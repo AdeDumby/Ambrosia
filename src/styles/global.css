@@ -1,3 +1,26 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+.app-shell {
+  display: flex;        /* row: sidebar left, main area right */
+  height: 100%;
+  overflow: hidden;     /* only .content scrolls */
+}
+
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;         /* lets wide content shrink instead of overflowing */
+}
+
+.content {
+  flex: 1;
+  overflow: auto;
+}
+
 .btn {
   padding: 10px 16px;
   border: 1px solid var(--border);
