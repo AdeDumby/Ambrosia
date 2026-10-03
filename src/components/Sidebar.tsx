@@ -1,3 +1,4 @@
+import SegmentedControl from './item/SegmentedControl'
 import { useState } from 'react'
 import '../styles/Sidebar.css'
 
@@ -30,19 +31,11 @@ export default function Sidebar() {
     <aside className="sidebar">
       <div className="sidebar-header">
         <h2 className="sidebar-title">Folders</h2>
-        <div className="sidebar-segmented" role="group" aria-label="Folder match mode">
-          {matchOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              className={`sidebar-segment ${matchMode === option.value ? 'active' : ''}`}
-              aria-pressed={matchMode === option.value}
-              onClick={() => setMatchMode(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl<MatchMode>
+          label="Folder match mode"
+          value={matchMode}
+          onChange={setMatchMode}
+          options={matchOptions}/>
       </div>
 
       <label className="sidebar-checkbox">
@@ -54,23 +47,13 @@ export default function Sidebar() {
         Unreviewed only
       </label>
 
-      <div
-        className="sidebar-segmented sidebar-segmented-full"
-        role="group"
-        aria-label="Track type"
-      >
-        {typeOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={`sidebar-segment ${typeFilter === option.value ? 'active' : ''}`}
-            aria-pressed={typeFilter === option.value}
-            onClick={() => setTypeFilter(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl<TypeFilter>
+        label="Track type"
+        fullWidth
+        value={typeFilter}
+        onChange={setTypeFilter}
+        options={typeOptions}
+      />
 
       {/* Folder list goes here later */}
       <div className="sidebar-folders" />

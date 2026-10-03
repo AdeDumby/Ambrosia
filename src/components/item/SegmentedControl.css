@@ -1,0 +1,25 @@
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.segmented-full { display: flex; }
+.segmented-full .segmented-item { flex: 1; }
+
+.segmented-item {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.segmented-item.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
