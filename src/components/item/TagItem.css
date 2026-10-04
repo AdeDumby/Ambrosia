@@ -1,12 +1,44 @@
 .tag-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 3px 4px 3px 22px;
-  font-size: 0.8rem;
+  gap: 6px;
+  width: 100%;
+  padding: 3px 4px 3px 12px;
+  border: none;
+  background: transparent;
   color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-item:hover {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.tag-item-marker {
+  width: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.tag-item-name {
+  flex: 1;
 }
 
 .tag-item-count {
   font-variant-numeric: tabular-nums;
+}
+
+.tag-item.include {
+  color: var(--accent);
+}
+
+.tag-item.exclude {
+  color: #e05555;
+}
+
+.tag-item.exclude .tag-item-name {
+  text-decoration: line-through;
 }

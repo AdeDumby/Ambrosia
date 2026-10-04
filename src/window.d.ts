@@ -1,24 +1,17 @@
-import type { Track } from './shared/types'
-
-export {}
+import type { Tag, TagCategory, Track } from './shared/types'
 
 declare global {
   interface Window {
     api: {
-      listCategories(): Promise<{ id: number; name: string; color: string; sortOrder: number }[]>
-      createCategory(
-        name: string,
-        color?: string
-      ): Promise<{ id: number; name: string; color: string; sortOrder: number }>
-      listTags(): Promise<{ id: number; name: string; categoryId: number | null }[]>
-      createTag(
-        name: string,
-        categoryId: number | null
-      ): Promise<{ id: number; name: string; categoryId: number | null }>
-      listTracks(): Promise<Track[]>
-      tagTrack(trackId: number, tagId: number): Promise<void>
+      listCategories(): Promise<TagCategory[]>
+      createCategory(name: string, color?: string): Promise<TagCategory>
       reorderCategories(ids: number[]): Promise<void>
-      untagTrack(trackId: number, tagId: number): Promise<void>
+      listTags(): Promise<Tag[]>
+      createTag(name: string, categoryId: number | null): Promise<Tag>
+      tagTrack(trackId: number, tagId: number): Promise<void>
+      untagTrack(trackId: number, tagId: number): Promise<boolean>
+      addTagToTrackByName(trackId: number, name: string): Promise<boolean>
+      listTracks(): Promise<Track[]>
       getTrack(id: number): Promise<Track | null>
     }
   }

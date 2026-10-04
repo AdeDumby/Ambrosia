@@ -3,20 +3,23 @@ import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import Footer from './Footer'
 import { FilterProvider } from '../store/FilterContext'
+import { LibraryProvider } from '../store/LibraryContext'
 
 export default function Layout() {
   return (
-    <FilterProvider>
-      <div className="app-shell">
-        <Sidebar />
-        <div className="main-area">
-          <Topbar />
-          <main className="content">
-            <Outlet />
-          </main>
-          <Footer />
+    <LibraryProvider>
+      <FilterProvider>
+        <div className="app-shell">
+          <Sidebar />
+          <div className="main-area">
+            <Topbar />
+            <main className="content">
+              <Outlet />
+            </main>
+            <Footer />
+          </div>
         </div>
-      </div>
-    </FilterProvider>
+      </FilterProvider>
+    </LibraryProvider>
   )
 }

@@ -28,3 +28,16 @@ export type TrackTag = {
   name: string
   color: string | null
 }
+
+export type TagCategory = {
+  id: number
+  name: string
+  color: string
+  sortOrder: number
+}
+
+export type Tag = {
+  id: number
+  name: string
+  categoryId: number | null
+}
