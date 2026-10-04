@@ -1,3 +1,5 @@
+import type { Track } from './shared/types'
+
 export {}
 
 declare global {
@@ -13,6 +15,7 @@ declare global {
         name: string,
         categoryId: number | null
       ): Promise<{ id: number; name: string; categoryId: number | null }>
+      listTracks(): Promise<Track[]>
     }
   }
 }

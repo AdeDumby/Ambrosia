@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 
 import { createCategory, listCategories } from './services/category.services.ts'
 import { createTag, listTags } from './services/tag.services.ts'
+import { listTracks, upsertTrack } from './services/track.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
 
@@ -47,6 +48,8 @@ app.whenReady().then(() => {
     }
     return createCategory(db, name.trim(), typeof color === 'string' ? color : undefined)
   })
+
+  ipcMain.handle('tracks:list', () => listTracks(db))
 
   createWindow()
 })
