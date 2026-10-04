@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 
 import { createCategory, reorderCategories, listCategories } from './services/category.services.ts'
 import { createTag, listTags, tagTrack, untagTrack } from './services/tag.services.ts'
-import { listTracks } from './services/track.services.ts'
+import { getTrack, listTracks } from './services/track.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
 
@@ -62,6 +62,11 @@ app.whenReady().then(() => {
       throw new Error('Invalid id')
     }
     tagTrack(db, trackId as number, tagId as number)
+  })
+
+  ipcMain.handle('tracks:get', (_event, id: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    return getTrack(db, id as number)
   })
 
   ipcMain.handle('tags:untag-track', (_event, trackId: unknown, tagId: unknown) => {

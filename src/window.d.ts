@@ -19,6 +19,7 @@ declare global {
       tagTrack(trackId: number, tagId: number): Promise<void>
       reorderCategories(ids: number[]): Promise<void>
       untagTrack(trackId: number, tagId: number): Promise<void>
+      getTrack(id: number): Promise<Track | null>
     }
   }
 }
