@@ -1,9 +1,11 @@
 import SegmentedControl from './item/SegmentedControl'
-import { useState } from 'react'
+import FolderItem from './item/FolderItem'
+import { useEffect, useState } from 'react'
 import '../styles/Sidebar.css'
 
 type MatchMode = 'or' | 'and'
 type TypeFilter = 'all' | 'music' | 'sfx'
+type Category = { id: number; name: string; color: string }
 
 const matchOptions: { value: MatchMode; label: string }[] = [
   { value: 'or', label: 'Or' },
@@ -20,6 +22,11 @@ export default function Sidebar() {
   const [matchMode, setMatchMode] = useState<MatchMode>('or')
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [categories, setCategories] = useState<Category[]>([])
+
+useEffect(() => {
+  window.api.listCategories().then(setCategories)
+  }, [])
 
   function clearFilters() {
     setMatchMode('or')
@@ -55,8 +62,11 @@ export default function Sidebar() {
         options={typeOptions}
       />
 
-      {/* Folder list goes here later */}
-      <div className="sidebar-folders" />
+      <div className="sidebar-folders">
+        {categories.map((category) => (
+          <FolderItem key={category.id} name={category.name} color={category.color} />
+        ))}
+      </div>
 
       <button className="btn sidebar-clear" onClick={clearFilters}>
         Clear filters
