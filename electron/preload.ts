@@ -6,5 +6,9 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('tags:create', name, categoryId),
   listCategories: () => ipcRenderer.invoke('categories:list'),
   createCategory: (name: string, color?: string) =>
-    ipcRenderer.invoke('categories:create', name, color)
+    ipcRenderer.invoke('categories:create', name, color),
+  listTracks: () => ipcRenderer.invoke('tracks:list'),
+  tagTrack: (trackId: number, tagId: number) =>
+    ipcRenderer.invoke('tags:tag-track', trackId, tagId),
+  reorderCategories: (ids: number[]) => ipcRenderer.invoke('categories:reorder', ids)
 })

@@ -20,3 +20,7 @@ export function listTags(db: DatabaseSync): Tag[] {
   const rows = db.prepare(`SELECT id, name, category_id AS categoryId FROM tag ORDER BY name`).all()
   return rows as unknown as Tag[]
 }
+
+export function tagTrack(db: DatabaseSync, trackId: number, tagId: number): void {
+  db.prepare(`INSERT OR IGNORE INTO track_tag (track_id, tag_id) VALUES (?, ?)`).run(trackId, tagId)
+}

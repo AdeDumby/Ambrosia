@@ -1,11 +1,13 @@
+import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
+import Home from './pages/Home'
 
-function App() {
+export default function App() {
   return (
-    <>
-      <Layout />
-    </>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route path="/" element={<Home />} />
+      </Route>
+    </Routes>
   )
 }
-
-export default App
