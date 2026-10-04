@@ -1,17 +1,18 @@
 import SegmentedControl from './item/SegmentedControl'
 import FolderItem from './item/FolderItem'
 import TagItem from './item/TagItem'
+
+import { useFilters, type MatchMode, type TypeFilter } from '../store/FilterContext'
+
 import { useEffect, useState } from 'react'
 import '../styles/Sidebar.css'
 
-type MatchMode = 'or' | 'and'
-type TypeFilter = 'all' | 'music' | 'sfx'
 type Category = { id: number; name: string; color: string }
 type Tag = { id: number; name: string; categoryId: number | null }
 
 const matchOptions: { value: MatchMode; label: string }[] = [
-  { value: 'or', label: 'Or' },
-  { value: 'and', label: 'And' }
+  { value: 'any', label: 'Or' },
+  { value: 'all', label: 'And' }
 ]
 
 const typeOptions: { value: TypeFilter; label: string }[] = [
@@ -21,9 +22,16 @@ const typeOptions: { value: TypeFilter; label: string }[] = [
 ]
 
 export default function Sidebar() {
-  const [matchMode, setMatchMode] = useState<MatchMode>('or')
-  const [unreviewedOnly, setUnreviewedOnly] = useState(false)
-  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const {
+    matchMode,
+    setMatchMode,
+    unreviewedOnly,
+    setUnreviewedOnly,
+    typeFilter,
+    setTypeFilter,
+    clearFilters
+  } = useFilters()
+
   const [categories, setCategories] = useState<Category[]>([])
   const [tags, setTags] = useState<Tag[]>([])
 
@@ -35,12 +43,6 @@ export default function Sidebar() {
       }
     )
   }, [])
-
-  function clearFilters() {
-    setMatchMode('or')
-    setUnreviewedOnly(false)
-    setTypeFilter('all')
-  }
 
   return (
     <aside className="sidebar">
