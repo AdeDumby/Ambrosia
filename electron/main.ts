@@ -27,7 +27,12 @@ app.whenReady().then(() => {
   const db = openDatabase(dbPath)
 
   ipcMain.handle('categories:list', () => listCategories(db))
-
+  ipcMain.handle('categories:create', (_event, name: unknown, color: unknown) => {
+  if (typeof name !== 'string' || name.trim() === '') {
+    throw new Error('Invalid category name')
+  }
+  return createCategory(db, name.trim(), typeof color === 'string' ? color : undefined)
+})
   createWindow()
 })
 app.on('window-all-closed', () => {
