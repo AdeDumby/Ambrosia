@@ -13,6 +13,7 @@ type FilterState = {
   setTypeFilter: (value: TypeFilter) => void
   tagFilters: Record<number, TagFilterState>
   cycleTagFilter: (tagId: number) => void
+  clearTagFilter: (tagId: number) => void
   clearFilters: () => void
 }
 
@@ -35,6 +36,14 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  function clearTagFilter(tagId: number) {
+    setTagFilters((previous) => {
+      const next = { ...previous }
+      delete next[tagId]
+      return next
+    })
+  }
+
   function clearFilters() {
     setMatchMode('any')
     setUnreviewedOnly(false)
@@ -53,6 +62,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         setTypeFilter,
         tagFilters,
         cycleTagFilter,
+        clearTagFilter,
         clearFilters
       }}
     >
