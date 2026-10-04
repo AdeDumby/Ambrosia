@@ -16,6 +16,17 @@ export default function Home() {
     window.api.listTracks().then(setTracks)
   }, [])
 
+  async function removeTag(trackId: number, tagId: number) {
+    await window.api.untagTrack(trackId, tagId)
+    setTracks((previous) =>
+      previous.map((track) =>
+        track.id === trackId
+          ? { ...track, tags: track.tags.filter((tag) => tag.id !== tagId) }
+          : track
+      )
+    )
+  }
+
   return (
     <div className="track-list">
       {visibleTracks.length === 0 && <p>No tracks yet.</p>}
@@ -25,6 +36,7 @@ export default function Home() {
           filename={track.filename}
           durationSec={track.durationSec}
           peakDb={track.peakDb}
+          onRemoveTag={(tagId) => removeTag(track.id, tagId)}
           tags={track.tags.map((tag) => ({
             id: tag.id,
             name: tag.name,

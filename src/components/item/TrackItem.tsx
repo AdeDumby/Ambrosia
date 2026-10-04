@@ -12,6 +12,7 @@ type Props = {
   durationSec: number
   peakDb: number | null
   tags?: TrackTag[]
+  onRemoveTag?: (tagId: number) => void
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -20,7 +21,13 @@ function formatDuration(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-export default function TrackItem({ filename, durationSec, peakDb, tags = [] }: Props) {
+export default function TrackItem({
+  filename,
+  durationSec,
+  peakDb,
+  tags = [],
+  onRemoveTag
+}: Props) {
   return (
     <div className="track-item">
       <div className="track-name">{filename}</div>
@@ -31,7 +38,12 @@ export default function TrackItem({ filename, durationSec, peakDb, tags = [] }: 
       {tags.length > 0 && (
         <div className="track-tags">
           {tags.map((tag) => (
-            <TagBubble key={tag.id} name={tag.name} color={tag.color} />
+            <TagBubble
+              key={tag.id}
+              name={tag.name}
+              color={tag.color}
+              onRemove={onRemoveTag ? () => onRemoveTag(tag.id) : undefined}
+            />
           ))}
         </div>
       )}
