@@ -31,8 +31,12 @@
   overflow: hidden;
 }
 
-.sidebar-segmented-full { display: flex; }
-.sidebar-segmented-full .sidebar-segment { flex: 1; }
+.sidebar-segmented-full {
+  display: flex;
+}
+.sidebar-segmented-full .sidebar-segment {
+  flex: 1;
+}
 
 .sidebar-segment {
   padding: 6px 12px;
@@ -59,7 +63,9 @@
   cursor: pointer;
 }
 
-.sidebar-folders { flex: 1; }
+.sidebar-folders {
+  flex: 1;
+}
 
 .sidebar-clear {
   align-self: flex-start;

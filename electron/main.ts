@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 
 import { createCategory, listCategories } from './services/category.services.ts'
+import { createTag, listTags } from './services/tag.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
 
@@ -26,13 +27,27 @@ app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
 
+  ipcMain.handle('tags:list', () => listTags(db))
+
+  ipcMain.handle('tags:create', (_event, name: unknown, categoryId: unknown) => {
+    if (typeof name !== 'string' || name.trim() === '') {
+      throw new Error('Invalid tag name')
+    }
+    if (categoryId !== null && !Number.isInteger(categoryId)) {
+      throw new Error('Invalid category id')
+    }
+    return createTag(db, name.trim(), categoryId as number | null)
+  })
+
   ipcMain.handle('categories:list', () => listCategories(db))
+
   ipcMain.handle('categories:create', (_event, name: unknown, color: unknown) => {
-  if (typeof name !== 'string' || name.trim() === '') {
-    throw new Error('Invalid category name')
-  }
-  return createCategory(db, name.trim(), typeof color === 'string' ? color : undefined)
-})
+    if (typeof name !== 'string' || name.trim() === '') {
+      throw new Error('Invalid category name')
+    }
+    return createCategory(db, name.trim(), typeof color === 'string' ? color : undefined)
+  })
+
   createWindow()
 })
 app.on('window-all-closed', () => {

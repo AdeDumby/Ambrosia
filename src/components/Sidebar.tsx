@@ -24,8 +24,8 @@ export default function Sidebar() {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [categories, setCategories] = useState<Category[]>([])
 
-useEffect(() => {
-  window.api.listCategories().then(setCategories)
+  useEffect(() => {
+    window.api.listCategories().then(setCategories)
   }, [])
 
   function clearFilters() {
@@ -42,7 +42,8 @@ useEffect(() => {
           label="Folder match mode"
           value={matchMode}
           onChange={setMatchMode}
-          options={matchOptions}/>
+          options={matchOptions}
+        />
       </div>
 
       <label className="sidebar-checkbox">

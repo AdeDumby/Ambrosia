@@ -5,8 +5,12 @@
   overflow: hidden;
 }
 
-.segmented-full { display: flex; }
-.segmented-full .segmented-item { flex: 1; }
+.segmented-full {
+  display: flex;
+}
+.segmented-full .segmented-item {
+  flex: 1;
+}
 
 .segmented-item {
   padding: 6px 12px;

@@ -11,8 +11,14 @@
   padding: 16px 32px;
 }
 
-.topbar-brand { display: flex; align-items: center; gap: 12px; }
-.topbar-logo { color: var(--accent); }
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.topbar-logo {
+  color: var(--accent);
+}
 
 .topbar-title {
   margin: 0;
@@ -28,7 +34,11 @@
   color: var(--muted);
 }
 
-.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
 .topbar-actions input {
   width: 320px;
@@ -55,5 +65,10 @@
   text-transform: uppercase;
 }
 
-.tab.active { color: inherit; border-bottom-color: var(--accent); }
-.tab-right { margin-left: auto; }
+.tab.active {
+  color: inherit;
+  border-bottom-color: var(--accent);
+}
+.tab-right {
+  margin-left: auto;
+}

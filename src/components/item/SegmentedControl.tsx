@@ -18,7 +18,11 @@ export default function SegmentedControl<T extends string>({
   fullWidth = false
 }: Props<T>) {
   return (
-    <div className={`segmented ${fullWidth ? 'segmented-full' : ''}`} role="group" aria-label={label}>
+    <div
+      className={`segmented ${fullWidth ? 'segmented-full' : ''}`}
+      role="group"
+      aria-label={label}
+    >
       {options.map((option) => (
         <button
           key={option.value}

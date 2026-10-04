@@ -1,20 +1,19 @@
-import { NavLink } from "react-router-dom"
+import { NavLink } from 'react-router-dom'
 import '../styles/Topbar.css'
 
 type TopbarStats = {
-    trackCount?: number
-    tagCount?: number
-    size?: string
+  trackCount?: number
+  tagCount?: number
+  size?: string
 }
 
 const tabs = [
-    { to: '/', label:'Library', end: true },
-    { to: '/review', label:'Review'},
-    { to: '/download', laebl: 'Download'}
-
+  { to: '/', label: 'Library', end: true },
+  { to: '/review', label: 'Review' },
+  { to: '/download', laebl: 'Download' }
 ]
 
-export default function Topbar({ trackCount = 0, tagCount = 0, size= '0 MB'}: TopbarStats) {
+export default function Topbar({ trackCount = 0, tagCount = 0, size = '0 MB' }: TopbarStats) {
   return (
     <header className="topbar">
       <div className="topbar-main">

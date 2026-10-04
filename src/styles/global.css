@@ -1,19 +1,21 @@
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
 }
 
 .app-shell {
-  display: flex;        /* row: sidebar left, main area right */
+  display: flex; /* row: sidebar left, main area right */
   height: 100%;
-  overflow: hidden;     /* only .content scrolls */
+  overflow: hidden; /* only .content scrolls */
 }
 
 .main-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-width: 0;         /* lets wide content shrink instead of overflowing */
+  min-width: 0; /* lets wide content shrink instead of overflowing */
 }
 
 .content {
