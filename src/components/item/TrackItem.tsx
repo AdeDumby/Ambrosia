@@ -1,4 +1,5 @@
 import TagBubble from './TagBubble'
+import TagInput, { type TagOption } from './TagInput'
 import './TrackItem.css'
 
 type TrackTag = {
@@ -12,6 +13,9 @@ type Props = {
   durationSec: number
   peakDb: number | null
   tags?: TrackTag[]
+  allTags?: TagOption[]
+  onRemoveTag?: (tagId: number) => void
+  onAddTag?: (tagId: number) => void
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -20,7 +24,18 @@ function formatDuration(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
-export default function TrackItem({ filename, durationSec, peakDb, tags = [] }: Props) {
+export default function TrackItem({
+  filename,
+  durationSec,
+  peakDb,
+  tags = [],
+  allTags = [],
+  onRemoveTag,
+  onAddTag
+}: Props) {
+  const ownedIds = new Set(tags.map((tag) => tag.id))
+  const availableTags = allTags.filter((tag) => !ownedIds.has(tag.id))
+
   return (
     <div className="track-item">
       <div className="track-name">{filename}</div>
@@ -28,11 +43,17 @@ export default function TrackItem({ filename, durationSec, peakDb, tags = [] }: 
         <span>{formatDuration(durationSec)}</span>
         {peakDb !== null && <span>{peakDb} dB max</span>}
       </div>
-      {tags.length > 0 && (
+      {(tags.length > 0 || onAddTag) && (
         <div className="track-tags">
           {tags.map((tag) => (
-            <TagBubble key={tag.id} name={tag.name} color={tag.color} />
+            <TagBubble
+              key={tag.id}
+              name={tag.name}
+              color={tag.color}
+              onRemove={onRemoveTag ? () => onRemoveTag(tag.id) : undefined}
+            />
           ))}
+          {onAddTag && <TagInput options={availableTags} onAdd={onAddTag} />}
         </div>
       )}
     </div>
