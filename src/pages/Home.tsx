@@ -25,6 +25,11 @@ export default function Home() {
           filename={track.filename}
           durationSec={track.durationSec}
           peakDb={track.peakDb}
+          tags={track.tags.map((tag) => ({
+            id: tag.id,
+            name: tag.name,
+            color: tag.color ?? undefined
+          }))}
         />
       ))}
     </div>

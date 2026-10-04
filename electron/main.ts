@@ -1,8 +1,8 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 
-import { createCategory, listCategories } from './services/category.services.ts'
-import { createTag, listTags } from './services/tag.services.ts'
-import { listTracks, upsertTrack } from './services/track.services.ts'
+import { createCategory, reorderCategories, listCategories } from './services/category.services.ts'
+import { createTag, listTags, tagTrack } from './services/tag.services.ts'
+import { listTracks } from './services/track.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
 
@@ -49,7 +49,20 @@ app.whenReady().then(() => {
     return createCategory(db, name.trim(), typeof color === 'string' ? color : undefined)
   })
 
+  ipcMain.handle('categories:reorder', (_event, ids: unknown) => {
+    if (!Array.isArray(ids) || !ids.every((id) => Number.isInteger(id))) {
+      throw new Error('Invalid ids')
+    }
+    reorderCategories(db, ids as number[])
+  })
+
   ipcMain.handle('tracks:list', () => listTracks(db))
+  ipcMain.handle('tags:tag-track', (_event, trackId: unknown, tagId: unknown) => {
+    if (!Number.isInteger(trackId) || !Number.isInteger(tagId)) {
+      throw new Error('Invalid id')
+    }
+    tagTrack(db, trackId as number, tagId as number)
+  })
 
   createWindow()
 })

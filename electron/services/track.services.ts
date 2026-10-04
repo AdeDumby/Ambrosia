@@ -1,7 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type { NewTrack, Track } from '../../src/shared/types.ts'
+import type { NewTrack, Track, TrackTag } from '../../src/shared/types.ts'
 
-type TrackRow = Omit<Track, 'reviewed'> & { reviewed: number }
+type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }
 
 export function upsertTrack(db: DatabaseSync, t: NewTrack): number {
   const row = db
@@ -31,5 +31,26 @@ export function listTracks(db: DatabaseSync): Track[] {
     )
     .all() as unknown as TrackRow[]
 
-  return rows.map((row) => ({ ...row, reviewed: row.reviewed === 1 }))
+  const tagRows = db
+    .prepare(
+      `SELECT tt.track_id AS trackId, g.id, g.name, c.color
+       FROM track_tag tt
+       JOIN tag g ON g.id = tt.tag_id
+       LEFT JOIN tag_category c ON c.id = g.category_id
+       ORDER BY c.sort_order IS NULL, c.sort_order, c.name, g.name COLLATE NOCASE`
+    )
+    .all() as unknown as (TrackTag & { trackId: number })[]
+
+  const tagsByTrack = new Map<number, TrackTag[]>()
+  for (const { trackId, ...tag } of tagRows) {
+    const list = tagsByTrack.get(trackId) ?? []
+    list.push(tag)
+    tagsByTrack.set(trackId, list)
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    reviewed: row.reviewed === 1,
+    tags: tagsByTrack.get(row.id) ?? []
+  }))
 }

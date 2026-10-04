@@ -15,3 +15,10 @@
   font-size: 0.75rem;
   color: var(--muted);
 }
+
+.track-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}

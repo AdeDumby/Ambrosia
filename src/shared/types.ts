@@ -10,6 +10,7 @@ export type Track = {
   sizeBytes: number
   reviewed: boolean
   addedAt: string
+  tags: TrackTag[]
 }
 
 export type NewTrack = {
@@ -20,4 +21,10 @@ export type NewTrack = {
   peakDb: number | null
   sizeBytes: number
   sourceFolderId: number
+}
+
+export type TrackTag = {
+  id: number
+  name: string
+  color: string | null
 }

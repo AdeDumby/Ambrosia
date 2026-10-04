@@ -16,6 +16,8 @@ declare global {
         categoryId: number | null
       ): Promise<{ id: number; name: string; categoryId: number | null }>
       listTracks(): Promise<Track[]>
+      tagTrack(trackId: number, tagId: number): Promise<void>
+      reorderCategories(ids: number[]): Promise<void>
     }
   }
 }
