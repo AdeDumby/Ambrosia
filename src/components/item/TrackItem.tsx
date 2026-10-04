@@ -16,6 +16,7 @@ type Props = {
   allTags?: TagOption[]
   onRemoveTag?: (tagId: number) => void
   onAddTag?: (tagId: number) => void
+  onCreateTag?: (name: string) => void
 }
 
 function formatDuration(totalSeconds: number): string {
@@ -31,7 +32,8 @@ export default function TrackItem({
   tags = [],
   allTags = [],
   onRemoveTag,
-  onAddTag
+  onAddTag,
+  onCreateTag
 }: Props) {
   const ownedIds = new Set(tags.map((tag) => tag.id))
   const availableTags = allTags.filter((tag) => !ownedIds.has(tag.id))
@@ -53,7 +55,7 @@ export default function TrackItem({
               onRemove={onRemoveTag ? () => onRemoveTag(tag.id) : undefined}
             />
           ))}
-          {onAddTag && <TagInput options={availableTags} onAdd={onAddTag} />}
+          {onAddTag && <TagInput options={availableTags} onAdd={onAddTag} onCreate={onCreateTag} />}
         </div>
       )}
     </div>

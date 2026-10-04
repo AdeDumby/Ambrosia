@@ -1,18 +1,14 @@
-import SegmentedControl from './item/SegmentedControl'
+import { useState, type DragEvent } from 'react'
 import FolderItem from './item/FolderItem'
+import SegmentedControl from './item/SegmentedControl'
 import TagItem from './item/TagItem'
-
 import { useFilters, type MatchMode, type TypeFilter } from '../store/FilterContext'
-
-import { useEffect, useState, type DragEvent } from 'react'
+import { useLibrary } from '../store/LibraryContext'
 import '../styles/Sidebar.css'
 
-type Category = { id: number; name: string; color: string }
-type Tag = { id: number; name: string; categoryId: number | null }
-
 const matchOptions: { value: MatchMode; label: string }[] = [
-  { value: 'any', label: 'Or' },
-  { value: 'all', label: 'And' }
+  { value: 'any', label: 'Any' },
+  { value: 'all', label: 'All' }
 ]
 
 const typeOptions: { value: TypeFilter; label: string }[] = [
@@ -22,6 +18,7 @@ const typeOptions: { value: TypeFilter; label: string }[] = [
 ]
 
 export default function Sidebar() {
+  const { categories, setCategories, tags } = useLibrary()
   const {
     matchMode,
     setMatchMode,
@@ -29,11 +26,11 @@ export default function Sidebar() {
     setUnreviewedOnly,
     typeFilter,
     setTypeFilter,
+    tagFilters,
+    cycleTagFilter,
     clearFilters
   } = useFilters()
 
-  const [categories, setCategories] = useState<Category[]>([])
-  const [tags, setTags] = useState<Tag[]>([])
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dropTarget, setDropTarget] = useState<{
     id: number
@@ -86,19 +83,12 @@ export default function Sidebar() {
     }
   }
 
-  useEffect(() => {
-    Promise.all([window.api.listCategories(), window.api.listTags()]).then(
-      ([loadedCategories, loadedTags]) => {
-        setCategories(loadedCategories)
-        setTags(loadedTags)
-      }
-    )
-  }, [])
-
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h2 className="sidebar-title">Folders</h2>
+        <button type="button" className="btn sidebar-clear" onClick={clearFilters}>
+          Clear filters
+        </button>
         <SegmentedControl<MatchMode>
           label="Folder match mode"
           value={matchMode}
@@ -111,7 +101,7 @@ export default function Sidebar() {
         <input
           type="checkbox"
           checked={unreviewedOnly}
-          onChange={(e) => setUnreviewedOnly(e.target.checked)}
+          onChange={(event) => setUnreviewedOnly(event.target.checked)}
         />
         Unreviewed only
       </label>
@@ -127,7 +117,9 @@ export default function Sidebar() {
       <div
         className="sidebar-folders"
         onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null)
+          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+            setDropTarget(null)
+          }
         }}
       >
         {categories.map((category) => (
@@ -137,12 +129,23 @@ export default function Sidebar() {
             color={category.color}
             draggable
             isDragging={draggedId === category.id}
-            dropIndicator={dropTarget?.id === category.id ? dropTarget.position : null}
+            dropIndicator={dropTarget && dropTarget.id === category.id ? dropTarget.position : null}
             onDragStart={(event) => handleDragStart(event, category.id)}
             onDragOver={(event) => handleDragOver(event, category.id)}
             onDrop={handleDrop}
             onDragEnd={resetDrag}
-          ></FolderItem>
+          >
+            {tags
+              .filter((tag) => tag.categoryId === category.id)
+              .map((tag) => (
+                <TagItem
+                  key={tag.id}
+                  name={tag.name}
+                  state={tagFilters[tag.id]}
+                  onClick={() => cycleTagFilter(tag.id)}
+                />
+              ))}
+          </FolderItem>
         ))}
 
         {tags.some((tag) => tag.categoryId === null) && (
@@ -150,15 +153,16 @@ export default function Sidebar() {
             {tags
               .filter((tag) => tag.categoryId === null)
               .map((tag) => (
-                <TagItem key={tag.id} name={tag.name} />
+                <TagItem
+                  key={tag.id}
+                  name={tag.name}
+                  state={tagFilters[tag.id]}
+                  onClick={() => cycleTagFilter(tag.id)}
+                />
               ))}
           </FolderItem>
         )}
       </div>
-
-      <button className="btn sidebar-clear" onClick={clearFilters}>
-        Clear filters
-      </button>
     </aside>
   )
 }

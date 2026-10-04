@@ -13,5 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   reorderCategories: (ids: number[]) => ipcRenderer.invoke('categories:reorder', ids),
   getTrack: (id: number) => ipcRenderer.invoke('tracks:get', id),
   untagTrack: (trackId: number, tagId: number) =>
-    ipcRenderer.invoke('tags:untag-track', trackId, tagId)
+    ipcRenderer.invoke('tags:untag-track', trackId, tagId),
+  addTagToTrackByName: (trackId: number, name: string) =>
+    ipcRenderer.invoke('tags:add-to-track-by-name', trackId, name)
 })

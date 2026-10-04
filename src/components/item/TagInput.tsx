@@ -6,11 +6,12 @@ export type TagOption = { id: number; name: string }
 type Props = {
   options: TagOption[]
   onAdd: (tagId: number) => void
+  onCreate?: (name: string) => void
 }
 
 const MIN_CHARS = 3
 
-export default function TagInput({ options, onAdd }: Props) {
+export default function TagInput({ options, onAdd, onCreate }: Props) {
   const [value, setValue] = useState('')
 
   const typed = value.toLowerCase()
@@ -26,12 +27,18 @@ export default function TagInput({ options, onAdd }: Props) {
       setValue(suggestion.name)
     } else if (event.key === 'Enter') {
       event.preventDefault()
-      const wanted = value.trim().toLowerCase()
-      const exact = options.find((option) => option.name.toLowerCase() === wanted)
+      const wanted = value.trim()
+      if (wanted === '') return
+
+      const exact = options.find((option) => option.name.toLowerCase() === wanted.toLowerCase())
       if (exact) {
         onAdd(exact.id)
-        setValue('')
+      } else if (onCreate) {
+        onCreate(wanted)
+      } else {
+        return
       }
+      setValue('')
     } else if (event.key === 'Escape') {
       setValue('')
     }
