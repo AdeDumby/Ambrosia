@@ -8,6 +8,7 @@ import {
   tagTrack,
   untagTrack
 } from './services/tag.services.ts'
+
 import { getTrack, listTracks } from './services/track.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
@@ -16,6 +17,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
+    icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
