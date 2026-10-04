@@ -1,11 +1,18 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
+
+import { createCategory, listCategories } from './services/category.services.ts'
+import { openDatabase } from './db/database.ts'
 import path from 'node:path'
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
-    webPreferences: { contextIsolation: true, nodeIntegration: false }
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(app.getAppPath(), 'dist-electron', 'preload.mjs')
+    }
   })
 
   if (process.env.VITE_DEV_SERVER_URL) {
@@ -15,7 +22,14 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
+  const db = openDatabase(dbPath)
+
+  ipcMain.handle('categories:list', () => listCategories(db))
+
+  createWindow()
+})
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })

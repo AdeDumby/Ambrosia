@@ -1,0 +1,41 @@
+export const SCHEMA = `
+CREATE TABLE IF NOT EXISTS source_folder (
+  id INTEGER PRIMARY KEY,
+  path TEXT NOT NULL UNIQUE,
+  last_scanned_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS tag_category (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  color TEXT NOT NULL DEFAULT '#888888',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS tag (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  category_id INTEGER REFERENCES tag_category(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS track (
+  id INTEGER PRIMARY KEY,
+  path TEXT NOT NULL UNIQUE,
+  filename TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK (kind IN ('music', 'sfx')),
+  duration_sec REAL NOT NULL DEFAULT 0,
+  peak_db REAL,
+  size_bytes INTEGER NOT NULL DEFAULT 0,
+  reviewed INTEGER NOT NULL DEFAULT 0,
+  added_at TEXT NOT NULL DEFAULT (datetime('now')),
+  source_folder_id INTEGER NOT NULL REFERENCES source_folder(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS track_tag (
+  track_id INTEGER NOT NULL REFERENCES track(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tag(id) ON DELETE CASCADE,
+  PRIMARY KEY (track_id, tag_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_track_tag_tag ON track_tag(tag_id);
+`
