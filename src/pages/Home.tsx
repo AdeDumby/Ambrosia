@@ -13,7 +13,7 @@ export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const { tags: allTags, categories, refreshTags } = useLibrary()
   const { typeFilter, unreviewedOnly, matchMode, tagFilters, clearTagFilter } = useFilters()
-  const { currentTrackId, isPlaying, playTrack, stop } = usePlayer()
+  const { currentTrack, isPlaying, toggleTrack, stop } = usePlayer()
 
   useEffect(() => {
     window.api.listTracks().then(setTracks)
@@ -90,7 +90,7 @@ export default function Home() {
     const { id } = pendingDelete
     setPendingDelete(null)
     await window.api.deleteTrack(id)
-    if (currentTrackId === id) stop()
+    if (currentTrack?.id === id) stop()
     setTracks((previous) => previous.filter((track) => track.id !== id))
   }
 
@@ -124,8 +124,8 @@ export default function Home() {
             color: tag.color ?? undefined
           }))}
           allTags={allTags}
-          isPlaying={isPlaying && currentTrackId === track.id}
-          onPlay={() => playTrack(track.id)}
+          isPlaying={isPlaying && currentTrack?.id === track.id}
+          onPlay={() => toggleTrack({ id: track.id, filename: track.filename })}
           onSetKind={(kind) => setKind(track.id, kind)}
           onDelete={() => setPendingDelete({ id: track.id, filename: track.filename })}
           onRemoveTag={(tagId) => removeTag(track.id, tagId)}

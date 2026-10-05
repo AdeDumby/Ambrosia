@@ -12,19 +12,24 @@ type Props = {
 export default function TrackActions({ isPlaying, onPlay, kind, onSetKind, onDelete }: Props) {
   const target: TrackKind = kind === 'music' ? 'sfx' : 'music'
   const kindLabel = target === 'sfx' ? 'Set as SFX' : 'Set as Music'
+  const playLabel = isPlaying ? 'Pause' : 'Play from the start'
 
   return (
     <div className="track-actions">
       <button
         type="button"
         className={`track-action ${isPlaying ? 'active' : ''}`}
-        aria-label="Play from the start"
+        aria-label={playLabel}
         aria-pressed={isPlaying}
-        title="Play from the start"
+        title={playLabel}
         onClick={onPlay}
       >
         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-          <path d="M8 5v14l11-7z" fill="currentColor" />
+          {isPlaying ? (
+            <path d="M6 5h4v14H6zM14 5h4v14h-4z" fill="currentColor" />
+          ) : (
+            <path d="M8 5v14l11-7z" fill="currentColor" />
+          )}
         </svg>
       </button>
 

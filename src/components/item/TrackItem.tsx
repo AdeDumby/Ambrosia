@@ -2,6 +2,7 @@ import type { TrackKind } from '../../shared/types'
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
 import TrackActions from './TrackActions'
+import { formatDuration } from '../../lib/formatDuration'
 import './TrackItem.css'
 
 type TrackTag = {
@@ -24,12 +25,6 @@ type Props = {
   onRemoveTag?: (tagId: number) => void
   onAddTag?: (tagId: number) => void
   onCreateTag?: (name: string) => void
-}
-
-function formatDuration(totalSeconds: number): string {
-  const minutes = Math.floor(totalSeconds / 60)
-  const seconds = Math.floor(totalSeconds % 60)
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
 export default function TrackItem({
