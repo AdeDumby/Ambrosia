@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol } from 'electron'
 
 import { createCategory, reorderCategories, listCategories } from './services/category.services.ts'
 import {
@@ -8,14 +8,29 @@ import {
   tagTrack,
   untagTrack
 } from './services/tag.services.ts'
-import { getTrack, listTracks } from './services/track.services.ts'
+import {
+  getTrack,
+  getTrackPath,
+  listTracks,
+  setTrackKind,
+  deleteTrack
+} from './services/track.services.ts'
+import { serveAudio } from './services/audio.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'ambrosia-audio',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+  }
+])
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
+    icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -33,6 +48,13 @@ function createWindow() {
 app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
+
+  protocol.handle('ambrosia-audio', (request) => {
+    const id = Number(new URL(request.url).pathname.slice(1))
+    const filePath = Number.isInteger(id) ? getTrackPath(db, id) : null
+    if (!filePath) return new Response('Not found', { status: 404 })
+    return serveAudio(filePath, request.headers.get('range'))
+  })
 
   ipcMain.handle('tags:list', () => listTags(db))
 
@@ -75,6 +97,11 @@ app.whenReady().then(() => {
     return getTrack(db, id as number)
   })
 
+  ipcMain.handle('tracks:delete', (_event, id: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    deleteTrack(db, id as number)
+  })
+
   ipcMain.handle('tags:untag-track', (_event, trackId: unknown, tagId: unknown) => {
     if (!Number.isInteger(trackId) || !Number.isInteger(tagId)) {
       throw new Error('Invalid id')
@@ -87,6 +114,13 @@ app.whenReady().then(() => {
     if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
     return addTagToTrackByName(db, trackId as number, name.trim())
   })
+
+  ipcMain.handle('tracks:set-kind', (_event, id: unknown, kind: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    if (kind !== 'music' && kind !== 'sfx') throw new Error('Invalid kind')
+    setTrackKind(db, id as number, kind)
+  })
+
   createWindow()
 })
 app.on('window-all-closed', () => {

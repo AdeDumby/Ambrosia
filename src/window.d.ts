@@ -1,4 +1,4 @@
-import type { Tag, TagCategory, Track } from './shared/types'
+import type { Tag, TagCategory, Track, TrackKind } from './shared/types'
 
 declare global {
   interface Window {
@@ -13,6 +13,8 @@ declare global {
       addTagToTrackByName(trackId: number, name: string): Promise<boolean>
       listTracks(): Promise<Track[]>
       getTrack(id: number): Promise<Track | null>
+      setTrackKind(id: number, kind: TrackKind): Promise<void>
+      deleteTrack(id: number): Promise<void>
     }
   }
 }

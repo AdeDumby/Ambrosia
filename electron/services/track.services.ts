@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type { NewTrack, Track, TrackTag } from '../../src/shared/types.ts'
+import type { NewTrack, Track, TrackKind, TrackTag } from '../../src/shared/types.ts'
 
 type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }
 
@@ -13,26 +13,15 @@ function toTrack(row: TrackRow, tags: TrackTag[]): Track {
   return { ...row, reviewed: row.reviewed === 1, tags }
 }
 
-export function upsertTrack(db: DatabaseSync, t: NewTrack): number {
-  const row = db
-    .prepare(
-      `INSERT INTO track (path, filename, kind, duration_sec, peak_db, size_bytes, source_folder_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(path) DO UPDATE SET
-         filename = excluded.filename,
-         kind = excluded.kind,
-         duration_sec = excluded.duration_sec,
-         peak_db = excluded.peak_db,
-         size_bytes = excluded.size_bytes
-       RETURNING id`
-    )
-    .get(t.path, t.filename, t.kind, t.durationSec, t.peakDb, t.sizeBytes, t.sourceFolderId)
-  return (row as unknown as { id: number }).id
+export function setTrackKind(db: DatabaseSync, id: number, kind: TrackKind): void {
+  db.prepare('UPDATE track SET kind = ? WHERE id = ?').run(kind, id)
 }
 
 export function listTracks(db: DatabaseSync): Track[] {
   const rows = db
-    .prepare(`SELECT ${TRACK_COLUMNS} FROM track ORDER BY filename COLLATE NOCASE`)
+    .prepare(
+      `SELECT ${TRACK_COLUMNS} FROM track WHERE deleted = 0 ORDER BY filename COLLATE NOCASE`
+    )
     .all() as unknown as TrackRow[]
 
   const tagRows = db
@@ -56,8 +45,9 @@ export function listTracks(db: DatabaseSync): Track[] {
 }
 
 export function getTrack(db: DatabaseSync, id: number): Track | null {
-  const row = db.prepare(`SELECT ${TRACK_COLUMNS} FROM track WHERE id = ?`).get(id) as
-    TrackRow | undefined
+  const row = db
+    .prepare(`SELECT ${TRACK_COLUMNS} FROM track WHERE id = ? AND deleted = 0`)
+    .get(id) as TrackRow | undefined
   if (!row) return null
 
   const tags = db
@@ -72,4 +62,14 @@ export function getTrack(db: DatabaseSync, id: number): Track | null {
     .all(id) as unknown as TrackTag[]
 
   return toTrack(row, tags)
+}
+
+export function deleteTrack(db: DatabaseSync, id: number): void {
+  db.prepare('UPDATE track SET deleted = 1 WHERE id = ?').run(id)
+}
+
+export function getTrackPath(db: DatabaseSync, id: number): string | null {
+  const row = db.prepare('SELECT path FROM track WHERE id = ?').get(id) as unknown as
+    { path: string } | undefined
+  return row ? row.path : null
 }
