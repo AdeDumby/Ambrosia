@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import './TagItem.css'
 
 type Props = {
@@ -5,9 +6,10 @@ type Props = {
   count?: number
   state?: 'include' | 'exclude'
   onClick?: () => void
+  onContextMenu?: (event: MouseEvent<HTMLButtonElement>) => void
 }
 
-export default function TagItem({ name, count, state, onClick }: Props) {
+export default function TagItem({ name, count, state, onClick, onContextMenu }: Props) {
   const marker = state === 'include' ? '+' : state === 'exclude' ? '−' : ''
 
   return (
@@ -16,6 +18,7 @@ export default function TagItem({ name, count, state, onClick }: Props) {
       className={`tag-item ${state ?? ''}`}
       aria-pressed={state !== undefined}
       onClick={onClick}
+      onContextMenu={onContextMenu}
     >
       <span className="tag-item-marker" aria-hidden="true">
         {marker}

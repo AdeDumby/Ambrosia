@@ -18,5 +18,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('tags:add-to-track-by-name', trackId, name),
   setTrackKind: (id: number, kind: 'music' | 'sfx') =>
     ipcRenderer.invoke('tracks:set-kind', id, kind),
-  deleteTrack: (id: number) => ipcRenderer.invoke('tracks:delete', id)
+  deleteTrack: (id: number) => ipcRenderer.invoke('tracks:delete', id),
+  setTagCategory: (tagId: number, categoryId: number | null) =>
+    ipcRenderer.invoke('tags:set-category', tagId, categoryId)
 })

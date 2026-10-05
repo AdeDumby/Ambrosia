@@ -15,6 +15,7 @@ declare global {
       getTrack(id: number): Promise<Track | null>
       setTrackKind(id: number, kind: TrackKind): Promise<void>
       deleteTrack(id: number): Promise<void>
+      setTagCategory(tagId: number, categoryId: number | null): Promise<void>
     }
   }
 }
