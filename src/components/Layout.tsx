@@ -4,22 +4,25 @@ import Topbar from './Topbar'
 import Footer from './Footer'
 import { FilterProvider } from '../store/FilterContext'
 import { LibraryProvider } from '../store/LibraryContext'
+import { PlayerProvider } from '../store/PlayerContext'
 
 export default function Layout() {
   return (
-    <LibraryProvider>
-      <FilterProvider>
-        <div className="app-shell">
-          <Sidebar />
-          <div className="main-area">
-            <Topbar />
-            <main className="content">
-              <Outlet />
-            </main>
-            <Footer />
+    <PlayerProvider>
+      <LibraryProvider>
+        <FilterProvider>
+          <div className="app-shell">
+            <Sidebar />
+            <div className="main-area">
+              <Topbar />
+              <main className="content">
+                <Outlet />
+              </main>
+              <Footer />
+            </div>
           </div>
-        </div>
-      </FilterProvider>
-    </LibraryProvider>
+        </FilterProvider>
+      </LibraryProvider>
+    </PlayerProvider>
   )
 }

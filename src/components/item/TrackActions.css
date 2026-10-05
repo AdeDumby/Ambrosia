@@ -1,0 +1,30 @@
+.track-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.track-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.track-action:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.track-action.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-text);
+}

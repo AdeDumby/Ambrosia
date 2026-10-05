@@ -1,5 +1,6 @@
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
+import TrackActions from './TrackActions'
 import './TrackItem.css'
 
 type TrackTag = {
@@ -14,6 +15,8 @@ type Props = {
   peakDb: number | null
   tags?: TrackTag[]
   allTags?: TagOption[]
+  isPlaying?: boolean
+  onPlay?: () => void
   onRemoveTag?: (tagId: number) => void
   onAddTag?: (tagId: number) => void
   onCreateTag?: (name: string) => void
@@ -31,6 +34,8 @@ export default function TrackItem({
   peakDb,
   tags = [],
   allTags = [],
+  isPlaying = false,
+  onPlay,
   onRemoveTag,
   onAddTag,
   onCreateTag
@@ -40,24 +45,29 @@ export default function TrackItem({
 
   return (
     <div className="track-item">
-      <div className="track-name">{filename}</div>
-      <div className="track-meta">
-        <span>{formatDuration(durationSec)}</span>
-        {peakDb !== null && <span>{peakDb} dB max</span>}
-      </div>
-      {(tags.length > 0 || onAddTag) && (
-        <div className="track-tags">
-          {tags.map((tag) => (
-            <TagBubble
-              key={tag.id}
-              name={tag.name}
-              color={tag.color}
-              onRemove={onRemoveTag ? () => onRemoveTag(tag.id) : undefined}
-            />
-          ))}
-          {onAddTag && <TagInput options={availableTags} onAdd={onAddTag} onCreate={onCreateTag} />}
+      <div className="track-main">
+        <div className="track-name">{filename}</div>
+        <div className="track-meta">
+          <span>{formatDuration(durationSec)}</span>
+          {peakDb !== null && <span>{peakDb} dB max</span>}
         </div>
-      )}
+        {(tags.length > 0 || onAddTag) && (
+          <div className="track-tags">
+            {tags.map((tag) => (
+              <TagBubble
+                key={tag.id}
+                name={tag.name}
+                color={tag.color}
+                onRemove={onRemoveTag ? () => onRemoveTag(tag.id) : undefined}
+              />
+            ))}
+            {onAddTag && (
+              <TagInput options={availableTags} onAdd={onAddTag} onCreate={onCreateTag} />
+            )}
+          </div>
+        )}
+      </div>
+      {onPlay && <TrackActions isPlaying={isPlaying} onPlay={onPlay} />}
     </div>
   )
 }

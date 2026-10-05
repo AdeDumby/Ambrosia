@@ -73,3 +73,9 @@ export function getTrack(db: DatabaseSync, id: number): Track | null {
 
   return toTrack(row, tags)
 }
+
+export function getTrackPath(db: DatabaseSync, id: number): string | null {
+  const row = db.prepare('SELECT path FROM track WHERE id = ?').get(id) as unknown as
+    { path: string } | undefined
+  return row ? row.path : null
+}

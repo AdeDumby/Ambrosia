@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol } from 'electron'
 
 import { createCategory, reorderCategories, listCategories } from './services/category.services.ts'
 import {
@@ -8,10 +8,17 @@ import {
   tagTrack,
   untagTrack
 } from './services/tag.services.ts'
-
-import { getTrack, listTracks } from './services/track.services.ts'
+import { getTrack, getTrackPath, listTracks } from './services/track.services.ts'
+import { serveAudio } from './services/audio.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'ambrosia-audio',
+    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+  }
+])
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -35,6 +42,13 @@ function createWindow() {
 app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
+
+  protocol.handle('ambrosia-audio', (request) => {
+    const id = Number(new URL(request.url).pathname.slice(1))
+    const filePath = Number.isInteger(id) ? getTrackPath(db, id) : null
+    if (!filePath) return new Response('Not found', { status: 404 })
+    return serveAudio(filePath, request.headers.get('range'))
+  })
 
   ipcMain.handle('tags:list', () => listTags(db))
 

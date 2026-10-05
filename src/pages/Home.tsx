@@ -4,12 +4,14 @@ import TagBubble from '../components/item/TagBubble'
 import TrackItem from '../components/item/TrackItem'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
+import { usePlayer } from '../store/PlayerContext'
 import './Home.css'
 
 export default function Home() {
   const [tracks, setTracks] = useState<Track[]>([])
   const { tags: allTags, categories, refreshTags } = useLibrary()
   const { typeFilter, unreviewedOnly, matchMode, tagFilters, clearTagFilter } = useFilters()
+  const { currentTrackId, isPlaying, playTrack } = usePlayer()
 
   useEffect(() => {
     window.api.listTracks().then(setTracks)
@@ -106,6 +108,8 @@ export default function Home() {
           onRemoveTag={(tagId) => removeTag(track.id, tagId)}
           onAddTag={(tagId) => addTag(track.id, tagId)}
           onCreateTag={(name) => createTag(track.id, name)}
+          isPlaying={isPlaying && currentTrackId === track.id}
+          onPlay={() => playTrack(track.id)}
         />
       ))}
     </div>
