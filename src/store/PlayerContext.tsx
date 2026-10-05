@@ -4,6 +4,7 @@ type PlayerState = {
   currentTrackId: number | null
   isPlaying: boolean
   playTrack: (trackId: number) => void
+  stop: () => void
 }
 
 const PlayerContext = createContext<PlayerState | null>(null)
@@ -21,8 +22,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     void audio.play().catch(() => {})
   }
 
+  function stop() {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.pause()
+    audio.removeAttribute('src')
+    audio.load()
+    setCurrentTrackId(null)
+  }
+
   return (
-    <PlayerContext.Provider value={{ currentTrackId, isPlaying, playTrack }}>
+    <PlayerContext.Provider value={{ currentTrackId, isPlaying, playTrack, stop }}>
       {children}
       <audio
         ref={audioRef}

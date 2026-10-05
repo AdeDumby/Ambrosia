@@ -8,7 +8,13 @@ import {
   tagTrack,
   untagTrack
 } from './services/tag.services.ts'
-import { getTrack, getTrackPath, listTracks } from './services/track.services.ts'
+import {
+  getTrack,
+  getTrackPath,
+  listTracks,
+  setTrackKind,
+  deleteTrack
+} from './services/track.services.ts'
 import { serveAudio } from './services/audio.services.ts'
 import { openDatabase } from './db/database.ts'
 import path from 'node:path'
@@ -91,6 +97,11 @@ app.whenReady().then(() => {
     return getTrack(db, id as number)
   })
 
+  ipcMain.handle('tracks:delete', (_event, id: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    deleteTrack(db, id as number)
+  })
+
   ipcMain.handle('tags:untag-track', (_event, trackId: unknown, tagId: unknown) => {
     if (!Number.isInteger(trackId) || !Number.isInteger(tagId)) {
       throw new Error('Invalid id')
@@ -103,6 +114,13 @@ app.whenReady().then(() => {
     if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
     return addTagToTrackByName(db, trackId as number, name.trim())
   })
+
+  ipcMain.handle('tracks:set-kind', (_event, id: unknown, kind: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    if (kind !== 'music' && kind !== 'sfx') throw new Error('Invalid kind')
+    setTrackKind(db, id as number, kind)
+  })
+
   createWindow()
 })
 app.on('window-all-closed', () => {

@@ -1,3 +1,4 @@
+import type { TrackKind } from '../../shared/types'
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
 import TrackActions from './TrackActions'
@@ -13,10 +14,13 @@ type Props = {
   filename: string
   durationSec: number
   peakDb: number | null
+  kind?: TrackKind
   tags?: TrackTag[]
   allTags?: TagOption[]
   isPlaying?: boolean
   onPlay?: () => void
+  onSetKind?: (kind: TrackKind) => void
+  onDelete?: () => void
   onRemoveTag?: (tagId: number) => void
   onAddTag?: (tagId: number) => void
   onCreateTag?: (name: string) => void
@@ -32,10 +36,13 @@ export default function TrackItem({
   filename,
   durationSec,
   peakDb,
+  kind,
   tags = [],
   allTags = [],
   isPlaying = false,
   onPlay,
+  onSetKind,
+  onDelete,
   onRemoveTag,
   onAddTag,
   onCreateTag
@@ -67,7 +74,15 @@ export default function TrackItem({
           </div>
         )}
       </div>
-      {onPlay && <TrackActions isPlaying={isPlaying} onPlay={onPlay} />}
+      {onPlay && (
+        <TrackActions
+          isPlaying={isPlaying}
+          onPlay={onPlay}
+          kind={kind}
+          onSetKind={onSetKind}
+          onDelete={onDelete}
+        />
+      )}
     </div>
   )
 }

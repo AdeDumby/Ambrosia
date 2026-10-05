@@ -28,3 +28,13 @@
   background: var(--accent);
   color: var(--accent-text);
 }
+
+.track-action-text {
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.track-action-danger:hover {
+  border-color: #e05555;
+  color: #e05555;
+}

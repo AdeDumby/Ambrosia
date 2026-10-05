@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Track } from '../shared/types'
+import type { Track, TrackKind } from '../shared/types'
+import ConfirmDialog from '../components/item/ConfirmDialog'
 import TagBubble from '../components/item/TagBubble'
 import TrackItem from '../components/item/TrackItem'
 import { useFilters } from '../store/FilterContext'
@@ -9,9 +10,10 @@ import './Home.css'
 
 export default function Home() {
   const [tracks, setTracks] = useState<Track[]>([])
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const { tags: allTags, categories, refreshTags } = useLibrary()
   const { typeFilter, unreviewedOnly, matchMode, tagFilters, clearTagFilter } = useFilters()
-  const { currentTrackId, isPlaying, playTrack } = usePlayer()
+  const { currentTrackId, isPlaying, playTrack, stop } = usePlayer()
 
   useEffect(() => {
     window.api.listTracks().then(setTracks)
@@ -76,6 +78,22 @@ export default function Home() {
     if (tagDeleted) await refreshTags()
   }
 
+  async function setKind(trackId: number, kind: TrackKind) {
+    await window.api.setTrackKind(trackId, kind)
+    setTracks((previous) =>
+      previous.map((track) => (track.id === trackId ? { ...track, kind } : track))
+    )
+  }
+
+  async function confirmDelete() {
+    if (!pendingDelete) return
+    const { id } = pendingDelete
+    setPendingDelete(null)
+    await window.api.deleteTrack(id)
+    if (currentTrackId === id) stop()
+    setTracks((previous) => previous.filter((track) => track.id !== id))
+  }
+
   return (
     <div className="track-list">
       {activeFilters.length > 0 && (
@@ -99,19 +117,34 @@ export default function Home() {
           filename={track.filename}
           durationSec={track.durationSec}
           peakDb={track.peakDb}
+          kind={track.kind}
           tags={track.tags.map((tag) => ({
             id: tag.id,
             name: tag.name,
             color: tag.color ?? undefined
           }))}
           allTags={allTags}
+          isPlaying={isPlaying && currentTrackId === track.id}
+          onPlay={() => playTrack(track.id)}
+          onSetKind={(kind) => setKind(track.id, kind)}
+          onDelete={() => setPendingDelete({ id: track.id, filename: track.filename })}
           onRemoveTag={(tagId) => removeTag(track.id, tagId)}
           onAddTag={(tagId) => addTag(track.id, tagId)}
           onCreateTag={(name) => createTag(track.id, name)}
-          isPlaying={isPlaying && currentTrackId === track.id}
-          onPlay={() => playTrack(track.id)}
         />
       ))}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete this track?"
+        message={
+          pendingDelete
+            ? `${pendingDelete.filename} will be hidden from the library. The file stays on disk.`
+            : ''
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   )
 }
