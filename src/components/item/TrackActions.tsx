@@ -12,7 +12,7 @@ type Props = {
 export default function TrackActions({ isPlaying, onPlay, kind, onSetKind, onDelete }: Props) {
   const target: TrackKind = kind === 'music' ? 'sfx' : 'music'
   const kindLabel = target === 'sfx' ? 'Set as SFX' : 'Set as Music'
-  const playLabel = isPlaying ? 'Pause' : 'Play from the start'
+  const playLabel = isPlaying ? 'Pause' : 'Play'
 
   return (
     <div className="track-actions">

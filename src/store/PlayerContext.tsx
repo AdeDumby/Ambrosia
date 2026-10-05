@@ -61,10 +61,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
 
   function toggleTrack(track: PlayerTrack) {
     const audio = audioRef.current
-    if (audio && currentTrack?.id === track.id && !audio.paused) {
-      audio.pause()
+    if (!audio) return
+
+    const isCurrent = currentTrack?.id === track.id && audio.src !== '' && !audio.error
+    if (isCurrent) {
+      if (audio.paused) void audio.play().catch(() => {})
+      else audio.pause()
       return
     }
+
     playFromStart(track)
   }
 
