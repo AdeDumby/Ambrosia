@@ -5,6 +5,7 @@ import {
   addTagToTrackByName,
   createTag,
   listTags,
+  setTagCategory,
   tagTrack,
   untagTrack
 } from './services/tag.services.ts'
@@ -119,6 +120,14 @@ app.whenReady().then(() => {
     if (!Number.isInteger(id)) throw new Error('Invalid id')
     if (kind !== 'music' && kind !== 'sfx') throw new Error('Invalid kind')
     setTrackKind(db, id as number, kind)
+  })
+
+  ipcMain.handle('tags:set-category', (_event, tagId: unknown, categoryId: unknown) => {
+    if (!Number.isInteger(tagId)) throw new Error('Invalid tag id')
+    if (categoryId !== null && !Number.isInteger(categoryId)) {
+      throw new Error('Invalid category id')
+    }
+    setTagCategory(db, tagId as number, categoryId as number | null)
   })
 
   createWindow()

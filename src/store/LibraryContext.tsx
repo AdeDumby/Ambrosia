@@ -1,11 +1,24 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { Tag, TagCategory } from '../shared/types'
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction
+} from 'react'
+import type { Tag, TagCategory, Track } from '../shared/types'
 
 type LibraryState = {
   categories: TagCategory[]
   setCategories: (categories: TagCategory[]) => void
   tags: Tag[]
   refreshTags: () => Promise<void>
+  tracks: Track[]
+  setTracks: Dispatch<SetStateAction<Track[]>>
+  refreshTracks: () => Promise<void>
+  moveTag: (tagId: number, categoryId: number | null) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
@@ -13,18 +26,43 @@ const LibraryContext = createContext<LibraryState | null>(null)
 export function LibraryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<TagCategory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
+  const [tracks, setTracks] = useState<Track[]>([])
 
   const refreshTags = useCallback(async () => {
     setTags(await window.api.listTags())
   }, [])
 
+  const refreshTracks = useCallback(async () => {
+    setTracks(await window.api.listTracks())
+  }, [])
+
+  const moveTag = useCallback(
+    async (tagId: number, categoryId: number | null) => {
+      await window.api.setTagCategory(tagId, categoryId)
+      await Promise.all([refreshTags(), refreshTracks()])
+    },
+    [refreshTags, refreshTracks]
+  )
+
   useEffect(() => {
     window.api.listCategories().then(setCategories)
     void refreshTags()
-  }, [refreshTags])
+    void refreshTracks()
+  }, [refreshTags, refreshTracks])
 
   return (
-    <LibraryContext.Provider value={{ categories, setCategories, tags, refreshTags }}>
+    <LibraryContext.Provider
+      value={{
+        categories,
+        setCategories,
+        tags,
+        refreshTags,
+        tracks,
+        setTracks,
+        refreshTracks,
+        moveTag
+      }}
+    >
       {children}
     </LibraryContext.Provider>
   )

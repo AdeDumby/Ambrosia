@@ -1,9 +1,12 @@
-import { useState, type DragEvent } from 'react'
+import { useMemo, useState, type DragEvent, type MouseEvent } from 'react'
+import type { Tag } from '../shared/types'
+import ContextMenu, { type MenuItem } from './item/ContextMenu'
 import FolderItem from './item/FolderItem'
 import SegmentedControl from './item/SegmentedControl'
 import TagItem from './item/TagItem'
-import { useFilters, type MatchMode, type TypeFilter } from '../store/FilterContext'
-import { useLibrary } from '../store/LibraryContext'
+import { useVisibleTracks } from './../hooks/useVisibleTracks'
+import { useFilters, type MatchMode, type TypeFilter } from './../store/FilterContext'
+import { useLibrary } from './../store/LibraryContext'
 import '../styles/Sidebar.css'
 
 const matchOptions: { value: MatchMode; label: string }[] = [
@@ -18,7 +21,7 @@ const typeOptions: { value: TypeFilter; label: string }[] = [
 ]
 
 export default function Sidebar() {
-  const { categories, setCategories, tags } = useLibrary()
+  const { categories, setCategories, tags, moveTag } = useLibrary()
   const {
     matchMode,
     setMatchMode,
@@ -30,12 +33,64 @@ export default function Sidebar() {
     cycleTagFilter,
     clearFilters
   } = useFilters()
+  const visibleTracks = useVisibleTracks()
 
+  const [menu, setMenu] = useState<{ x: number; y: number; tag: Tag } | null>(null)
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dropTarget, setDropTarget] = useState<{
     id: number
     position: 'before' | 'after'
   } | null>(null)
+
+  const counts = useMemo(() => {
+    const result = new Map<number, number>()
+    for (const track of visibleTracks) {
+      for (const tag of track.tags) result.set(tag.id, (result.get(tag.id) ?? 0) + 1)
+    }
+    return result
+  }, [visibleTracks])
+
+  function openTagMenu(event: MouseEvent<HTMLButtonElement>, tag: Tag) {
+    event.preventDefault()
+    setMenu({ x: event.clientX, y: event.clientY, tag })
+  }
+
+  async function moveTagTo(tagId: number, categoryId: number | null) {
+    setMenu(null)
+    await moveTag(tagId, categoryId)
+  }
+
+  const menuItems: MenuItem[] = menu
+    ? [
+        ...categories.map((category) => ({
+          label: category.name,
+          color: category.color,
+          checked: category.id === menu.tag.categoryId,
+          disabled: category.id === menu.tag.categoryId,
+          onSelect: () => moveTagTo(menu.tag.id, category.id)
+        })),
+        {
+          label: 'Ungrouped',
+          color: '#888888',
+          checked: menu.tag.categoryId === null,
+          disabled: menu.tag.categoryId === null,
+          onSelect: () => moveTagTo(menu.tag.id, null)
+        }
+      ]
+    : []
+
+  function renderTag(tag: Tag) {
+    return (
+      <TagItem
+        key={tag.id}
+        name={tag.name}
+        count={counts.get(tag.id) ?? 0}
+        state={tagFilters[tag.id]}
+        onClick={() => cycleTagFilter(tag.id)}
+        onContextMenu={(event) => openTagMenu(event, tag)}
+      />
+    )
+  }
 
   function resetDrag() {
     setDraggedId(null)
@@ -82,6 +137,8 @@ export default function Sidebar() {
       setCategories(await window.api.listCategories())
     }
   }
+
+  const ungroupedTags = tags.filter((tag) => tag.categoryId === null)
 
   return (
     <aside className="sidebar">
@@ -135,34 +192,26 @@ export default function Sidebar() {
             onDrop={handleDrop}
             onDragEnd={resetDrag}
           >
-            {tags
-              .filter((tag) => tag.categoryId === category.id)
-              .map((tag) => (
-                <TagItem
-                  key={tag.id}
-                  name={tag.name}
-                  state={tagFilters[tag.id]}
-                  onClick={() => cycleTagFilter(tag.id)}
-                />
-              ))}
+            {tags.filter((tag) => tag.categoryId === category.id).map(renderTag)}
           </FolderItem>
         ))}
 
-        {tags.some((tag) => tag.categoryId === null) && (
+        {ungroupedTags.length > 0 && (
           <FolderItem name="Ungrouped" color="#888888">
-            {tags
-              .filter((tag) => tag.categoryId === null)
-              .map((tag) => (
-                <TagItem
-                  key={tag.id}
-                  name={tag.name}
-                  state={tagFilters[tag.id]}
-                  onClick={() => cycleTagFilter(tag.id)}
-                />
-              ))}
+            {ungroupedTags.map(renderTag)}
           </FolderItem>
         )}
       </div>
+
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          title={`Move "${menu.tag.name}" to`}
+          items={menuItems}
+          onClose={() => setMenu(null)}
+        />
+      )}
     </aside>
   )
 }

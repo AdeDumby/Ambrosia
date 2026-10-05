@@ -1,11 +1,7 @@
 import { NavLink } from 'react-router-dom'
+import { useLibrary } from '../store/LibraryContext'
+import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import '../styles/Topbar.css'
-
-type TopbarStats = {
-  trackCount?: number
-  tagCount?: number
-  size?: string
-}
 
 const tabs = [
   { to: '/', label: 'Library', end: true },
@@ -13,7 +9,10 @@ const tabs = [
   { to: '/download', laebl: 'Download' }
 ]
 
-export default function Topbar({ trackCount = 0, tagCount = 0, size = '0 MB' }: TopbarStats) {
+export default function Topbar() {
+  const { tracks } = useLibrary()
+  const visibleTracks = useVisibleTracks()
+  const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`
   return (
     <header className="topbar">
       <div className="topbar-main">
@@ -21,9 +20,7 @@ export default function Topbar({ trackCount = 0, tagCount = 0, size = '0 MB' }: 
           <span className="topbar-logo">◆</span>
           <div>
             <h1 className="topbar-title">Ambrosia</h1>
-            <p className="topbar-stats">
-              {trackCount} tracks · {tagCount} tags · {size}
-            </p>
+            <p className="topbar-stats">{trackLabel}</p>
           </div>
         </div>
 

@@ -69,3 +69,7 @@ export function addTagToTrackByName(db: DatabaseSync, trackId: number, name: str
     throw error
   }
 }
+
+export function setTagCategory(db: DatabaseSync, tagId: number, categoryId: number | null): void {
+  db.prepare('UPDATE tag SET category_id = ? WHERE id = ?').run(categoryId, tagId)
+}
