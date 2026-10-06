@@ -1,5 +1,5 @@
 import type { Settings } from './settings'
-import type { Tag, TagCategory, Track, TrackKind } from './types'
+import type { LibraryPaths, Tag, TagCategory, Track, TrackKind } from './types'
 
 export type Api = {
   listCategories(): Promise<TagCategory[]>
@@ -21,4 +21,6 @@ export type Api = {
 
   getSettings(): Promise<Settings>
   saveSettings(settings: Settings): Promise<void>
+
+  getLibraryPaths(): Promise<LibraryPaths>
 }

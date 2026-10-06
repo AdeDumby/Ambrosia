@@ -7,6 +7,7 @@ import * as tags from '../services/tag.services.ts'
 import * as tracks from '../services/track.services.ts'
 import * as settings from '../services/settings.services.ts'
 import { assertId, assertName } from './validate.ts'
+import type { LibraryPaths } from '../../src/shared/types.ts'
 
 type Handlers = {
   [K in keyof Api]: (
@@ -14,7 +15,7 @@ type Handlers = {
   ) => ReturnType<Api[K]> | Awaited<ReturnType<Api[K]>>
 }
 
-export function registerIpc(db: DatabaseSync): void {
+export function registerIpc(db: DatabaseSync, library: LibraryPaths): void {
   const handlers: Handlers = {
     listCategories: () => categories.listCategories(db),
     createCategory: (name, color) => {
@@ -82,7 +83,8 @@ export function registerIpc(db: DatabaseSync): void {
     getSettings: () => settings.getSettings(db),
     saveSettings: (value) => {
       settings.saveSettings(db, value)
-    }
+    },
+    getLibraryPaths: () => library
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {
