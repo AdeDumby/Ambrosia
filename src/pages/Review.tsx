@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import TrackItem from '../components/item/TrackItem'
+import TagColumn from '../components/feature/TagColumn'
 import { useTrackActions } from '../hooks/useTrackActions'
 import { useLibrary } from '../store/LibraryContext'
 import { usePlayer } from '../store/PlayerContext'
 import './Review.css'
+
+const HIDDEN_FOLDERS = new Set(['franchise'])
 
 function shuffleKey(id: number, seed: number): number {
   let hash = (id ^ seed) >>> 0
@@ -14,7 +17,7 @@ function shuffleKey(id: number, seed: number): number {
 }
 
 export default function Review() {
-  const { tracks, tags: allTags } = useLibrary()
+  const { tracks, tags: allTags, categories } = useLibrary()
   const { currentTrack, isPlaying, toggleTrack, playTrack } = usePlayer()
   const { addTag, createTag, removeTag, setReviewed, deleteTrack } = useTrackActions()
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 32))
@@ -53,6 +56,24 @@ export default function Review() {
     )
   }
 
+  const selectedIds = new Set(current.tags.map((tag) => tag.id))
+
+  function toggleTag(tagId: number) {
+    if (!current) return
+    if (selectedIds.has(tagId)) void removeTag(current.id, tagId)
+    else void addTag(current.id, tagId)
+  }
+
+  const columns = categories
+    .filter((category) => !HIDDEN_FOLDERS.has(category.name.toLowerCase()))
+    .map((category) => ({
+      id: category.id,
+      name: category.name,
+      color: category.color,
+      tags: allTags.filter((tag) => tag.categoryId === category.id)
+    }))
+  const ungrouped = allTags.filter((tag) => tag.categoryId === null)
+
   return (
     <div className="review">
       <p className="review-left">{queue.length} left to review</p>
@@ -76,6 +97,29 @@ export default function Review() {
         onAddTag={(tagId) => addTag(current.id, tagId)}
         onCreateTag={(name) => createTag(current.id, name)}
       />
+
+      <div className="review-columns">
+        {columns.map((column) => (
+          <TagColumn
+            key={column.id}
+            name={column.name}
+            color={column.color}
+            tags={column.tags}
+            selectedIds={selectedIds}
+            onToggle={toggleTag}
+            onCreate={(name) => createTag(current.id, name, column.id)}
+          />
+        ))}
+        {ungrouped.length > 0 && (
+          <TagColumn
+            name="Ungrouped"
+            color="#888888"
+            tags={ungrouped}
+            selectedIds={selectedIds}
+            onToggle={toggleTag}
+          />
+        )}
+      </div>
 
       <ConfirmDialog
         open={confirmingDelete}

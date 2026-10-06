@@ -14,8 +14,8 @@ contextBridge.exposeInMainWorld('api', {
   getTrack: (id: number) => ipcRenderer.invoke('tracks:get', id),
   untagTrack: (trackId: number, tagId: number) =>
     ipcRenderer.invoke('tags:untag-track', trackId, tagId),
-  addTagToTrackByName: (trackId: number, name: string) =>
-    ipcRenderer.invoke('tags:add-to-track-by-name', trackId, name),
+  addTagToTrackByName: (trackId: number, name: string, categoryId?: number | null) =>
+    ipcRenderer.invoke('tags:add-to-track-by-name', trackId, name, categoryId ?? null),
   setTrackKind: (id: number, kind: 'music' | 'sfx') =>
     ipcRenderer.invoke('tracks:set-kind', id, kind),
   deleteTrack: (id: number) => ipcRenderer.invoke('tracks:delete', id),

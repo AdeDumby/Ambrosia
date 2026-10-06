@@ -1,0 +1,23 @@
+.tag-choice {
+  display: block;
+  width: 100%;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tag-choice:hover {
+  border-color: var(--choice-color);
+}
+
+.tag-choice.selected {
+  border-color: var(--choice-color);
+  background: color-mix(in srgb, var(--choice-color) 20%, transparent);
+  color: var(--choice-color);
+}

@@ -10,7 +10,11 @@ declare global {
       createTag(name: string, categoryId: number | null): Promise<Tag>
       tagTrack(trackId: number, tagId: number): Promise<void>
       untagTrack(trackId: number, tagId: number): Promise<boolean>
-      addTagToTrackByName(trackId: number, name: string): Promise<boolean>
+      addTagToTrackByName(
+        trackId: number,
+        name: string,
+        categoryId?: number | null
+      ): Promise<boolean>
       listTracks(): Promise<Track[]>
       getTrack(id: number): Promise<Track | null>
       setTrackKind(id: number, kind: TrackKind): Promise<void>

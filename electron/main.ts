@@ -111,11 +111,22 @@ app.whenReady().then(() => {
     return untagTrack(db, trackId as number, tagId as number)
   })
 
-  ipcMain.handle('tags:add-to-track-by-name', (_event, trackId: unknown, name: unknown) => {
-    if (!Number.isInteger(trackId)) throw new Error('Invalid id')
-    if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
-    return addTagToTrackByName(db, trackId as number, name.trim())
-  })
+  ipcMain.handle(
+    'tags:add-to-track-by-name',
+    (_event, trackId: unknown, name: unknown, categoryId: unknown) => {
+      if (!Number.isInteger(trackId)) throw new Error('Invalid id')
+      if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
+      if (categoryId !== null && categoryId !== undefined && !Number.isInteger(categoryId)) {
+        throw new Error('Invalid category id')
+      }
+      return addTagToTrackByName(
+        db,
+        trackId as number,
+        name.trim(),
+        (categoryId as number | null | undefined) ?? null
+      )
+    }
+  )
 
   ipcMain.handle('tracks:set-kind', (_event, id: unknown, kind: unknown) => {
     if (!Number.isInteger(id)) throw new Error('Invalid id')

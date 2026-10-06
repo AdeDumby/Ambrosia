@@ -17,8 +17,8 @@ export function useTrackActions() {
     await reloadTrack(trackId)
   }
 
-  async function createTag(trackId: number, name: string) {
-    const created = await window.api.addTagToTrackByName(trackId, name)
+  async function createTag(trackId: number, name: string, categoryId: number | null = null) {
+    const created = await window.api.addTagToTrackByName(trackId, name, categoryId)
     await reloadTrack(trackId)
     if (created) await refreshTags()
   }

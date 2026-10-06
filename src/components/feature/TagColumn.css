@@ -1,0 +1,70 @@
+.tag-column {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.tag-column-title {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--column-color);
+  color: var(--column-color);
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+}
+
+.tag-column-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tag-column-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.tag-column-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.tag-column-new input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.tag-column-new button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tag-column-new button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tag-column-new button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
