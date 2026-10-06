@@ -1,3 +1,4 @@
+import type { Settings } from './settings'
 import type { Tag, TagCategory, Track, TrackKind } from './types'
 
 export type Api = {
@@ -17,4 +18,7 @@ export type Api = {
   setTrackKind(id: number, kind: TrackKind): Promise<void>
   setTrackReviewed(id: number, reviewed: boolean): Promise<void>
   deleteTrack(id: number): Promise<void>
+
+  getSettings(): Promise<Settings>
+  saveSettings(settings: Settings): Promise<void>
 }

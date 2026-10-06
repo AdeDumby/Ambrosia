@@ -5,27 +5,32 @@ import Footer from './Footer'
 import { FilterProvider } from '../store/FilterContext'
 import { LibraryProvider } from '../store/LibraryContext'
 import { PlayerProvider } from '../store/PlayerContext'
+import { SettingsProvider } from '../store/SettingsContext'
+
+const FOCUSED_PAGES = ['/review', '/settings']
 
 export default function Layout() {
   const { pathname } = useLocation()
-  const isReview = pathname === '/review'
+  const focused = FOCUSED_PAGES.includes(pathname)
 
   return (
-    <PlayerProvider>
-      <LibraryProvider>
-        <FilterProvider>
-          <div className="app-shell">
-            {!isReview && <Sidebar />}
-            <div className="main-area">
-              <Topbar minimal={isReview} />
-              <main className="content">
-                <Outlet />
-              </main>
-              <Footer />
+    <SettingsProvider>
+      <PlayerProvider>
+        <LibraryProvider>
+          <FilterProvider>
+            <div className="app-shell">
+              {!focused && <Sidebar />}
+              <div className="main-area">
+                <Topbar minimal={focused} />
+                <main className="content">
+                  <Outlet />
+                </main>
+                <Footer />
+              </div>
             </div>
-          </div>
-        </FilterProvider>
-      </LibraryProvider>
-    </PlayerProvider>
+          </FilterProvider>
+        </LibraryProvider>
+      </PlayerProvider>
+    </SettingsProvider>
   )
 }

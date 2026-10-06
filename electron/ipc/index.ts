@@ -5,6 +5,7 @@ import { CHANNELS } from '../../src/shared/channels.ts'
 import * as categories from '../services/category.services.ts'
 import * as tags from '../services/tag.services.ts'
 import * as tracks from '../services/track.services.ts'
+import * as settings from '../services/settings.services.ts'
 import { assertId, assertName } from './validate.ts'
 
 type Handlers = {
@@ -77,6 +78,10 @@ export function registerIpc(db: DatabaseSync): void {
     deleteTrack: (id) => {
       assertId(id)
       tracks.deleteTrack(db, id)
+    },
+    getSettings: () => settings.getSettings(db),
+    saveSettings: (value) => {
+      settings.saveSettings(db, value)
     }
   }
 

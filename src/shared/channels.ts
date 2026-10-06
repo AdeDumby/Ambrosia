@@ -14,5 +14,7 @@ export const CHANNELS = {
   getTrack: 'tracks:get',
   setTrackKind: 'tracks:set-kind',
   setTrackReviewed: 'tracks:set-reviewed',
-  deleteTrack: 'tracks:delete'
+  deleteTrack: 'tracks:delete',
+  getSettings: 'settings:get',
+  saveSettings: 'settings:save'
 } as const satisfies Record<keyof Api, string>
