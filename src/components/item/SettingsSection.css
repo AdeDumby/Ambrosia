@@ -1,0 +1,25 @@
+.settings-section {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.settings-section-title {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+}
+
+.settings-section-description {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.settings-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

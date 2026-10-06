@@ -39,4 +39,9 @@ CREATE TABLE IF NOT EXISTS track_tag (
 );
 
 CREATE INDEX IF NOT EXISTS idx_track_tag_tag ON track_tag(tag_id);
+
+CREATE TABLE IF NOT EXISTS setting (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
 `

@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode,
@@ -22,6 +23,7 @@ type PlayerState = {
   seek: (seconds: number) => void
   setVolume: (value: number) => void
   stop: () => void
+  stopTrack: (trackId: number) => void
 }
 
 const VOLUME_KEY = 'ambrosia.volume'
@@ -40,6 +42,7 @@ const PlayerContext = createContext<PlayerState | null>(null)
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null)
+  const currentRef = useRef<PlayerTrack | null>(null)
   const [currentTrack, setCurrentTrack] = useState<PlayerTrack | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(loadVolume)
@@ -57,60 +60,76 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current
     if (!audio) return
     audio.src = `ambrosia-audio://track/${track.id}`
+    currentRef.current = track
     setCurrentTrack(track)
     void audio.play().catch(() => {})
   }, [])
 
-  function toggleTrack(track: PlayerTrack) {
+  const toggleTrack = useCallback(
+    (track: PlayerTrack) => {
+      const audio = audioRef.current
+      if (!audio) return
+
+      const isCurrent = currentRef.current?.id === track.id && audio.src !== '' && !audio.error
+      if (isCurrent) {
+        if (audio.paused) void audio.play().catch(() => {})
+        else audio.pause()
+        return
+      }
+
+      playTrack(track)
+    },
+    [playTrack]
+  )
+
+  const togglePause = useCallback(() => {
     const audio = audioRef.current
-    if (!audio) return
-
-    const isCurrent = currentTrack?.id === track.id && audio.src !== '' && !audio.error
-    if (isCurrent) {
-      if (audio.paused) void audio.play().catch(() => {})
-      else audio.pause()
-      return
-    }
-
-    playTrack(track)
-  }
-
-  function togglePause() {
-    const audio = audioRef.current
-    if (!audio || !currentTrack) return
+    if (!audio || !currentRef.current) return
     if (audio.paused) void audio.play().catch(() => {})
     else audio.pause()
-  }
+  }, [])
 
-  function seek(seconds: number) {
+  const seek = useCallback((seconds: number) => {
     const audio = audioRef.current
     if (audio) audio.currentTime = seconds
-  }
+  }, [])
 
-  function stop() {
+  const stop = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
     audio.pause()
     audio.removeAttribute('src')
     audio.load()
+    currentRef.current = null
     setCurrentTrack(null)
-  }
+  }, [])
+
+  const stopTrack = useCallback(
+    (trackId: number) => {
+      if (currentRef.current?.id === trackId) stop()
+    },
+    [stop]
+  )
+
+  const value = useMemo(
+    () => ({
+      audioRef,
+      currentTrack,
+      isPlaying,
+      volume,
+      playTrack,
+      toggleTrack,
+      togglePause,
+      seek,
+      setVolume,
+      stop,
+      stopTrack
+    }),
+    [currentTrack, isPlaying, volume, playTrack, toggleTrack, togglePause, seek, stop, stopTrack]
+  )
 
   return (
-    <PlayerContext.Provider
-      value={{
-        audioRef,
-        currentTrack,
-        isPlaying,
-        volume,
-        playTrack,
-        toggleTrack,
-        togglePause,
-        seek,
-        setVolume,
-        stop
-      }}
-    >
+    <PlayerContext.Provider value={value}>
       {children}
       <audio
         ref={audioRef}

@@ -1,0 +1,30 @@
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  padding: 16px 32px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-reset {
+  align-self: flex-start;
+}
+
+.settings-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.settings-error {
+  margin: 0;
+  color: #e05555;
+  font-size: 0.85rem;
+}

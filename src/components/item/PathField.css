@@ -1,0 +1,27 @@
+.path-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.path-field-label {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.path-field-value {
+  flex: 1;
+  min-width: 200px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.path-field-actions {
+  display: flex;
+  gap: 8px;
+}

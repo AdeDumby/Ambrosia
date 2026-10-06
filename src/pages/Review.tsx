@@ -80,22 +80,19 @@ export default function Review() {
 
       <TrackItem
         key={current.id}
+        id={current.id}
         filename={current.filename}
         durationSec={current.durationSec}
         peakDb={current.peakDb}
-        tags={current.tags.map((tag) => ({
-          id: tag.id,
-          name: tag.name,
-          color: tag.color ?? undefined
-        }))}
+        tags={current.tags}
         allTags={allTags}
         isPlaying={isPlaying && currentTrack?.id === current.id}
-        onPlay={() => toggleTrack({ id: current.id, filename: current.filename })}
+        onPlay={(id, filename) => toggleTrack({ id, filename })}
         onFinish={finish}
         onDelete={() => setConfirmingDelete(true)}
-        onRemoveTag={(tagId) => removeTag(current.id, tagId)}
-        onAddTag={(tagId) => addTag(current.id, tagId)}
-        onCreateTag={(name) => createTag(current.id, name)}
+        onRemoveTag={removeTag}
+        onAddTag={addTag}
+        onCreateTag={createTag}
       />
 
       <div className="review-columns">

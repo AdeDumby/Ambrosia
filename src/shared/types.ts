@@ -41,3 +41,8 @@ export type Tag = {
   name: string
   categoryId: number | null
 }
+
+export type LibraryPaths = {
+  folder: string
+  deletedFolder: string
+}
