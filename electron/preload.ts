@@ -20,5 +20,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.invoke('tracks:set-kind', id, kind),
   deleteTrack: (id: number) => ipcRenderer.invoke('tracks:delete', id),
   setTagCategory: (tagId: number, categoryId: number | null) =>
-    ipcRenderer.invoke('tags:set-category', tagId, categoryId)
+    ipcRenderer.invoke('tags:set-category', tagId, categoryId),
+  setTrackReviewed: (id: number, reviewed: boolean) =>
+    ipcRenderer.invoke('tracks:set-reviewed', id, reviewed)
 })

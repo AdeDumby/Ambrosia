@@ -9,7 +9,11 @@ const tabs = [
   { to: '/download', laebl: 'Download' }
 ]
 
-export default function Topbar() {
+type TopbarProps = {
+  minimal?: boolean
+}
+
+export default function Topbar({ minimal = false }: TopbarProps) {
   const { tracks } = useLibrary()
   const visibleTracks = useVisibleTracks()
   const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`

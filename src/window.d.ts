@@ -16,6 +16,7 @@ declare global {
       setTrackKind(id: number, kind: TrackKind): Promise<void>
       deleteTrack(id: number): Promise<void>
       setTagCategory(tagId: number, categoryId: number | null): Promise<void>
+      setTrackReviewed(id: number, reviewed: boolean): Promise<void>
     }
   }
 }

@@ -6,10 +6,18 @@ type Props = {
   onPlay: () => void
   kind?: TrackKind
   onSetKind?: (kind: TrackKind) => void
+  onFinish?: () => void
   onDelete?: () => void
 }
 
-export default function TrackActions({ isPlaying, onPlay, kind, onSetKind, onDelete }: Props) {
+export default function TrackActions({
+  isPlaying,
+  onPlay,
+  kind,
+  onSetKind,
+  onFinish,
+  onDelete
+}: Props) {
   const target: TrackKind = kind === 'music' ? 'sfx' : 'music'
   const kindLabel = target === 'sfx' ? 'Set as SFX' : 'Set as Music'
   const playLabel = isPlaying ? 'Pause' : 'Play'
@@ -32,6 +40,12 @@ export default function TrackActions({ isPlaying, onPlay, kind, onSetKind, onDel
           )}
         </svg>
       </button>
+
+      {onFinish && (
+        <button type="button" className="btn btn-primary track-finish" onClick={onFinish}>
+          Finish
+        </button>
+      )}
 
       {kind && onSetKind && (
         <button

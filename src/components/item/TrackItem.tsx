@@ -1,8 +1,8 @@
 import type { TrackKind } from '../../shared/types'
+import { formatDuration } from '../../lib/formatDuration'
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
 import TrackActions from './TrackActions'
-import { formatDuration } from '../../lib/formatDuration'
 import './TrackItem.css'
 
 type TrackTag = {
@@ -21,6 +21,7 @@ type Props = {
   isPlaying?: boolean
   onPlay?: () => void
   onSetKind?: (kind: TrackKind) => void
+  onFinish?: () => void
   onDelete?: () => void
   onRemoveTag?: (tagId: number) => void
   onAddTag?: (tagId: number) => void
@@ -37,6 +38,7 @@ export default function TrackItem({
   isPlaying = false,
   onPlay,
   onSetKind,
+  onFinish,
   onDelete,
   onRemoveTag,
   onAddTag,
@@ -75,6 +77,7 @@ export default function TrackItem({
           onPlay={onPlay}
           kind={kind}
           onSetKind={onSetKind}
+          onFinish={onFinish}
           onDelete={onDelete}
         />
       )}

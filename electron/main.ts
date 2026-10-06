@@ -14,7 +14,8 @@ import {
   getTrackPath,
   listTracks,
   setTrackKind,
-  deleteTrack
+  deleteTrack,
+  setTrackReviewed
 } from './services/track.services.ts'
 import { serveAudio } from './services/audio.services.ts'
 import { openDatabase } from './db/database.ts'
@@ -128,6 +129,11 @@ app.whenReady().then(() => {
       throw new Error('Invalid category id')
     }
     setTagCategory(db, tagId as number, categoryId as number | null)
+  })
+
+  ipcMain.handle('tracks:set-reviewed', (_event, id: unknown, reviewed: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    setTrackReviewed(db, id as number, reviewed === true)
   })
 
   createWindow()
