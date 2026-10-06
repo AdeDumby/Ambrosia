@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import TagBubble from '../components/item/TagBubble'
 import TrackItem from '../components/item/TrackItem'
@@ -16,6 +16,15 @@ export default function Home() {
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
   const visibleTracks = useVisibleTracks()
+
+  const play = useCallback(
+    (id: number, filename: string) => toggleTrack({ id, filename }),
+    [toggleTrack]
+  )
+  const requestDelete = useCallback(
+    (id: number, filename: string) => setPendingDelete({ id, filename }),
+    []
+  )
 
   const folderPosition = (categoryId: number | null) =>
     categoryId === null ? categories.length : categories.findIndex((c) => c.id === categoryId)
@@ -51,23 +60,20 @@ export default function Home() {
       {visibleTracks.map((track) => (
         <TrackItem
           key={track.id}
+          id={track.id}
           filename={track.filename}
           durationSec={track.durationSec}
           peakDb={track.peakDb}
           kind={track.kind}
-          tags={track.tags.map((tag) => ({
-            id: tag.id,
-            name: tag.name,
-            color: tag.color ?? undefined
-          }))}
+          tags={track.tags}
           allTags={allTags}
           isPlaying={isPlaying && currentTrack?.id === track.id}
-          onPlay={() => toggleTrack({ id: track.id, filename: track.filename })}
-          onSetKind={(kind) => setKind(track.id, kind)}
-          onDelete={() => setPendingDelete({ id: track.id, filename: track.filename })}
-          onRemoveTag={(tagId) => removeTag(track.id, tagId)}
-          onAddTag={(tagId) => addTag(track.id, tagId)}
-          onCreateTag={(name) => createTag(track.id, name)}
+          onPlay={play}
+          onSetKind={setKind}
+          onDelete={requestDelete}
+          onRemoveTag={removeTag}
+          onAddTag={addTag}
+          onCreateTag={createTag}
         />
       ))}
 
