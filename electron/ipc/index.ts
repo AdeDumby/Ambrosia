@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Api } from '../../src/shared/api.ts'
 import { CHANNELS } from '../../src/shared/channels.ts'
@@ -6,8 +6,8 @@ import * as categories from '../services/category.services.ts'
 import * as tags from '../services/tag.services.ts'
 import * as tracks from '../services/track.services.ts'
 import * as settings from '../services/settings.services.ts'
+import * as library from '../services/library.services.ts'
 import { assertId, assertName } from './validate.ts'
-import type { LibraryPaths } from '../../src/shared/types.ts'
 
 type Handlers = {
   [K in keyof Api]: (
@@ -15,7 +15,7 @@ type Handlers = {
   ) => ReturnType<Api[K]> | Awaited<ReturnType<Api[K]>>
 }
 
-export function registerIpc(db: DatabaseSync, library: LibraryPaths): void {
+export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
   const handlers: Handlers = {
     listCategories: () => categories.listCategories(db),
     createCategory: (name, color) => {
@@ -84,7 +84,26 @@ export function registerIpc(db: DatabaseSync, library: LibraryPaths): void {
     saveSettings: (value) => {
       settings.saveSettings(db, value)
     },
-    getLibraryPaths: () => library
+    getLibraryPaths: () => library.getLibraryPaths(db, documentsFolder),
+    chooseLibraryFolder: async () => {
+      const current = library.getLibraryPaths(db, documentsFolder)
+      const options: OpenDialogOptions = {
+        title: 'Choose the library folder',
+        defaultPath: current.folder,
+        properties: ['openDirectory', 'createDirectory']
+      }
+      const parent = BrowserWindow.getFocusedWindow()
+      const result = parent
+        ? await dialog.showOpenDialog(parent, options)
+        : await dialog.showOpenDialog(options)
+      if (result.canceled || result.filePaths.length === 0) return null
+      return library.setLibraryFolder(db, result.filePaths[0])
+    },
+    openLibraryFolder: async () => {
+      const { folder } = library.getLibraryPaths(db, documentsFolder)
+      const problem = await shell.openPath(folder)
+      if (problem) throw new Error(problem)
+    }
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

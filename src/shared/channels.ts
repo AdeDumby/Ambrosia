@@ -17,5 +17,7 @@ export const CHANNELS = {
   deleteTrack: 'tracks:delete',
   getSettings: 'settings:get',
   saveSettings: 'settings:save',
-  getLibraryPaths: 'library:get-paths'
+  getLibraryPaths: 'library:get-paths',
+  chooseLibraryFolder: 'library:choose-folder',
+  openLibraryFolder: 'library:open-folder'
 } as const satisfies Record<keyof Api, string>

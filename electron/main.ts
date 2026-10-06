@@ -4,7 +4,7 @@ import { openDatabase } from './db/database.ts'
 import { registerIpc } from './ipc/index.ts'
 import { serveAudio } from './services/audio.services.ts'
 import { getTrackPath } from './services/track.services.ts'
-import { ensureLibraryFolders, resolveLibraryPaths } from './services/library.services.ts'
+import { ensureLibraryFolders, getLibraryPaths } from './services/library.services.ts'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -36,14 +36,14 @@ app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
 
-  const library = resolveLibraryPaths(app.getPath('documents'))
+  const documents = app.getPath('documents')
   try {
-    ensureLibraryFolders(library)
+    ensureLibraryFolders(getLibraryPaths(db, documents))
   } catch (error) {
     console.error('Could not create the library folders:', error)
   }
 
-  registerIpc(db, library)
+  registerIpc(db, documents)
 
   protocol.handle('ambrosia-audio', (request) => {
     const id = Number(new URL(request.url).pathname.slice(1))

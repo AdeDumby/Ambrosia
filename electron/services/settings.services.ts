@@ -1,9 +1,12 @@
 import type { DatabaseSync } from 'node:sqlite'
 import {
   DEFAULT_SETTINGS,
+  DELETE_MODES,
   DENSITIES,
   type Appearance,
+  type DeleteMode,
   type Density,
+  type LibrarySettings,
   type Settings
 } from '../../src/shared/settings.ts'
 
@@ -33,8 +36,22 @@ function parseAppearance(raw: unknown): Appearance {
   }
 }
 
+function parseLibrary(raw: unknown): LibrarySettings {
+  const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.library
+  return {
+    deleteMode: DELETE_MODES.includes(source.deleteMode as DeleteMode)
+      ? (source.deleteMode as DeleteMode)
+      : defaults.deleteMode
+  }
+}
+
 export function parseSettings(raw: unknown): Settings {
-  return { appearance: parseAppearance(asObject(raw).appearance) }
+  const source = asObject(raw)
+  return {
+    appearance: parseAppearance(source.appearance),
+    library: parseLibrary(source.library)
+  }
 }
 
 export function getSettings(db: DatabaseSync): Settings {

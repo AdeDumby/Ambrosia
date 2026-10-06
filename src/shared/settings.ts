@@ -2,6 +2,10 @@ export type Density = 'spacey' | 'comfortable' | 'compact'
 
 export const DENSITIES: Density[] = ['spacey', 'comfortable', 'compact']
 
+export type DeleteMode = 'deleted-folder' | 'permanent'
+
+export const DELETE_MODES: DeleteMode[] = ['deleted-folder', 'permanent']
+
 export type Appearance = {
   accentColor: string
   density: Density
@@ -11,8 +15,13 @@ export type Appearance = {
   borderColor: string
 }
 
+export type LibrarySettings = {
+  deleteMode: DeleteMode
+}
+
 export type Settings = {
   appearance: Appearance
+  library: LibrarySettings
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -24,6 +33,11 @@ export const DEFAULT_APPEARANCE: Appearance = {
   borderColor: '#8c5dbb'
 }
 
+export const DEFAULT_LIBRARY: LibrarySettings = {
+  deleteMode: 'deleted-folder'
+}
+
 export const DEFAULT_SETTINGS: Settings = {
-  appearance: DEFAULT_APPEARANCE
+  appearance: DEFAULT_APPEARANCE,
+  library: DEFAULT_LIBRARY
 }

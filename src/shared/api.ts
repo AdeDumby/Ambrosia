@@ -23,4 +23,6 @@ export type Api = {
   saveSettings(settings: Settings): Promise<void>
 
   getLibraryPaths(): Promise<LibraryPaths>
+  chooseLibraryFolder(): Promise<LibraryPaths | null>
+  openLibraryFolder(): Promise<void>
 }

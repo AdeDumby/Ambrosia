@@ -9,12 +9,18 @@ import {
   type ReactNode
 } from 'react'
 import { applyAppearance } from '../lib/applyAppearance'
-import { DEFAULT_SETTINGS, type Appearance, type Settings } from '../shared/settings'
+import {
+  DEFAULT_SETTINGS,
+  type Appearance,
+  type LibrarySettings,
+  type Settings
+} from '../shared/settings'
 
 type SettingsState = {
   settings: Settings
   updateAppearance: (patch: Partial<Appearance>) => void
   resetAppearance: () => void
+  updateLibrary: (patch: Partial<LibrarySettings>) => void
 }
 
 const SAVE_DELAY_MS = 400
@@ -60,9 +66,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const updateLibrary = useCallback((patch: Partial<LibrarySettings>) => {
+    dirty.current = true
+    setSettings((previous) =>
+      previous ? { ...previous, library: { ...previous.library, ...patch } } : previous
+    )
+  }, [])
+
   const value = useMemo(
-    () => (settings ? { settings, updateAppearance, resetAppearance } : null),
-    [settings, updateAppearance, resetAppearance]
+    () => (settings ? { settings, updateAppearance, resetAppearance, updateLibrary } : null),
+    [settings, updateAppearance, resetAppearance, updateLibrary]
   )
 
   if (!value) return null
