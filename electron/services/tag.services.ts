@@ -44,7 +44,12 @@ export function untagTrack(db: DatabaseSync, trackId: number, tagId: number): bo
   }
 }
 
-export function addTagToTrackByName(db: DatabaseSync, trackId: number, name: string): boolean {
+export function addTagToTrackByName(
+  db: DatabaseSync,
+  trackId: number,
+  name: string,
+  categoryId: number | null = null
+): boolean {
   db.exec('BEGIN')
   try {
     const existing = db.prepare('SELECT id FROM tag WHERE name = ?').get(name) as unknown as
@@ -54,8 +59,8 @@ export function addTagToTrackByName(db: DatabaseSync, trackId: number, name: str
       ? existing.id
       : (
           db
-            .prepare('INSERT INTO tag (name, category_id) VALUES (?, NULL) RETURNING id')
-            .get(name) as unknown as { id: number }
+            .prepare('INSERT INTO tag (name, category_id) VALUES (?, ?) RETURNING id')
+            .get(name, categoryId) as unknown as { id: number }
         ).id
 
     db.prepare('INSERT OR IGNORE INTO track_tag (track_id, tag_id) VALUES (?, ?)').run(

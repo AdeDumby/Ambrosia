@@ -38,3 +38,7 @@
   border-color: #e05555;
   color: #e05555;
 }
+
+.track-finish {
+  white-space: nowrap;
+}

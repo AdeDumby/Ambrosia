@@ -14,7 +14,8 @@ import {
   getTrackPath,
   listTracks,
   setTrackKind,
-  deleteTrack
+  deleteTrack,
+  setTrackReviewed
 } from './services/track.services.ts'
 import { serveAudio } from './services/audio.services.ts'
 import { openDatabase } from './db/database.ts'
@@ -110,11 +111,22 @@ app.whenReady().then(() => {
     return untagTrack(db, trackId as number, tagId as number)
   })
 
-  ipcMain.handle('tags:add-to-track-by-name', (_event, trackId: unknown, name: unknown) => {
-    if (!Number.isInteger(trackId)) throw new Error('Invalid id')
-    if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
-    return addTagToTrackByName(db, trackId as number, name.trim())
-  })
+  ipcMain.handle(
+    'tags:add-to-track-by-name',
+    (_event, trackId: unknown, name: unknown, categoryId: unknown) => {
+      if (!Number.isInteger(trackId)) throw new Error('Invalid id')
+      if (typeof name !== 'string' || name.trim() === '') throw new Error('Invalid tag name')
+      if (categoryId !== null && categoryId !== undefined && !Number.isInteger(categoryId)) {
+        throw new Error('Invalid category id')
+      }
+      return addTagToTrackByName(
+        db,
+        trackId as number,
+        name.trim(),
+        (categoryId as number | null | undefined) ?? null
+      )
+    }
+  )
 
   ipcMain.handle('tracks:set-kind', (_event, id: unknown, kind: unknown) => {
     if (!Number.isInteger(id)) throw new Error('Invalid id')
@@ -128,6 +140,11 @@ app.whenReady().then(() => {
       throw new Error('Invalid category id')
     }
     setTagCategory(db, tagId as number, categoryId as number | null)
+  })
+
+  ipcMain.handle('tracks:set-reviewed', (_event, id: unknown, reviewed: unknown) => {
+    if (!Number.isInteger(id)) throw new Error('Invalid id')
+    setTrackReviewed(db, id as number, reviewed === true)
   })
 
   createWindow()

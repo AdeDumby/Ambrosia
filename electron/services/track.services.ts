@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import type { NewTrack, Track, TrackKind, TrackTag } from '../../src/shared/types.ts'
+import type { Track, TrackKind, TrackTag } from '../../src/shared/types.ts'
 
 type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }
 
@@ -72,4 +72,8 @@ export function getTrackPath(db: DatabaseSync, id: number): string | null {
   const row = db.prepare('SELECT path FROM track WHERE id = ?').get(id) as unknown as
     { path: string } | undefined
   return row ? row.path : null
+}
+
+export function setTrackReviewed(db: DatabaseSync, id: number, reviewed: boolean): void {
+  db.prepare('UPDATE track SET reviewed = ? WHERE id = ?').run(reviewed ? 1 : 0, id)
 }

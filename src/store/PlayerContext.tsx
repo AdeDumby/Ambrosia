@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -15,6 +16,7 @@ type PlayerState = {
   currentTrack: PlayerTrack | null
   isPlaying: boolean
   volume: number
+  playTrack: (track: PlayerTrack) => void
   toggleTrack: (track: PlayerTrack) => void
   togglePause: () => void
   seek: (seconds: number) => void
@@ -51,13 +53,13 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     }
   }, [volume])
 
-  function playFromStart(track: PlayerTrack) {
+  const playTrack = useCallback((track: PlayerTrack) => {
     const audio = audioRef.current
     if (!audio) return
     audio.src = `ambrosia-audio://track/${track.id}`
     setCurrentTrack(track)
     void audio.play().catch(() => {})
-  }
+  }, [])
 
   function toggleTrack(track: PlayerTrack) {
     const audio = audioRef.current
@@ -70,7 +72,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    playFromStart(track)
+    playTrack(track)
   }
 
   function togglePause() {
@@ -101,6 +103,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         currentTrack,
         isPlaying,
         volume,
+        playTrack,
         toggleTrack,
         togglePause,
         seek,

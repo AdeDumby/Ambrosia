@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { TrackKind } from '../shared/types'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import TagBubble from '../components/item/TagBubble'
 import TrackItem from '../components/item/TrackItem'
+import { useTrackActions } from '../hooks/useTrackActions'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
@@ -11,9 +11,10 @@ import './Home.css'
 
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
-  const { tags: allTags, categories, setTracks, refreshTags } = useLibrary()
+  const { tags: allTags, categories } = useLibrary()
   const { tagFilters, clearTagFilter } = useFilters()
-  const { currentTrack, isPlaying, toggleTrack, stop } = usePlayer()
+  const { currentTrack, isPlaying, toggleTrack } = usePlayer()
+  const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
   const visibleTracks = useVisibleTracks()
 
   const folderPosition = (categoryId: number | null) =>
@@ -23,49 +24,11 @@ export default function Home() {
     .filter((tag) => tagFilters[tag.id] !== undefined)
     .sort((a, b) => folderPosition(a.categoryId) - folderPosition(b.categoryId))
 
-  async function reloadTrack(trackId: number) {
-    const updated = await window.api.getTrack(trackId)
-    if (!updated) return
-    setTracks((previous) => previous.map((track) => (track.id === trackId ? updated : track)))
-  }
-
-  async function addTag(trackId: number, tagId: number) {
-    await window.api.tagTrack(trackId, tagId)
-    await reloadTrack(trackId)
-  }
-
-  async function createTag(trackId: number, name: string) {
-    const created = await window.api.addTagToTrackByName(trackId, name)
-    await reloadTrack(trackId)
-    if (created) await refreshTags()
-  }
-
-  async function removeTag(trackId: number, tagId: number) {
-    const tagDeleted = await window.api.untagTrack(trackId, tagId)
-    setTracks((previous) =>
-      previous.map((track) =>
-        track.id === trackId
-          ? { ...track, tags: track.tags.filter((tag) => tag.id !== tagId) }
-          : track
-      )
-    )
-    if (tagDeleted) await refreshTags()
-  }
-
-  async function setKind(trackId: number, kind: TrackKind) {
-    await window.api.setTrackKind(trackId, kind)
-    setTracks((previous) =>
-      previous.map((track) => (track.id === trackId ? { ...track, kind } : track))
-    )
-  }
-
   async function confirmDelete() {
     if (!pendingDelete) return
     const { id } = pendingDelete
     setPendingDelete(null)
-    await window.api.deleteTrack(id)
-    if (currentTrack?.id === id) stop()
-    setTracks((previous) => previous.filter((track) => track.id !== id))
+    await deleteTrack(id)
   }
 
   return (
