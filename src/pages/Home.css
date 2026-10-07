@@ -11,3 +11,7 @@
   gap: 6px;
   padding-bottom: 8px;
 }
+
+.track-list-end {
+  min-height: 1px;
+}

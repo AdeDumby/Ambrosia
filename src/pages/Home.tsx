@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import InlineError from '../components/item/InlineError'
 import TagBubble from '../components/item/TagBubble'
@@ -13,16 +13,46 @@ import { usePlayer } from '../store/PlayerContext'
 import { useSettings } from '../store/SettingsContext'
 import './Home.css'
 
+const PAGE_SIZE = 60
+
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const { tracks, tags: allTags, categories } = useLibrary()
-  const { tagFilters, clearTagFilter, sort } = useFilters()
+  const { tagFilters, clearTagFilter, sort, search, typeFilter, unreviewedOnly, matchMode } =
+    useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
   const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
+
   const filteredTracks = useVisibleTracks()
   const visibleTracks = useMemo(() => sortTracks(filteredTracks, sort), [filteredTracks, sort])
+
+  const listKey = `${sort}|${search}|${typeFilter}|${unreviewedOnly}|${matchMode}|${JSON.stringify(tagFilters)}`
+  const [paging, setPaging] = useState({ key: listKey, limit: PAGE_SIZE })
+  const limit = paging.key === listKey ? paging.limit : PAGE_SIZE
+  const hasMore = limit < visibleTracks.length
+  const shownTracks = useMemo(() => visibleTracks.slice(0, limit), [visibleTracks, limit])
+
+  const listRef = useRef<HTMLDivElement>(null)
+  const sentinelRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    listRef.current?.closest('.content')?.scrollTo({ top: 0 })
+  }, [listKey])
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current
+    if (!hasMore || !sentinel) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) setPaging({ key: listKey, limit: limit + PAGE_SIZE })
+      },
+      { rootMargin: '800px' }
+    )
+    observer.observe(sentinel)
+    return () => observer.disconnect()
+  }, [hasMore, limit, listKey])
 
   const play = useCallback(
     (id: number, filename: string) => toggleTrack({ id, filename }),
@@ -60,7 +90,7 @@ export default function Home() {
     : null
 
   return (
-    <div className="track-list">
+    <div className="track-list" ref={listRef}>
       {activeFilters.length > 0 && (
         <div className="filter-bar">
           {activeFilters.map((tag) => (
@@ -80,7 +110,7 @@ export default function Home() {
       {visibleTracks.length === 0 && (
         <p>{tracks.length === 0 ? 'No tracks yet.' : 'No tracks match the current filters.'}</p>
       )}
-      {visibleTracks.map((track) => (
+      {shownTracks.map((track) => (
         <TrackItem
           key={track.id}
           id={track.id}
@@ -99,6 +129,8 @@ export default function Home() {
           onCreateTag={createTag}
         />
       ))}
+
+      {hasMore && <div ref={sentinelRef} className="track-list-end" />}
 
       <ConfirmDialog
         open={pendingDelete !== null}

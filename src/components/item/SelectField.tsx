@@ -16,15 +16,18 @@ export default function SelectField<T extends string>({
   onChange
 }: Props<T>) {
   return (
-    <label className="select-field">
-      <span className="select-field-label">{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value as T)}>
+    <div className="select-field">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(event) => onChange(event.target.value as T)}
+      >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
       </select>
-    </label>
+    </div>
   )
 }
