@@ -15,7 +15,7 @@ import './Home.css'
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const { tags: allTags, categories } = useLibrary()
+  const { tracks, tags: allTags, categories } = useLibrary()
   const { tagFilters, clearTagFilter } = useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
@@ -75,7 +75,9 @@ export default function Home() {
 
       {deleteError && <InlineError message={deleteError} onDismiss={() => setDeleteError(null)} />}
 
-      {visibleTracks.length === 0 && <p>No tracks yet.</p>}
+      {visibleTracks.length === 0 && (
+        <p>{tracks.length === 0 ? 'No tracks yet.' : 'No tracks match the current filters.'}</p>
+      )}
       {visibleTracks.map((track) => (
         <TrackItem
           key={track.id}

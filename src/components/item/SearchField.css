@@ -1,0 +1,39 @@
+.search-field {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  max-width: 420px;
+}
+
+.search-field input {
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.search-field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.search-field button {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1rem;
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.search-field button:hover {
+  color: inherit;
+}

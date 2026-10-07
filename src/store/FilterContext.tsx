@@ -11,6 +11,8 @@ type FilterState = {
   setUnreviewedOnly: (value: boolean) => void
   typeFilter: TypeFilter
   setTypeFilter: (value: TypeFilter) => void
+  search: string
+  setSearch: (value: string) => void
   tagFilters: Record<number, TagFilterState>
   cycleTagFilter: (tagId: number) => void
   clearTagFilter: (tagId: number) => void
@@ -23,6 +25,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const [matchMode, setMatchMode] = useState<MatchMode>('any')
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
+  const [search, setSearch] = useState('')
   const [tagFilters, setTagFilters] = useState<Record<number, TagFilterState>>({})
 
   function cycleTagFilter(tagId: number) {
@@ -48,6 +51,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     setMatchMode('any')
     setUnreviewedOnly(false)
     setTypeFilter('all')
+    setSearch('')
     setTagFilters({})
   }
 
@@ -60,6 +64,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         setUnreviewedOnly,
         typeFilter,
         setTypeFilter,
+        search,
+        setSearch,
         tagFilters,
         cycleTagFilter,
         clearTagFilter,

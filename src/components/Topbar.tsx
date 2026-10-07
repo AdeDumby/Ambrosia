@@ -1,5 +1,7 @@
 import { NavLink } from 'react-router-dom'
+import SearchField from './item/SearchField'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
+import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
 import '../styles/Topbar.css'
 
@@ -14,6 +16,7 @@ const tabs = [
 
 export default function Topbar({ minimal = false }: TopbarProps) {
   const { tracks } = useLibrary()
+  const { search, setSearch } = useFilters()
   const visibleTracks = useVisibleTracks()
   const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`
 
@@ -28,6 +31,13 @@ export default function Topbar({ minimal = false }: TopbarProps) {
               <p className="topbar-stats">{trackLabel}</p>
             </div>
           </div>
+
+          <SearchField
+            label="Search tracks by name"
+            placeholder="Search tracks by name"
+            value={search}
+            onChange={setSearch}
+          />
         </div>
       )}
 
