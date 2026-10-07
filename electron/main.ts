@@ -9,7 +9,13 @@ import { ensureLibraryFolders, getLibraryPaths } from './services/library.servic
 protocol.registerSchemesAsPrivileged([
   {
     scheme: 'ambrosia-audio',
-    privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      stream: true,
+      corsEnabled: true
+    }
   }
 ])
 

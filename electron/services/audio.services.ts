@@ -29,7 +29,9 @@ export async function serveAudio(filePath: string, rangeHeader: string | null): 
 
   const headers = {
     'Content-Type': AUDIO_TYPES[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream',
-    'Accept-Ranges': 'bytes'
+    'Accept-Ranges': 'bytes',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Accept-Ranges'
   }
 
   const match = rangeHeader ? /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim()) : null
