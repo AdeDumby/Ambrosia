@@ -19,9 +19,14 @@ export type LibrarySettings = {
   deleteMode: DeleteMode
 }
 
+export type PlaybackSettings = {
+  defaultVolume: number
+}
+
 export type Settings = {
   appearance: Appearance
   library: LibrarySettings
+  playback: PlaybackSettings
 }
 
 export const DEFAULT_APPEARANCE: Appearance = {
@@ -37,7 +42,12 @@ export const DEFAULT_LIBRARY: LibrarySettings = {
   deleteMode: 'deleted-folder'
 }
 
+export const DEFAULT_PLAYBACK: PlaybackSettings = {
+  defaultVolume: 0.5
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   appearance: DEFAULT_APPEARANCE,
-  library: DEFAULT_LIBRARY
+  library: DEFAULT_LIBRARY,
+  playback: DEFAULT_PLAYBACK
 }

@@ -7,6 +7,7 @@ import SegmentedControl from '../components/item/SegmentedControl'
 import SettingsSection from '../components/item/SettingsSection'
 import { useLibrary } from '../store/LibraryContext'
 import { useSettings } from '../store/SettingsContext'
+import PlaybackSettings from '../components/feature/PlaybackSettings'
 import type { DeleteMode, Density } from '../shared/settings'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
 import './Settings.css'
@@ -254,7 +255,7 @@ export default function Settings() {
           Reset to default
         </button>
       </SettingsSection>
-
+      <PlaybackSettings />
       <ConfirmDialog
         open={confirmingApply}
         title="Apply the scan?"

@@ -1,0 +1,23 @@
+.slider-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slider-field-label {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.slider-field input {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+}
+
+.slider-field-value {
+  width: 56px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

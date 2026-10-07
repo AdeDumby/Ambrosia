@@ -13,6 +13,7 @@ import {
   DEFAULT_SETTINGS,
   type Appearance,
   type LibrarySettings,
+  type PlaybackSettings,
   type Settings
 } from '../shared/settings'
 
@@ -21,6 +22,7 @@ type SettingsState = {
   updateAppearance: (patch: Partial<Appearance>) => void
   resetAppearance: () => void
   updateLibrary: (patch: Partial<LibrarySettings>) => void
+  updatePlayback: (patch: Partial<PlaybackSettings>) => void
 }
 
 const SAVE_DELAY_MS = 400
@@ -73,9 +75,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const updatePlayback = useCallback((patch: Partial<PlaybackSettings>) => {
+    dirty.current = true
+    setSettings((previous) =>
+      previous ? { ...previous, playback: { ...previous.playback, ...patch } } : previous
+    )
+  }, [])
+
   const value = useMemo(
-    () => (settings ? { settings, updateAppearance, resetAppearance, updateLibrary } : null),
-    [settings, updateAppearance, resetAppearance, updateLibrary]
+    () =>
+      settings
+        ? { settings, updateAppearance, resetAppearance, updateLibrary, updatePlayback }
+        : null,
+    [settings, updateAppearance, resetAppearance, updateLibrary, updatePlayback]
   )
 
   if (!value) return null

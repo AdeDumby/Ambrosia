@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type RefObject
 } from 'react'
+import { useSettings } from './SettingsContext'
 
 export type PlayerTrack = { id: number; filename: string }
 
@@ -26,34 +27,18 @@ type PlayerState = {
   stopTrack: (trackId: number) => void
 }
 
-const VOLUME_KEY = 'ambrosia.volume'
-
-function loadVolume(): number {
-  try {
-    const raw = localStorage.getItem(VOLUME_KEY)
-    const value = raw === null ? Number.NaN : Number(raw)
-    return Number.isFinite(value) ? Math.min(Math.max(value, 0), 1) : 0.5
-  } catch {
-    return 0.5
-  }
-}
-
 const PlayerContext = createContext<PlayerState | null>(null)
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
+  const { settings } = useSettings()
   const audioRef = useRef<HTMLAudioElement>(null)
   const currentRef = useRef<PlayerTrack | null>(null)
   const [currentTrack, setCurrentTrack] = useState<PlayerTrack | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
-  const [volume, setVolume] = useState(loadVolume)
+  const [volume, setVolume] = useState(settings.playback.defaultVolume)
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume
-    try {
-      localStorage.setItem(VOLUME_KEY, String(volume))
-    } catch {
-      // storage unavailable: the volume simply resets next time
-    }
   }, [volume])
 
   const playTrack = useCallback((track: PlayerTrack) => {

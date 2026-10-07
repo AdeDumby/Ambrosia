@@ -7,6 +7,7 @@ import {
   type DeleteMode,
   type Density,
   type LibrarySettings,
+  type PlaybackSettings,
   type Settings
 } from '../../src/shared/settings.ts'
 
@@ -46,11 +47,24 @@ function parseLibrary(raw: unknown): LibrarySettings {
   }
 }
 
+function parsePlayback(raw: unknown): PlaybackSettings {
+  const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.playback
+  const volume = source.defaultVolume
+  return {
+    defaultVolume:
+      typeof volume === 'number' && Number.isFinite(volume)
+        ? Math.min(Math.max(volume, 0), 1)
+        : defaults.defaultVolume
+  }
+}
+
 export function parseSettings(raw: unknown): Settings {
   const source = asObject(raw)
   return {
     appearance: parseAppearance(source.appearance),
-    library: parseLibrary(source.library)
+    library: parseLibrary(source.library),
+    playback: parsePlayback(source.playback)
   }
 }
 
