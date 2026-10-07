@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import InlineError from '../components/item/InlineError'
 import TagBubble from '../components/item/TagBubble'
@@ -6,6 +6,7 @@ import TrackItem from '../components/item/TrackItem'
 import { useTrackActions } from '../hooks/useTrackActions'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import { deleteDialogText } from '../lib/deleteDialog'
+import { sortTracks } from '../lib/sortTracks'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
 import { usePlayer } from '../store/PlayerContext'
@@ -16,11 +17,12 @@ export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const { tracks, tags: allTags, categories } = useLibrary()
-  const { tagFilters, clearTagFilter } = useFilters()
+  const { tagFilters, clearTagFilter, sort } = useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
   const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
-  const visibleTracks = useVisibleTracks()
+  const filteredTracks = useVisibleTracks()
+  const visibleTracks = useMemo(() => sortTracks(filteredTracks, sort), [filteredTracks, sort])
 
   const play = useCallback(
     (id: number, filename: string) => toggleTrack({ id, filename }),

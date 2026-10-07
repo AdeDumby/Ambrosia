@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
+import type { SortKey } from '../lib/sortTracks'
 
 export type MatchMode = 'any' | 'all'
 export type TypeFilter = 'all' | 'music' | 'sfx'
@@ -13,6 +14,8 @@ type FilterState = {
   setTypeFilter: (value: TypeFilter) => void
   search: string
   setSearch: (value: string) => void
+  sort: SortKey
+  setSort: (value: SortKey) => void
   tagFilters: Record<number, TagFilterState>
   cycleTagFilter: (tagId: number) => void
   clearTagFilter: (tagId: number) => void
@@ -26,6 +29,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const [unreviewedOnly, setUnreviewedOnly] = useState(false)
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<SortKey>('name-asc')
   const [tagFilters, setTagFilters] = useState<Record<number, TagFilterState>>({})
 
   function cycleTagFilter(tagId: number) {
@@ -66,6 +70,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         setTypeFilter,
         search,
         setSearch,
+        sort,
+        setSort,
         tagFilters,
         cycleTagFilter,
         clearTagFilter,

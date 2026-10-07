@@ -1,6 +1,8 @@
 import { NavLink } from 'react-router-dom'
+import SelectField from './item/SelectField'
 import SearchField from './item/SearchField'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
+import { SORT_OPTIONS } from '../lib/sortTracks'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
 import '../styles/Topbar.css'
@@ -16,7 +18,7 @@ const tabs = [
 
 export default function Topbar({ minimal = false }: TopbarProps) {
   const { tracks } = useLibrary()
-  const { search, setSearch } = useFilters()
+  const { search, setSearch, sort, setSort } = useFilters()
   const visibleTracks = useVisibleTracks()
   const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`
 
@@ -38,6 +40,8 @@ export default function Topbar({ minimal = false }: TopbarProps) {
             value={search}
             onChange={setSearch}
           />
+
+          <SelectField label="Sort" value={sort} options={SORT_OPTIONS} onChange={setSort} />
         </div>
       )}
 
