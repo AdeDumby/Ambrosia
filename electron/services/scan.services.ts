@@ -15,6 +15,13 @@ import { probeDuration } from './probe.services.ts'
 const PROBE_PARALLELISM = 4
 const STAT_PARALLELISM = 16
 
+const FRANCHISE_FOLDER = 'franchise'
+
+function franchiseFor(libraryFolder: string, file: string): string | null {
+  const parts = path.relative(libraryFolder, file).split(path.sep)
+  return parts.length > 1 ? parts[0] : null
+}
+
 function pathKey(file: string): string {
   const resolved = path.resolve(file)
   return process.platform === 'win32' ? resolved.toLowerCase() : resolved
@@ -105,7 +112,8 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
         path: file,
         filename: path.basename(file),
         durationSec,
-        sizeBytes: info.size
+        sizeBytes: info.size,
+        franchise: franchiseFor(paths.folder, file)
       }
       return candidate
     } catch (error) {
@@ -137,6 +145,27 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
   missing.sort((a, b) => a.filename.localeCompare(b.filename))
   problems.sort((a, b) => a.path.localeCompare(b.path))
 
+  const folders = db.prepare('SELECT id, name FROM tag_category').all() as unknown as {
+    id: number
+    name: string
+  }[]
+  const franchiseFolderFound = folders.some(
+    (folder) => folder.name.toLowerCase() === FRANCHISE_FOLDER
+  )
+
+  const existingTags = new Set(
+    (db.prepare('SELECT name FROM tag').all() as unknown as { name: string }[]).map((tag) =>
+      tag.name.toLowerCase()
+    )
+  )
+  const franchisesToCreate = [
+    ...new Set(
+      toAdd
+        .map((candidate) => candidate.franchise)
+        .filter((name): name is string => name !== null && !existingTags.has(name.toLowerCase()))
+    )
+  ].sort((a, b) => a.localeCompare(b))
+
   return {
     libraryFolder: paths.folder,
     libraryFolderExists,
@@ -144,6 +173,8 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
     alreadyKnown: files.length - unknownFiles.length,
     toAdd,
     missing,
-    problems
+    problems,
+    franchiseFolderFound,
+    franchisesToCreate
   }
 }

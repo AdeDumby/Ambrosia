@@ -47,13 +47,6 @@ export type LibraryPaths = {
   deletedFolder: string
 }
 
-export type ScanCandidate = {
-  path: string
-  filename: string
-  durationSec: number
-  sizeBytes: number
-}
-
 export type ScanMissing = {
   id: number
   path: string
@@ -66,6 +59,14 @@ export type ScanProblem = {
   message: string
 }
 
+export type ScanCandidate = {
+  path: string
+  filename: string
+  durationSec: number
+  sizeBytes: number
+  franchise: string | null
+}
+
 export type ScanReport = {
   libraryFolder: string
   libraryFolderExists: boolean
@@ -74,4 +75,6 @@ export type ScanReport = {
   toAdd: ScanCandidate[]
   missing: ScanMissing[]
   problems: ScanProblem[]
+  franchiseFolderFound: boolean
+  franchisesToCreate: string[]
 }
