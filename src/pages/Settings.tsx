@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import ScanReportView from '../components/feature/ScanReportView'
 import ColorField from '../components/item/ColorField'
+import ConfirmDialog from '../components/item/ConfirmDialog'
 import PathField from '../components/item/PathField'
 import SegmentedControl from '../components/item/SegmentedControl'
 import SettingsSection from '../components/item/SettingsSection'
+import { useLibrary } from '../store/LibraryContext'
 import { useSettings } from '../store/SettingsContext'
 import type { DeleteMode, Density } from '../shared/settings'
-import type { LibraryPaths, ScanReport } from '../shared/types'
+import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
 import './Settings.css'
 
 const densityOptions: { value: Density; label: string }[] = [
@@ -26,14 +28,48 @@ const deleteModeHelp: Record<DeleteMode, string> = {
   permanent: 'Deleted tracks are erased from the disk right away and cannot be recovered.'
 }
 
+function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? '' : 's'}`
+}
+
+function droppableCount(report: ScanReport): number {
+  return report.missing.filter((track) => !track.folderGone).length
+}
+
+function confirmMessage(report: ScanReport): string {
+  const actions: string[] = []
+  if (report.toAdd.length > 0) actions.push(`add ${plural(report.toAdd.length, 'new track')}`)
+  const dropped = droppableCount(report)
+  if (dropped > 0) actions.push(`remove ${plural(dropped, 'missing track')} from the library`)
+
+  let message = `This will ${actions.join(' and ')}. Files on disk are not touched. Tags without a folder that end up on no track are removed too.`
+  const skipped = report.missing.length - dropped
+  if (skipped > 0) {
+    message += ` ${plural(skipped, 'track')} in missing folders will be left alone.`
+  }
+  return message
+}
+
+function describeResult(result: ApplyResult): string {
+  const parts = [`${result.added} added`, `${result.dropped} dropped`]
+  if (result.skipped > 0) parts.push(`${result.skipped} left alone in missing folders`)
+  if (result.tagsCreated > 0) parts.push(`${plural(result.tagsCreated, 'new tag')}`)
+  if (result.tagsRemoved > 0) parts.push(`${plural(result.tagsRemoved, 'unused tag')} removed`)
+  return `Done: ${parts.join(', ')}.`
+}
+
 export default function Settings() {
   const { settings, updateAppearance, resetAppearance, updateLibrary } = useSettings()
+  const { refreshTracks, refreshTags } = useLibrary()
   const { appearance, library } = settings
 
   const [paths, setPaths] = useState<LibraryPaths | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
   const [report, setReport] = useState<ScanReport | null>(null)
   const [scanning, setScanning] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [confirmingApply, setConfirmingApply] = useState(false)
+  const [applyResult, setApplyResult] = useState<ApplyResult | null>(null)
 
   useEffect(() => {
     window.api
@@ -42,6 +78,8 @@ export default function Settings() {
       .catch(() => setLibraryError('Could not read the library location.'))
   }, [])
 
+  const canApply = report !== null && (report.toAdd.length > 0 || droppableCount(report) > 0)
+
   async function chooseFolder() {
     setLibraryError(null)
     try {
@@ -49,6 +87,7 @@ export default function Settings() {
       if (chosen) {
         setPaths(chosen)
         setReport(null)
+        setApplyResult(null)
       }
     } catch {
       setLibraryError('That folder cannot be used. It may be read-only or unavailable.')
@@ -66,6 +105,7 @@ export default function Settings() {
 
   async function scan() {
     setLibraryError(null)
+    setApplyResult(null)
     setScanning(true)
     try {
       setReport(await window.api.scanLibrary())
@@ -75,6 +115,32 @@ export default function Settings() {
     } finally {
       setScanning(false)
     }
+  }
+
+  async function applyScan() {
+    setConfirmingApply(false)
+    setLibraryError(null)
+    setApplying(true)
+
+    let result: ApplyResult
+    try {
+      result = await window.api.applyScan()
+    } catch {
+      setLibraryError('Applying the scan failed, and nothing was changed.')
+      setApplying(false)
+      return
+    }
+
+    setApplyResult(result)
+    try {
+      await Promise.all([refreshTracks(), refreshTags()])
+      setReport(await window.api.scanLibrary())
+    } catch {
+      setLibraryError(
+        'The changes were applied, but the view could not be refreshed. Reload the window.'
+      )
+    }
+    setApplying(false)
   }
 
   return (
@@ -107,14 +173,36 @@ export default function Settings() {
 
         <div className="settings-row">
           <span>Look for new and missing files</span>
-          <button type="button" className="btn btn-primary" disabled={scanning} onClick={scan}>
-            {scanning ? 'Scanning...' : 'Scan library'}
-          </button>
+          <div className="settings-actions">
+            <button type="button" className="btn" disabled={scanning || applying} onClick={scan}>
+              {scanning ? 'Scanning...' : 'Scan library'}
+            </button>
+            {canApply && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={scanning || applying}
+                onClick={() => setConfirmingApply(true)}
+              >
+                {applying ? 'Applying...' : 'Apply changes'}
+              </button>
+            )}
+          </div>
         </div>
+        <p className="settings-hint">
+          A file that was moved or renamed counts as one removed track and one new track, so it
+          starts again without its tags.
+        </p>
 
         {libraryError && (
           <p className="settings-error" role="alert">
             {libraryError}
+          </p>
+        )}
+
+        {applyResult && (
+          <p className="settings-success" role="status">
+            {describeResult(applyResult)}
           </p>
         )}
 
@@ -166,6 +254,16 @@ export default function Settings() {
           Reset to default
         </button>
       </SettingsSection>
+
+      <ConfirmDialog
+        open={confirmingApply}
+        title="Apply the scan?"
+        message={report ? confirmMessage(report) : ''}
+        confirmLabel="Apply"
+        cancelLabel="Cancel"
+        onConfirm={applyScan}
+        onCancel={() => setConfirmingApply(false)}
+      />
     </div>
   )
 }

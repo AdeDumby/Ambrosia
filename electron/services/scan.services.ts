@@ -7,20 +7,17 @@ import type {
   ScanCandidate,
   ScanMissing,
   ScanProblem,
-  ScanReport
+  ScanReport,
+  VanishedFolder
 } from '../../src/shared/types.ts'
 import { AUDIO_EXTENSIONS } from './audio.services.ts'
 import { probeDuration } from './probe.services.ts'
 
 const PROBE_PARALLELISM = 4
 const STAT_PARALLELISM = 16
-
 const FRANCHISE_FOLDER = 'franchise'
 
-function franchiseFor(libraryFolder: string, file: string): string | null {
-  const parts = path.relative(libraryFolder, file).split(path.sep)
-  return parts.length > 1 ? parts[0] : null
-}
+type DirectoryStatus = 'present' | 'gone' | 'unknown'
 
 function pathKey(file: string): string {
   const resolved = path.resolve(file)
@@ -29,6 +26,11 @@ function pathKey(file: string): string {
 
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
+}
+
+function franchiseFor(libraryFolder: string, file: string): string | null {
+  const parts = path.relative(libraryFolder, file).split(path.sep)
+  return parts.length > 1 ? parts[0] : null
 }
 
 async function mapLimit<T, R>(
@@ -56,6 +58,37 @@ async function fileStatus(file: string): Promise<'present' | 'missing' | Error> 
     const code = (error as NodeJS.ErrnoException).code
     if (code === 'ENOENT' || code === 'ENOTDIR') return 'missing'
     return error instanceof Error ? error : new Error(String(error))
+  }
+}
+
+function createDirectoryChecker(): (folder: string) => Promise<DirectoryStatus> {
+  const cache = new Map<string, Promise<DirectoryStatus>>()
+  return (folder) => {
+    const key = pathKey(folder)
+    let result = cache.get(key)
+    if (!result) {
+      result = stat(folder).then(
+        (info): DirectoryStatus => (info.isDirectory() ? 'present' : 'gone'),
+        (error): DirectoryStatus => {
+          const code = (error as NodeJS.ErrnoException).code
+          return code === 'ENOENT' || code === 'ENOTDIR' ? 'gone' : 'unknown'
+        }
+      )
+      cache.set(key, result)
+    }
+    return result
+  }
+}
+
+async function topVanishedFolder(
+  folder: string,
+  check: (folder: string) => Promise<DirectoryStatus>
+): Promise<string> {
+  let top = folder
+  for (;;) {
+    const parent = path.dirname(top)
+    if (parent === top || (await check(parent)) !== 'gone') return top
+    top = parent
   }
 }
 
@@ -134,12 +167,26 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
         id: row.id,
         path: row.path,
         filename: row.filename,
-        deleted: row.deleted === 1
+        deleted: row.deleted === 1,
+        folderGone: false
       })
     } else if (status !== 'present') {
       problems.push({ path: row.path, message: describe(status) })
     }
   }
+
+  const checkDirectory = createDirectoryChecker()
+  const vanishedCounts = new Map<string, number>()
+  for (const track of missing) {
+    const folder = path.dirname(track.path)
+    if ((await checkDirectory(folder)) !== 'gone') continue
+    track.folderGone = true
+    const top = await topVanishedFolder(folder, checkDirectory)
+    vanishedCounts.set(top, (vanishedCounts.get(top) ?? 0) + 1)
+  }
+  const vanishedFolders: VanishedFolder[] = [...vanishedCounts]
+    .map(([folderPath, tracks]) => ({ path: folderPath, tracks }))
+    .sort((a, b) => a.path.localeCompare(b.path))
 
   toAdd.sort((a, b) => a.path.localeCompare(b.path))
   missing.sort((a, b) => a.filename.localeCompare(b.filename))
@@ -175,6 +222,7 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
     missing,
     problems,
     franchiseFolderFound,
-    franchisesToCreate
+    franchisesToCreate,
+    vanishedFolders
   }
 }

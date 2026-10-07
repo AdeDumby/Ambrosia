@@ -28,11 +28,6 @@ export default function Topbar({ minimal = false }: TopbarProps) {
               <p className="topbar-stats">{trackLabel}</p>
             </div>
           </div>
-
-          <div className="topbar-actions">
-            <input type="text" placeholder="Items" />
-            <button className="btn">Export</button>
-          </div>
         </div>
       )}
 

@@ -8,6 +8,7 @@ import * as tracks from '../services/track.services.ts'
 import * as settings from '../services/settings.services.ts'
 import * as library from '../services/library.services.ts'
 import * as scan from '../services/scan.services.ts'
+import * as apply from '../services/apply-scan.services.ts'
 import { assertId, assertName } from './validate.ts'
 
 type Handlers = {
@@ -105,7 +106,8 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       const problem = await shell.openPath(folder)
       if (problem) throw new Error(problem)
     },
-    scanLibrary: () => scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder))
+    scanLibrary: () => scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder)),
+    applyScan: () => apply.applyScan(db, library.getLibraryPaths(db, documentsFolder))
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

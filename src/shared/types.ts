@@ -47,13 +47,6 @@ export type LibraryPaths = {
   deletedFolder: string
 }
 
-export type ScanMissing = {
-  id: number
-  path: string
-  filename: string
-  deleted: boolean
-}
-
 export type ScanProblem = {
   path: string
   message: string
@@ -67,6 +60,19 @@ export type ScanCandidate = {
   franchise: string | null
 }
 
+export type ScanMissing = {
+  id: number
+  path: string
+  filename: string
+  deleted: boolean
+  folderGone: boolean
+}
+
+export type VanishedFolder = {
+  path: string
+  tracks: number
+}
+
 export type ScanReport = {
   libraryFolder: string
   libraryFolderExists: boolean
@@ -77,4 +83,14 @@ export type ScanReport = {
   problems: ScanProblem[]
   franchiseFolderFound: boolean
   franchisesToCreate: string[]
+  vanishedFolders: VanishedFolder[]
+}
+
+export type ApplyResult = {
+  added: number
+  dropped: number
+  skipped: number
+  tagsCreated: number
+  tagsRemoved: number
+  problems: ScanProblem[]
 }

@@ -8,6 +8,10 @@ type Props = {
   report: ScanReport
 }
 
+function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? '' : 's'}`
+}
+
 function Group({ title, count, children }: { title: string; count: number; children: ReactNode }) {
   if (count === 0) {
     return (
@@ -38,14 +42,32 @@ export default function ScanReportView({ report }: Props) {
   return (
     <div className="scan-report">
       <p className="scan-summary">
-        Preview only, nothing was changed. {report.filesFound} audio files found in the library
-        folder, {report.alreadyKnown} already known.
+        {report.filesFound} audio files found in the library folder, {report.alreadyKnown} already
+        known.
       </p>
 
       {!report.libraryFolderExists && (
         <p className="scan-warning" role="alert">
           The library folder does not exist, so no new files were looked for.
         </p>
+      )}
+
+      {report.vanishedFolders.length > 0 && (
+        <div className="scan-alarm" role="alert">
+          <strong>Some folders cannot be found</strong>
+          <p>
+            The tracks inside them will not be removed by Apply. If a drive is unplugged or a folder
+            was renamed, fix that and scan again.
+          </p>
+          <ul>
+            {report.vanishedFolders.map((folder) => (
+              <li key={folder.path}>
+                {folder.path}
+                <span className="scan-path">{plural(folder.tracks, 'track')}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <Group title="New files to add" count={report.toAdd.length}>
@@ -76,6 +98,9 @@ export default function ScanReportView({ report }: Props) {
           <li key={track.id}>
             {track.filename}
             {track.deleted && <span className="scan-badge">deleted</span>}
+            {track.folderGone && (
+              <span className="scan-badge scan-badge-alarm">folder missing</span>
+            )}
             <span className="scan-path">{track.path}</span>
           </li>
         ))}

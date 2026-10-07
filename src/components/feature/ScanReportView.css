@@ -67,3 +67,29 @@
   color: var(--muted);
   list-style: none;
 }
+
+.scan-alarm {
+  padding: 12px;
+  border: 1px solid #e05555;
+  border-radius: 6px;
+  background: color-mix(in srgb, #e05555 12%, transparent);
+  font-size: 0.85rem;
+}
+
+.scan-alarm p {
+  margin: 4px 0 8px;
+}
+
+.scan-alarm ul {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding-left: 20px;
+  overflow-wrap: anywhere;
+}
+
+.scan-badge-alarm {
+  border-color: #e05555;
+  color: #e05555;
+}

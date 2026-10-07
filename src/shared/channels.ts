@@ -20,5 +20,6 @@ export const CHANNELS = {
   getLibraryPaths: 'library:get-paths',
   chooseLibraryFolder: 'library:choose-folder',
   openLibraryFolder: 'library:open-folder',
-  scanLibrary: 'library:scan'
+  scanLibrary: 'library:scan',
+  applyScan: 'library:apply-scan'
 } as const satisfies Record<keyof Api, string>
