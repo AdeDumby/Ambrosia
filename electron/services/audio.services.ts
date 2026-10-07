@@ -13,6 +13,8 @@ const AUDIO_TYPES: Record<string, string> = {
   '.aac': 'audio/aac'
 }
 
+export const AUDIO_EXTENSIONS = new Set(Object.keys(AUDIO_TYPES))
+
 function toWebStream(stream: Readable): ReadableStream {
   return Readable.toWeb(stream) as unknown as ReadableStream
 }

@@ -1,5 +1,5 @@
 import type { Settings } from './settings'
-import type { LibraryPaths, Tag, TagCategory, Track, TrackKind } from './types'
+import type { LibraryPaths, ScanReport, Tag, TagCategory, Track, TrackKind } from './types'
 
 export type Api = {
   listCategories(): Promise<TagCategory[]>
@@ -25,4 +25,5 @@ export type Api = {
   getLibraryPaths(): Promise<LibraryPaths>
   chooseLibraryFolder(): Promise<LibraryPaths | null>
   openLibraryFolder(): Promise<void>
+  scanLibrary(): Promise<ScanReport>
 }

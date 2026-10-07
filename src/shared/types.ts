@@ -46,3 +46,32 @@ export type LibraryPaths = {
   folder: string
   deletedFolder: string
 }
+
+export type ScanCandidate = {
+  path: string
+  filename: string
+  durationSec: number
+  sizeBytes: number
+}
+
+export type ScanMissing = {
+  id: number
+  path: string
+  filename: string
+  deleted: boolean
+}
+
+export type ScanProblem = {
+  path: string
+  message: string
+}
+
+export type ScanReport = {
+  libraryFolder: string
+  libraryFolderExists: boolean
+  filesFound: number
+  alreadyKnown: number
+  toAdd: ScanCandidate[]
+  missing: ScanMissing[]
+  problems: ScanProblem[]
+}
