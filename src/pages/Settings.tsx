@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
+import ScanReportView from '../components/feature/ScanReportView'
 import ColorField from '../components/item/ColorField'
 import PathField from '../components/item/PathField'
 import SegmentedControl from '../components/item/SegmentedControl'
 import SettingsSection from '../components/item/SettingsSection'
 import { useSettings } from '../store/SettingsContext'
 import type { DeleteMode, Density } from '../shared/settings'
-import type { LibraryPaths } from '../shared/types'
+import type { LibraryPaths, ScanReport } from '../shared/types'
 import './Settings.css'
 
 const densityOptions: { value: Density; label: string }[] = [
@@ -31,6 +32,8 @@ export default function Settings() {
 
   const [paths, setPaths] = useState<LibraryPaths | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
+  const [report, setReport] = useState<ScanReport | null>(null)
+  const [scanning, setScanning] = useState(false)
 
   useEffect(() => {
     window.api
@@ -43,7 +46,10 @@ export default function Settings() {
     setLibraryError(null)
     try {
       const chosen = await window.api.chooseLibraryFolder()
-      if (chosen) setPaths(chosen)
+      if (chosen) {
+        setPaths(chosen)
+        setReport(null)
+      }
     } catch {
       setLibraryError('That folder cannot be used. It may be read-only or unavailable.')
     }
@@ -55,6 +61,19 @@ export default function Settings() {
       await window.api.openLibraryFolder()
     } catch {
       setLibraryError('Could not open the library folder. It may have been moved or deleted.')
+    }
+  }
+
+  async function scan() {
+    setLibraryError(null)
+    setScanning(true)
+    try {
+      setReport(await window.api.scanLibrary())
+    } catch {
+      setReport(null)
+      setLibraryError('The scan failed. Check that the library folder is available.')
+    } finally {
+      setScanning(false)
     }
   }
 
@@ -75,12 +94,6 @@ export default function Settings() {
 
         <PathField label="Deleted files" path={paths?.deletedFolder ?? null} />
 
-        {libraryError && (
-          <p className="settings-error" role="alert">
-            {libraryError}
-          </p>
-        )}
-
         <div className="settings-row">
           <span>When deleting a track</span>
           <SegmentedControl<DeleteMode>
@@ -91,6 +104,21 @@ export default function Settings() {
           />
         </div>
         <p className="settings-hint">{deleteModeHelp[library.deleteMode]}</p>
+
+        <div className="settings-row">
+          <span>Look for new and missing files</span>
+          <button type="button" className="btn btn-primary" disabled={scanning} onClick={scan}>
+            {scanning ? 'Scanning...' : 'Scan library'}
+          </button>
+        </div>
+
+        {libraryError && (
+          <p className="settings-error" role="alert">
+            {libraryError}
+          </p>
+        )}
+
+        {report && <ScanReportView report={report} />}
       </SettingsSection>
 
       <SettingsSection

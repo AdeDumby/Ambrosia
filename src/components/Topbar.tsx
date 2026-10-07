@@ -31,7 +31,6 @@ export default function Topbar({ minimal = false }: TopbarProps) {
 
           <div className="topbar-actions">
             <input type="text" placeholder="Items" />
-            <button className="btn btn-primary">Scan folder</button>
             <button className="btn">Export</button>
           </div>
         </div>
