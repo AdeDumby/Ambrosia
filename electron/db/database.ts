@@ -20,5 +20,6 @@ export function openDatabase(file: string): DatabaseSync {
   db.exec('PRAGMA foreign_keys = ON')
   db.exec(SCHEMA)
   addColumnIfMissing(db, 'track', 'deleted', 'INTEGER NOT NULL DEFAULT 0')
+  addColumnIfMissing(db, 'track', 'original_path', 'TEXT')
   return db
 }

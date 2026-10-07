@@ -9,6 +9,7 @@ import * as settings from '../services/settings.services.ts'
 import * as library from '../services/library.services.ts'
 import * as scan from '../services/scan.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
+import * as deletion from '../services/delete.services.ts'
 import { assertId, assertName } from './validate.ts'
 
 type Handlers = {
@@ -80,7 +81,12 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     },
     deleteTrack: (id) => {
       assertId(id)
-      tracks.deleteTrack(db, id)
+      return deletion.deleteTrackWithFile(
+        db,
+        library.getLibraryPaths(db, documentsFolder),
+        settings.getSettings(db).library.deleteMode,
+        id
+      )
     },
     getSettings: () => settings.getSettings(db),
     saveSettings: (value) => {

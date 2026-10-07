@@ -116,16 +116,26 @@ async function walk(
   }
 }
 
+type KnownRow = {
+  id: number
+  path: string
+  original_path: string | null
+  filename: string
+  deleted: number
+}
+
 export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promise<ScanReport> {
   const problems: ScanProblem[] = []
 
-  const known = db.prepare('SELECT id, path, filename, deleted FROM track').all() as unknown as {
-    id: number
-    path: string
-    filename: string
-    deleted: number
-  }[]
-  const knownKeys = new Set(known.map((row) => pathKey(row.path)))
+  const known = db
+    .prepare('SELECT id, path, original_path, filename, deleted FROM track')
+    .all() as unknown as KnownRow[]
+
+  const knownKeys = new Set<string>()
+  for (const row of known) {
+    knownKeys.add(pathKey(row.path))
+    if (row.deleted === 1 && row.original_path) knownKeys.add(pathKey(row.original_path))
+  }
 
   const files: string[] = []
   const libraryFolderExists = await stat(paths.folder).then(
@@ -156,10 +166,13 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
   })
   const toAdd = probed.filter((candidate): candidate is ScanCandidate => candidate !== null)
 
-  const statuses = await mapLimit(known, STAT_PARALLELISM, async (row) => ({
-    row,
-    status: await fileStatus(row.path)
-  }))
+  const statuses = await mapLimit(known, STAT_PARALLELISM, async (row) => {
+    let status = await fileStatus(row.path)
+    if (status === 'missing' && row.deleted === 1 && row.original_path) {
+      status = await fileStatus(row.original_path)
+    }
+    return { row, status }
+  })
   const missing: ScanMissing[] = []
   for (const { row, status } of statuses) {
     if (status === 'missing') {

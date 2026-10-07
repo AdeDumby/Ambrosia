@@ -25,7 +25,7 @@ export type Api = {
   getTrack(id: number): Promise<Track | null>
   setTrackKind(id: number, kind: TrackKind): Promise<void>
   setTrackReviewed(id: number, reviewed: boolean): Promise<void>
-  deleteTrack(id: number): Promise<void>
+  deleteTrack(id: number): Promise<boolean>
 
   getSettings(): Promise<Settings>
   saveSettings(settings: Settings): Promise<void>

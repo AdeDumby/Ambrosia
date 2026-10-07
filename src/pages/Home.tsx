@@ -1,19 +1,24 @@
 import { useCallback, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
+import InlineError from '../components/item/InlineError'
 import TagBubble from '../components/item/TagBubble'
 import TrackItem from '../components/item/TrackItem'
 import { useTrackActions } from '../hooks/useTrackActions'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
+import { deleteDialogText } from '../lib/deleteDialog'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
 import { usePlayer } from '../store/PlayerContext'
+import { useSettings } from '../store/SettingsContext'
 import './Home.css'
 
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const { tags: allTags, categories } = useLibrary()
   const { tagFilters, clearTagFilter } = useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
+  const { settings } = useSettings()
   const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
   const visibleTracks = useVisibleTracks()
 
@@ -35,10 +40,22 @@ export default function Home() {
 
   async function confirmDelete() {
     if (!pendingDelete) return
-    const { id } = pendingDelete
+    const { id, filename } = pendingDelete
     setPendingDelete(null)
-    await deleteTrack(id)
+    setDeleteError(null)
+    try {
+      await deleteTrack(id)
+    } catch (error) {
+      console.error(error)
+      setDeleteError(
+        `Could not delete ${filename}. The file may be in use or its folder may be read-only.`
+      )
+    }
   }
+
+  const dialog = pendingDelete
+    ? deleteDialogText(settings.library.deleteMode, pendingDelete.filename)
+    : null
 
   return (
     <div className="track-list">
@@ -55,6 +72,8 @@ export default function Home() {
           ))}
         </div>
       )}
+
+      {deleteError && <InlineError message={deleteError} onDismiss={() => setDeleteError(null)} />}
 
       {visibleTracks.length === 0 && <p>No tracks yet.</p>}
       {visibleTracks.map((track) => (
@@ -79,12 +98,9 @@ export default function Home() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Delete this track?"
-        message={
-          pendingDelete
-            ? `${pendingDelete.filename} will be hidden from the library. The file stays on disk.`
-            : ''
-        }
+        title={dialog?.title ?? ''}
+        message={dialog?.message ?? ''}
+        confirmLabel={dialog?.confirmLabel}
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
       />

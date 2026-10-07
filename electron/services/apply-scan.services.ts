@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { ApplyResult, LibraryPaths } from '../../src/shared/types.ts'
+import { removeUnusedLooseTags } from './tag.services.ts'
 import { scanLibrary } from './scan.services.ts'
 
 const FRANCHISE_FOLDER = 'Franchise'
@@ -84,14 +85,7 @@ export async function applyScan(db: DatabaseSync, paths: LibraryPaths): Promise<
       deleteTrack.run(track.id)
     }
 
-    const removeTag = db.prepare(
-      `DELETE FROM tag
-       WHERE id = ? AND category_id IS NULL
-         AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = ?)`
-    )
-    for (const tagId of touchedTags) {
-      tagsRemoved += Number(removeTag.run(tagId, tagId).changes)
-    }
+    tagsRemoved = removeUnusedLooseTags(db, touchedTags)
 
     db.exec('COMMIT')
   } catch (error) {

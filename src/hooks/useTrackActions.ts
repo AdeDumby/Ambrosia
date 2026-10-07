@@ -70,11 +70,12 @@ export function useTrackActions() {
 
   const deleteTrack = useCallback(
     async (trackId: number) => {
-      await window.api.deleteTrack(trackId)
       stopTrack(trackId)
+      const tagsRemoved = await window.api.deleteTrack(trackId)
       setTracks((previous) => previous.filter((track) => track.id !== trackId))
+      if (tagsRemoved) await refreshTags()
     },
-    [setTracks, stopTrack]
+    [setTracks, stopTrack, refreshTags]
   )
 
   return { addTag, createTag, removeTag, setKind, setReviewed, deleteTrack }

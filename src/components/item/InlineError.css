@@ -1,0 +1,20 @@
+.inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid #e05555;
+  border-radius: 6px;
+  background: color-mix(in srgb, #e05555 12%, transparent);
+  font-size: 0.85rem;
+}
+
+.inline-error button {
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+}

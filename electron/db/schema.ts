@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS track (
   size_bytes INTEGER NOT NULL DEFAULT 0,
   reviewed INTEGER NOT NULL DEFAULT 0,
   deleted INTEGER NOT NULL DEFAULT 0,
+  original_path TEXT,
   added_at TEXT NOT NULL DEFAULT (datetime('now')),
   source_folder_id INTEGER NOT NULL REFERENCES source_folder(id) ON DELETE CASCADE
 );

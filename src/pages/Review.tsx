@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
+import InlineError from '../components/item/InlineError'
 import TrackItem from '../components/item/TrackItem'
 import TagColumn from '../components/feature/TagColumn'
 import { useTrackActions } from '../hooks/useTrackActions'
+import { deleteDialogText } from '../lib/deleteDialog'
 import { useLibrary } from '../store/LibraryContext'
 import { usePlayer } from '../store/PlayerContext'
+import { useSettings } from '../store/SettingsContext'
 import './Review.css'
 
 const HIDDEN_FOLDERS = new Set(['franchise'])
@@ -19,9 +22,11 @@ function shuffleKey(id: number, seed: number): number {
 export default function Review() {
   const { tracks, tags: allTags, categories } = useLibrary()
   const { currentTrack, isPlaying, toggleTrack, playTrack } = usePlayer()
+  const { settings } = useSettings()
   const { addTag, createTag, removeTag, setReviewed, deleteTrack } = useTrackActions()
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 32))
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const queue = useMemo(
     () =>
@@ -45,7 +50,16 @@ export default function Review() {
 
   async function confirmDelete() {
     setConfirmingDelete(false)
-    if (current) await deleteTrack(current.id)
+    if (!current) return
+    setDeleteError(null)
+    try {
+      await deleteTrack(current.id)
+    } catch (error) {
+      console.error(error)
+      setDeleteError(
+        `Could not delete ${current.filename}. The file may be in use or its folder may be read-only.`
+      )
+    }
   }
 
   if (!current) {
@@ -73,10 +87,13 @@ export default function Review() {
       tags: allTags.filter((tag) => tag.categoryId === category.id)
     }))
   const ungrouped = allTags.filter((tag) => tag.categoryId === null)
+  const dialog = deleteDialogText(settings.library.deleteMode, current.filename)
 
   return (
     <div className="review">
       <p className="review-left">{queue.length} left to review</p>
+
+      {deleteError && <InlineError message={deleteError} onDismiss={() => setDeleteError(null)} />}
 
       <TrackItem
         key={current.id}
@@ -120,8 +137,9 @@ export default function Review() {
 
       <ConfirmDialog
         open={confirmingDelete}
-        title="Delete this track?"
-        message={`${current.filename} will be hidden from the library. The file stays on disk.`}
+        title={dialog.title}
+        message={dialog.message}
+        confirmLabel={dialog.confirmLabel}
         onConfirm={confirmDelete}
         onCancel={() => setConfirmingDelete(false)}
       />
