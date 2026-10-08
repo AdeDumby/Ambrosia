@@ -1,16 +1,23 @@
 import type { DatabaseSync } from 'node:sqlite'
 import {
+  APPEARANCE_MODES,
   BATCH_SIZE_MAX,
   BATCH_SIZE_MIN,
+  BUILT_IN_PRESETS,
   DEFAULT_SETTINGS,
   DELETE_MODES,
   DENSITIES,
+  MAX_PRESETS,
+  MAX_PRESET_NAME,
   type Appearance,
+  type AppearanceMode,
   type DeleteMode,
   type Density,
   type LibrarySettings,
   type ListSettings,
   type PlaybackSettings,
+  type Preset,
+  type PresetAppearance,
   type ReviewSettings,
   type Settings
 } from '../../src/shared/settings.ts'
@@ -28,7 +35,29 @@ function color(value: unknown, fallback: string): string {
   return typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : fallback
 }
 
-function parseAppearance(raw: unknown): Appearance {
+function volume(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(Math.max(value, 0), 1)
+    : undefined
+}
+
+function folderList(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null
+
+  const seen = new Set<string>()
+  const folders: string[] = []
+  for (const item of value) {
+    if (typeof item !== 'string') continue
+    const name = item.trim()
+    if (name === '' || name.length > MAX_FOLDER_NAME || seen.has(name.toLowerCase())) continue
+    seen.add(name.toLowerCase())
+    folders.push(name)
+    if (folders.length >= MAX_HIDDEN_FOLDERS) break
+  }
+  return folders
+}
+
+function parsePalette(raw: unknown): PresetAppearance {
   const source = asObject(raw)
   const defaults = DEFAULT_SETTINGS.appearance
   return {
@@ -40,6 +69,16 @@ function parseAppearance(raw: unknown): Appearance {
     panelBackground: color(source.panelBackground, defaults.panelBackground),
     raisedBackground: color(source.raisedBackground, defaults.raisedBackground),
     borderColor: color(source.borderColor, defaults.borderColor)
+  }
+}
+
+function parseAppearance(raw: unknown): Appearance {
+  const source = asObject(raw)
+  return {
+    ...parsePalette(raw),
+    mode: APPEARANCE_MODES.includes(source.mode as AppearanceMode)
+      ? (source.mode as AppearanceMode)
+      : DEFAULT_SETTINGS.appearance.mode
   }
 }
 
@@ -55,44 +94,58 @@ function parseLibrary(raw: unknown): LibrarySettings {
 
 function parsePlayback(raw: unknown): PlaybackSettings {
   const source = asObject(raw)
-  const defaults = DEFAULT_SETTINGS.playback
-  const volume = source.defaultVolume
   return {
-    defaultVolume:
-      typeof volume === 'number' && Number.isFinite(volume)
-        ? Math.min(Math.max(volume, 0), 1)
-        : defaults.defaultVolume
+    defaultVolume: volume(source.defaultVolume) ?? DEFAULT_SETTINGS.playback.defaultVolume
   }
 }
 
 function parseReview(raw: unknown): ReviewSettings {
   const source = asObject(raw)
-  const defaults = DEFAULT_SETTINGS.review
-  if (!Array.isArray(source.hiddenFolders)) return { hiddenFolders: [...defaults.hiddenFolders] }
-
-  const seen = new Set<string>()
-  const hiddenFolders: string[] = []
-  for (const value of source.hiddenFolders) {
-    if (typeof value !== 'string') continue
-    const name = value.trim()
-    if (name === '' || name.length > MAX_FOLDER_NAME || seen.has(name.toLowerCase())) continue
-    seen.add(name.toLowerCase())
-    hiddenFolders.push(name)
-    if (hiddenFolders.length >= MAX_HIDDEN_FOLDERS) break
+  return {
+    hiddenFolders: folderList(source.hiddenFolders) ?? [...DEFAULT_SETTINGS.review.hiddenFolders]
   }
-  return { hiddenFolders }
 }
 
 function parseList(raw: unknown): ListSettings {
   const source = asObject(raw)
-  const defaults = DEFAULT_SETTINGS.list
   const size = source.batchSize
   return {
     batchSize:
       typeof size === 'number' && Number.isFinite(size)
         ? Math.min(Math.max(Math.round(size), BATCH_SIZE_MIN), BATCH_SIZE_MAX)
-        : defaults.batchSize
+        : DEFAULT_SETTINGS.list.batchSize
   }
+}
+
+function parsePresets(raw: unknown): Preset[] {
+  if (!Array.isArray(raw)) return []
+
+  const taken = new Set(BUILT_IN_PRESETS.map((preset) => preset.name.toLowerCase()))
+  const presets: Preset[] = []
+  for (const item of raw) {
+    const source = asObject(item)
+    const name = typeof source.name === 'string' ? source.name.trim() : ''
+    if (name === '' || name.length > MAX_PRESET_NAME || taken.has(name.toLowerCase())) continue
+    taken.add(name.toLowerCase())
+
+    presets.push({
+      name,
+      appearance: parsePalette(source.appearance),
+      defaultVolume: volume(source.defaultVolume),
+      hiddenFolders: folderList(source.hiddenFolders) ?? undefined
+    })
+    if (presets.length >= MAX_PRESETS) break
+  }
+  return presets
+}
+
+function parseActivePreset(value: unknown): string | null {
+  if (value === null) return null
+  if (typeof value === 'string') {
+    const name = value.trim()
+    return name !== '' && name.length <= MAX_PRESET_NAME ? name : null
+  }
+  return DEFAULT_SETTINGS.activePreset
 }
 
 export function parseSettings(raw: unknown): Settings {
@@ -102,7 +155,9 @@ export function parseSettings(raw: unknown): Settings {
     library: parseLibrary(source.library),
     playback: parsePlayback(source.playback),
     review: parseReview(source.review),
-    list: parseList(source.list)
+    list: parseList(source.list),
+    presets: parsePresets(source.presets),
+    activePreset: parseActivePreset(source.activePreset)
   }
 }
 

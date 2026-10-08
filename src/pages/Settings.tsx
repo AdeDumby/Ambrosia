@@ -1,23 +1,30 @@
 import { useEffect, useState } from 'react'
-import ScanReportView from '../components/feature/ScanReportView'
-import ColorField from '../components/item/ColorField'
-import ConfirmDialog from '../components/item/ConfirmDialog'
-import PathField from '../components/item/PathField'
-import SegmentedControl from '../components/item/SegmentedControl'
-import SettingsSection from '../components/item/SettingsSection'
 import { useLibrary } from '../store/LibraryContext'
 import { useSettings } from '../store/SettingsContext'
-import PlaybackSettings from '../components/feature/PlaybackSettings'
+import PathField from '../components/item/PathField'
+import ColorField from '../components/item/ColorField'
+import ConfirmDialog from '../components/item/ConfirmDialog'
+import SettingsSection from '../components/item/SettingsSection'
+import SegmentedControl from '../components/item/SegmentedControl'
 import ReviewSettings from '../components/feature/ReviewSettings'
+import ScanReportView from '../components/feature/ScanReportView'
+import PresetSettings from '../components/feature/PresetSettings'
+import PlaybackSettings from '../components/feature/PlaybackSettings'
 import TrackListSettings from '../components/feature/TrackListSettings'
-import type { DeleteMode, Density } from '../shared/settings'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
+import type { AppearanceMode, DeleteMode, Density } from '../shared/settings'
 import './Settings.css'
 
 const densityOptions: { value: Density; label: string }[] = [
   { value: 'spacey', label: 'Spacey' },
   { value: 'comfortable', label: 'Comfortable' },
   { value: 'compact', label: 'Compact' }
+]
+
+const modeOptions: { value: AppearanceMode; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' }
 ]
 
 const deleteModeOptions: { value: DeleteMode; label: string }[] = [
@@ -211,11 +218,24 @@ export default function Settings() {
 
         {report && <ScanReportView report={report} />}
       </SettingsSection>
-
+      <PresetSettings />
       <SettingsSection
         title="Appearance"
         description="Changes apply immediately and are saved automatically."
       >
+        <div className="settings-row">
+          <span>Theme</span>
+          <SegmentedControl<AppearanceMode>
+            label="Theme mode"
+            value={appearance.mode}
+            onChange={(mode) => updateAppearance({ mode })}
+            options={modeOptions}
+          />
+        </div>
+        <p className="settings-hint">
+          The colors below are your base palette. In the other mode, the app converts them
+          automatically.
+        </p>
         <ColorField
           label="Accent color"
           value={appearance.accentColor}

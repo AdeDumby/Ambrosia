@@ -39,3 +39,50 @@
   color: #6cc07a;
   font-size: 0.85rem;
 }
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.preset-swatches {
+  display: flex;
+}
+
+.preset-swatches span {
+  width: 16px;
+  height: 16px;
+  margin-left: -4px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+.preset-swatches span:first-child {
+  margin-left: 0;
+}
+
+.preset-name {
+  flex: 1;
+}
+
+.preset-badge {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.preset-save {
+  display: flex;
+  gap: 8px;
+}
+
+.preset-save input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}

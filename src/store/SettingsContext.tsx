@@ -10,11 +10,14 @@ import {
 } from 'react'
 import { applyAppearance } from '../lib/applyAppearance'
 import {
+  DEFAULT_APPEARANCE,
   DEFAULT_SETTINGS,
+  WITHERING_LAVENDER,
   type Appearance,
   type LibrarySettings,
   type ListSettings,
   type PlaybackSettings,
+  type Preset,
   type ReviewSettings,
   type Settings
 } from '../shared/settings'
@@ -27,14 +30,32 @@ type SettingsState = {
   updatePlayback: (patch: Partial<PlaybackSettings>) => void
   updateReview: (patch: Partial<ReviewSettings>) => void
   updateList: (patch: Partial<ListSettings>) => void
+  applyPreset: (preset: Preset) => void
+  savePreset: (name: string) => void
+  deletePreset: (name: string) => void
 }
 
 const SAVE_DELAY_MS = 400
+const LIGHT_QUERY = '(prefers-color-scheme: light)'
 
 const SettingsContext = createContext<SettingsState | null>(null)
 
+function useSystemPrefersLight(): boolean {
+  const [light, setLight] = useState(() => window.matchMedia(LIGHT_QUERY).matches)
+
+  useEffect(() => {
+    const query = window.matchMedia(LIGHT_QUERY)
+    const update = () => setLight(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+
+  return light
+}
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null)
+  const systemPrefersLight = useSystemPrefersLight()
   const dirty = useRef(false)
 
   useEffect(() => {
@@ -46,8 +67,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const appearance = settings?.appearance
   useEffect(() => {
-    if (appearance) applyAppearance(appearance)
-  }, [appearance])
+    if (appearance) applyAppearance(appearance, systemPrefersLight)
+  }, [appearance, systemPrefersLight])
 
   useEffect(() => {
     if (!settings || !dirty.current) return
@@ -58,47 +79,106 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer)
   }, [settings])
 
-  const updateAppearance = useCallback((patch: Partial<Appearance>) => {
+  const change = useCallback((update: (previous: Settings) => Settings) => {
     dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, appearance: { ...previous.appearance, ...patch } } : previous
-    )
+    setSettings((previous) => (previous ? update(previous) : previous))
   }, [])
 
-  const resetAppearance = useCallback(() => {
-    dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, appearance: DEFAULT_SETTINGS.appearance } : previous
-    )
-  }, [])
+  const updateAppearance = useCallback(
+    (patch: Partial<Appearance>) =>
+      change((previous) => ({
+        ...previous,
+        appearance: { ...previous.appearance, ...patch }
+      })),
+    [change]
+  )
 
-  const updateLibrary = useCallback((patch: Partial<LibrarySettings>) => {
-    dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, library: { ...previous.library, ...patch } } : previous
-    )
-  }, [])
+  const resetAppearance = useCallback(
+    () =>
+      change((previous) => ({
+        ...previous,
+        appearance: { ...DEFAULT_APPEARANCE, mode: previous.appearance.mode },
+        activePreset: WITHERING_LAVENDER.name
+      })),
+    [change]
+  )
 
-  const updatePlayback = useCallback((patch: Partial<PlaybackSettings>) => {
-    dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, playback: { ...previous.playback, ...patch } } : previous
-    )
-  }, [])
+  const updateLibrary = useCallback(
+    (patch: Partial<LibrarySettings>) =>
+      change((previous) => ({ ...previous, library: { ...previous.library, ...patch } })),
+    [change]
+  )
 
-  const updateReview = useCallback((patch: Partial<ReviewSettings>) => {
-    dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, review: { ...previous.review, ...patch } } : previous
-    )
-  }, [])
+  const updatePlayback = useCallback(
+    (patch: Partial<PlaybackSettings>) =>
+      change((previous) => ({ ...previous, playback: { ...previous.playback, ...patch } })),
+    [change]
+  )
 
-  const updateList = useCallback((patch: Partial<ListSettings>) => {
-    dirty.current = true
-    setSettings((previous) =>
-      previous ? { ...previous, list: { ...previous.list, ...patch } } : previous
-    )
-  }, [])
+  const updateReview = useCallback(
+    (patch: Partial<ReviewSettings>) =>
+      change((previous) => ({ ...previous, review: { ...previous.review, ...patch } })),
+    [change]
+  )
+
+  const updateList = useCallback(
+    (patch: Partial<ListSettings>) =>
+      change((previous) => ({ ...previous, list: { ...previous.list, ...patch } })),
+    [change]
+  )
+
+  const applyPreset = useCallback(
+    (preset: Preset) =>
+      change((previous) => ({
+        ...previous,
+        appearance: { ...preset.appearance, mode: previous.appearance.mode },
+        playback:
+          preset.defaultVolume === undefined
+            ? previous.playback
+            : { ...previous.playback, defaultVolume: preset.defaultVolume },
+        review:
+          preset.hiddenFolders === undefined
+            ? previous.review
+            : { ...previous.review, hiddenFolders: [...preset.hiddenFolders] },
+        activePreset: preset.name
+      })),
+    [change]
+  )
+
+  const savePreset = useCallback(
+    (name: string) =>
+      change((previous) => {
+        const current = previous.appearance
+        const preset: Preset = {
+          name,
+          appearance: {
+            accentColor: current.accentColor,
+            density: current.density,
+            pageBackground: current.pageBackground,
+            panelBackground: current.panelBackground,
+            raisedBackground: current.raisedBackground,
+            borderColor: current.borderColor
+          },
+          defaultVolume: previous.playback.defaultVolume,
+          hiddenFolders: [...previous.review.hiddenFolders]
+        }
+        const others = previous.presets.filter(
+          (existing) => existing.name.toLowerCase() !== name.toLowerCase()
+        )
+        return { ...previous, presets: [...others, preset], activePreset: name }
+      }),
+    [change]
+  )
+
+  const deletePreset = useCallback(
+    (name: string) =>
+      change((previous) => ({
+        ...previous,
+        presets: previous.presets.filter((preset) => preset.name !== name),
+        activePreset: previous.activePreset === name ? null : previous.activePreset
+      })),
+    [change]
+  )
 
   const value = useMemo(
     () =>
@@ -110,7 +190,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             updateLibrary,
             updatePlayback,
             updateReview,
-            updateList
+            updateList,
+            applyPreset,
+            savePreset,
+            deletePreset
           }
         : null,
     [
@@ -120,7 +203,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       updateLibrary,
       updatePlayback,
       updateReview,
-      updateList
+      updateList,
+      applyPreset,
+      savePreset,
+      deletePreset
     ]
   )
 
