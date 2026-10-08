@@ -8,6 +8,8 @@ import SettingsSection from '../components/item/SettingsSection'
 import { useLibrary } from '../store/LibraryContext'
 import { useSettings } from '../store/SettingsContext'
 import PlaybackSettings from '../components/feature/PlaybackSettings'
+import ReviewSettings from '../components/feature/ReviewSettings'
+import TrackListSettings from '../components/feature/TrackListSettings'
 import type { DeleteMode, Density } from '../shared/settings'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
 import './Settings.css'
@@ -256,6 +258,8 @@ export default function Settings() {
         </button>
       </SettingsSection>
       <PlaybackSettings />
+      <ReviewSettings />
+      <TrackListSettings />
       <ConfirmDialog
         open={confirmingApply}
         title="Apply the scan?"

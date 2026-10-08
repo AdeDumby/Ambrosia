@@ -10,8 +10,6 @@ import { usePlayer } from '../store/PlayerContext'
 import { useSettings } from '../store/SettingsContext'
 import './Review.css'
 
-const HIDDEN_FOLDERS = new Set(['franchise'])
-
 function shuffleKey(id: number, seed: number): number {
   let hash = (id ^ seed) >>> 0
   hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b)
@@ -78,8 +76,9 @@ export default function Review() {
     else void addTag(current.id, tagId)
   }
 
+  const hiddenFolders = new Set(settings.review.hiddenFolders.map((name) => name.toLowerCase()))
   const columns = categories
-    .filter((category) => !HIDDEN_FOLDERS.has(category.name.toLowerCase()))
+    .filter((category) => !hiddenFolders.has(category.name.toLowerCase()))
     .map((category) => ({
       id: category.id,
       name: category.name,

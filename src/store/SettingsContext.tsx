@@ -13,7 +13,9 @@ import {
   DEFAULT_SETTINGS,
   type Appearance,
   type LibrarySettings,
+  type ListSettings,
   type PlaybackSettings,
+  type ReviewSettings,
   type Settings
 } from '../shared/settings'
 
@@ -23,6 +25,8 @@ type SettingsState = {
   resetAppearance: () => void
   updateLibrary: (patch: Partial<LibrarySettings>) => void
   updatePlayback: (patch: Partial<PlaybackSettings>) => void
+  updateReview: (patch: Partial<ReviewSettings>) => void
+  updateList: (patch: Partial<ListSettings>) => void
 }
 
 const SAVE_DELAY_MS = 400
@@ -82,12 +86,42 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const updateReview = useCallback((patch: Partial<ReviewSettings>) => {
+    dirty.current = true
+    setSettings((previous) =>
+      previous ? { ...previous, review: { ...previous.review, ...patch } } : previous
+    )
+  }, [])
+
+  const updateList = useCallback((patch: Partial<ListSettings>) => {
+    dirty.current = true
+    setSettings((previous) =>
+      previous ? { ...previous, list: { ...previous.list, ...patch } } : previous
+    )
+  }, [])
+
   const value = useMemo(
     () =>
       settings
-        ? { settings, updateAppearance, resetAppearance, updateLibrary, updatePlayback }
+        ? {
+            settings,
+            updateAppearance,
+            resetAppearance,
+            updateLibrary,
+            updatePlayback,
+            updateReview,
+            updateList
+          }
         : null,
-    [settings, updateAppearance, resetAppearance, updateLibrary, updatePlayback]
+    [
+      settings,
+      updateAppearance,
+      resetAppearance,
+      updateLibrary,
+      updatePlayback,
+      updateReview,
+      updateList
+    ]
   )
 
   if (!value) return null

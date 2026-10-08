@@ -1,5 +1,7 @@
 import type { DatabaseSync } from 'node:sqlite'
 import {
+  BATCH_SIZE_MAX,
+  BATCH_SIZE_MIN,
   DEFAULT_SETTINGS,
   DELETE_MODES,
   DENSITIES,
@@ -7,12 +9,16 @@ import {
   type DeleteMode,
   type Density,
   type LibrarySettings,
+  type ListSettings,
   type PlaybackSettings,
+  type ReviewSettings,
   type Settings
 } from '../../src/shared/settings.ts'
 
 const SETTINGS_KEY = 'settings'
 const HEX_COLOR = /^#[0-9a-f]{6}$/i
+const MAX_HIDDEN_FOLDERS = 200
+const MAX_FOLDER_NAME = 100
 
 function asObject(value: unknown): Record<string, unknown> {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {}
@@ -59,12 +65,44 @@ function parsePlayback(raw: unknown): PlaybackSettings {
   }
 }
 
+function parseReview(raw: unknown): ReviewSettings {
+  const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.review
+  if (!Array.isArray(source.hiddenFolders)) return { hiddenFolders: [...defaults.hiddenFolders] }
+
+  const seen = new Set<string>()
+  const hiddenFolders: string[] = []
+  for (const value of source.hiddenFolders) {
+    if (typeof value !== 'string') continue
+    const name = value.trim()
+    if (name === '' || name.length > MAX_FOLDER_NAME || seen.has(name.toLowerCase())) continue
+    seen.add(name.toLowerCase())
+    hiddenFolders.push(name)
+    if (hiddenFolders.length >= MAX_HIDDEN_FOLDERS) break
+  }
+  return { hiddenFolders }
+}
+
+function parseList(raw: unknown): ListSettings {
+  const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.list
+  const size = source.batchSize
+  return {
+    batchSize:
+      typeof size === 'number' && Number.isFinite(size)
+        ? Math.min(Math.max(Math.round(size), BATCH_SIZE_MIN), BATCH_SIZE_MAX)
+        : defaults.batchSize
+  }
+}
+
 export function parseSettings(raw: unknown): Settings {
   const source = asObject(raw)
   return {
     appearance: parseAppearance(source.appearance),
     library: parseLibrary(source.library),
-    playback: parsePlayback(source.playback)
+    playback: parsePlayback(source.playback),
+    review: parseReview(source.review),
+    list: parseList(source.list)
   }
 }
 

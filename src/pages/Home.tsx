@@ -13,8 +13,6 @@ import { usePlayer } from '../store/PlayerContext'
 import { useSettings } from '../store/SettingsContext'
 import './Home.css'
 
-const PAGE_SIZE = 60
-
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -24,13 +22,14 @@ export default function Home() {
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
   const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
+  const pageSize = settings.list.batchSize
 
   const filteredTracks = useVisibleTracks()
   const visibleTracks = useMemo(() => sortTracks(filteredTracks, sort), [filteredTracks, sort])
 
   const listKey = `${sort}|${search}|${typeFilter}|${unreviewedOnly}|${matchMode}|${JSON.stringify(tagFilters)}`
-  const [paging, setPaging] = useState({ key: listKey, limit: PAGE_SIZE })
-  const limit = paging.key === listKey ? paging.limit : PAGE_SIZE
+  const [paging, setPaging] = useState({ key: listKey, limit: pageSize })
+  const limit = paging.key === listKey ? paging.limit : pageSize
   const hasMore = limit < visibleTracks.length
   const shownTracks = useMemo(() => visibleTracks.slice(0, limit), [visibleTracks, limit])
 
@@ -46,13 +45,13 @@ export default function Home() {
     if (!hasMore || !sentinel) return
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting) setPaging({ key: listKey, limit: limit + PAGE_SIZE })
+        if (entries[0]?.isIntersecting) setPaging({ key: listKey, limit: limit + pageSize })
       },
       { rootMargin: '800px' }
     )
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [hasMore, limit, listKey])
+  }, [hasMore, limit, listKey, pageSize])
 
   const play = useCallback(
     (id: number, filename: string) => toggleTrack({ id, filename }),
