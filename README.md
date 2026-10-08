@@ -1,13 +1,10 @@
-### LEFT TO DO
+### LEFT TO DO FOR V1.0.0 RELEASE
 
 ---
 
 ## Settings
 
-- Set custom page size length before load
 - Loudness bounds
-- Settings preset
-- Hidden folders for review
 - Export DB in settings
 
 ---
@@ -34,13 +31,14 @@
 
 - README page tutorial
 - Packaging
+- Logo color changes depending on theme used
 
 ---
 
-### KNOWN ISSUES TO FIX
+### KNOWN ISSUES TO FIX FOR FUTURE VERSIONS
 
 - Every row gets redrawn on tag change between folders
-- The color picker has no hex input, & appearance settings don't match everywhere
+- The color picker has no hex input
 - Tag sorting ignores accents
 - Tags aren't name conventioned
 - Moved or renamed files are lost
