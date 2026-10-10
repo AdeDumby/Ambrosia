@@ -21,5 +21,7 @@ export const CHANNELS = {
   chooseLibraryFolder: 'library:choose-folder',
   openLibraryFolder: 'library:open-folder',
   scanLibrary: 'library:scan',
-  applyScan: 'library:apply-scan'
+  applyScan: 'library:apply-scan',
+  listPendingAnalysis: 'analysis:list-pending',
+  saveAnalysis: 'analysis:save'
 } as const satisfies Record<keyof Api, string>

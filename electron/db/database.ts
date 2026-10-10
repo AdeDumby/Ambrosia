@@ -21,5 +21,10 @@ export function openDatabase(file: string): DatabaseSync {
   db.exec(SCHEMA)
   addColumnIfMissing(db, 'track', 'deleted', 'INTEGER NOT NULL DEFAULT 0')
   addColumnIfMissing(db, 'track', 'original_path', 'TEXT')
+  addColumnIfMissing(db, 'track', 'loudness_lufs', 'REAL')
+  addColumnIfMissing(db, 'track', 'loudness_peak', 'REAL')
+  addColumnIfMissing(db, 'track', 'loudness_curve', 'TEXT')
+  addColumnIfMissing(db, 'track', 'analysis_error', 'TEXT')
+  addColumnIfMissing(db, 'track', 'analyzed_at', 'TEXT')
   return db
 }

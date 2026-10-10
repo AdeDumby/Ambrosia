@@ -5,6 +5,7 @@ type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }
 
 const TRACK_COLUMNS = `id, path, filename, kind,
   duration_sec AS durationSec, peak_db AS peakDb,
+  loudness_lufs AS loudnessLufs, loudness_peak AS loudnessPeak,
   size_bytes AS sizeBytes, reviewed, added_at AS addedAt`
 
 const TAG_ORDER = `c.sort_order IS NULL, c.sort_order, c.name, g.name COLLATE NOCASE`

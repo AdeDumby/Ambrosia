@@ -7,6 +7,8 @@ export type Track = {
   kind: TrackKind
   durationSec: number
   peakDb: number | null
+  loudnessLufs: number | null
+  loudnessPeak: number | null
   sizeBytes: number
   reviewed: boolean
   addedAt: string
@@ -94,3 +96,12 @@ export type ApplyResult = {
   tagsRemoved: number
   problems: ScanProblem[]
 }
+
+export type PendingAnalysis = {
+  id: number
+  filename: string
+  durationSec: number
+}
+
+export type AnalysisInput =
+  { ok: true; integrated: number; peak: number; curve: number[] } | { ok: false; message: string }

@@ -1,7 +1,9 @@
 import type { Settings } from './settings'
 import type {
+  AnalysisInput,
   ApplyResult,
   LibraryPaths,
+  PendingAnalysis,
   ScanReport,
   Tag,
   TagCategory,
@@ -35,4 +37,7 @@ export type Api = {
   openLibraryFolder(): Promise<void>
   scanLibrary(): Promise<ScanReport>
   applyScan(): Promise<ApplyResult>
+
+  listPendingAnalysis(): Promise<PendingAnalysis[]>
+  saveAnalysis(id: number, input: AnalysisInput): Promise<void>
 }

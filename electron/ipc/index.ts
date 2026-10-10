@@ -10,7 +10,8 @@ import * as library from '../services/library.services.ts'
 import * as scan from '../services/scan.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
 import * as deletion from '../services/delete.services.ts'
-import { assertId, assertName } from './validate.ts'
+import * as analysis from '../services/analysis.service.ts'
+import { assertId, assertName, parseAnalysisInput } from './validate.ts'
 
 type Handlers = {
   [K in keyof Api]: (
@@ -113,7 +114,12 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       if (problem) throw new Error(problem)
     },
     scanLibrary: () => scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder)),
-    applyScan: () => apply.applyScan(db, library.getLibraryPaths(db, documentsFolder))
+    applyScan: () => apply.applyScan(db, library.getLibraryPaths(db, documentsFolder)),
+    listPendingAnalysis: () => analysis.listPendingAnalysis(db),
+    saveAnalysis: (id, input) => {
+      assertId(id)
+      analysis.saveAnalysis(db, id, parseAnalysisInput(input))
+    }
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {
