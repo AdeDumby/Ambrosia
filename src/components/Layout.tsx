@@ -6,6 +6,7 @@ import { FilterProvider } from '../store/FilterContext'
 import { LibraryProvider } from '../store/LibraryContext'
 import { PlayerProvider } from '../store/PlayerContext'
 import { SettingsProvider } from '../store/SettingsContext'
+import { AnalysisProvider } from '../store/AnalysisContext'
 
 const FOCUSED_PAGES = ['/review', '/settings']
 
@@ -17,18 +18,20 @@ export default function Layout() {
     <SettingsProvider>
       <PlayerProvider>
         <LibraryProvider>
-          <FilterProvider>
-            <div className="app-shell">
-              {!focused && <Sidebar />}
-              <div className="main-area">
-                <Topbar minimal={focused} />
-                <main className="content">
-                  <Outlet />
-                </main>
-                <Footer />
+          <AnalysisProvider>
+            <FilterProvider>
+              <div className="app-shell">
+                {!focused && <Sidebar />}
+                <div className="main-area">
+                  <Topbar minimal={focused} />
+                  <main className="content">
+                    <Outlet />
+                  </main>
+                  <Footer />
+                </div>
               </div>
-            </div>
-          </FilterProvider>
+            </FilterProvider>
+          </AnalysisProvider>
         </LibraryProvider>
       </PlayerProvider>
     </SettingsProvider>

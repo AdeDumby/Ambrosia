@@ -31,3 +31,10 @@ export function saveAnalysis(db: DatabaseSync, id: number, input: AnalysisInput)
      WHERE id = ?`
   ).run(message, id)
 }
+
+export function clearAnalysisErrors(db: DatabaseSync): void {
+  db.prepare(
+    `UPDATE track SET analysis_error = NULL, analyzed_at = NULL
+     WHERE analysis_error IS NOT NULL AND loudness_lufs IS NULL`
+  ).run()
+}

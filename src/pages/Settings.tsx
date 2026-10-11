@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLibrary } from '../store/LibraryContext'
+import { useAnalysis } from '../store/AnalysisContext'
 import { useSettings } from '../store/SettingsContext'
 import PathField from '../components/item/PathField'
 import ColorField from '../components/item/ColorField'
@@ -9,6 +10,7 @@ import SegmentedControl from '../components/item/SegmentedControl'
 import ReviewSettings from '../components/feature/ReviewSettings'
 import ScanReportView from '../components/feature/ScanReportView'
 import PresetSettings from '../components/feature/PresetSettings'
+import AnalysisPanel from '../components/feature/AnalysisPanel'
 import PlaybackSettings from '../components/feature/PlaybackSettings'
 import TrackListSettings from '../components/feature/TrackListSettings'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
@@ -80,6 +82,7 @@ export default function Settings() {
   const [applying, setApplying] = useState(false)
   const [confirmingApply, setConfirmingApply] = useState(false)
   const [applyResult, setApplyResult] = useState<ApplyResult | null>(null)
+  const { start: startAnalysis } = useAnalysis()
 
   useEffect(() => {
     window.api
@@ -151,6 +154,7 @@ export default function Settings() {
       )
     }
     setApplying(false)
+    void startAnalysis()
   }
 
   return (
@@ -203,6 +207,7 @@ export default function Settings() {
           A file that was moved or renamed counts as one removed track and one new track, so it
           starts again without its tags.
         </p>
+        <AnalysisPanel />
 
         {libraryError && (
           <p className="settings-error" role="alert">

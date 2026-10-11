@@ -119,6 +119,9 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     saveAnalysis: (id, input) => {
       assertId(id)
       analysis.saveAnalysis(db, id, parseAnalysisInput(input))
+    },
+    clearAnalysisErrors: () => {
+      analysis.clearAnalysisErrors(db)
     }
   }
 

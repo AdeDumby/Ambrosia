@@ -23,5 +23,6 @@ export const CHANNELS = {
   scanLibrary: 'library:scan',
   applyScan: 'library:apply-scan',
   listPendingAnalysis: 'analysis:list-pending',
-  saveAnalysis: 'analysis:save'
+  saveAnalysis: 'analysis:save',
+  clearAnalysisErrors: 'analysis:clear-errors'
 } as const satisfies Record<keyof Api, string>

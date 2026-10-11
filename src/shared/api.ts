@@ -40,4 +40,5 @@ export type Api = {
 
   listPendingAnalysis(): Promise<PendingAnalysis[]>
   saveAnalysis(id: number, input: AnalysisInput): Promise<void>
+  clearAnalysisErrors(): Promise<void>
 }
