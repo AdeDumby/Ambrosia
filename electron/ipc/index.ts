@@ -8,6 +8,7 @@ import * as scan from '../services/scan.services.ts'
 import * as purge from '../services/purge.services.ts'
 import * as tracks from '../services/track.services.ts'
 import * as deletion from '../services/delete.services.ts'
+import * as renaming from '../services/rename.services.ts'
 import * as library from '../services/library.services.ts'
 import * as restore from '../services/restore.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
@@ -141,6 +142,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     deleteCategory: (id, withTags) => {
       assertId(id)
       categories.deleteCategory(db, id, withTags === true)
+    },
+    renameTrack: (id, name) => {
+      assertId(id)
+      if (typeof name !== 'string') throw new Error('Invalid name')
+      return renaming.renameTrack(db, id, name)
     }
   }
 

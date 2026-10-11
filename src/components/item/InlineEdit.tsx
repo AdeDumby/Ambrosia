@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { errorMessage } from '../../lib/errors'
 import './InlineEdit.css'
 
 type Props = {
@@ -7,15 +8,10 @@ type Props = {
   onCancel: () => void
   maxLength?: number
   caret?: number
+  suffix?: string
 }
 
-function messageOf(error: unknown): string {
-  const text = error instanceof Error ? error.message : String(error)
-  const match = text.match(/Error: ([^:]+)$/)
-  return match ? match[1] : 'That did not work.'
-}
-
-export default function InlineEdit({ value, onSubmit, onCancel, maxLength, caret }: Props) {
+export default function InlineEdit({ value, onSubmit, onCancel, maxLength, caret, suffix }: Props) {
   const [draft, setDraft] = useState(value)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -44,7 +40,7 @@ export default function InlineEdit({ value, onSubmit, onCancel, maxLength, caret
       await onSubmit(trimmed)
       settled.current = true
     } catch (failure) {
-      setError(messageOf(failure))
+      setError(errorMessage(failure))
       setBusy(false)
       inputRef.current?.focus()
     }
@@ -52,33 +48,36 @@ export default function InlineEdit({ value, onSubmit, onCancel, maxLength, caret
 
   return (
     <div className="inline-edit">
-      <input
-        ref={inputRef}
-        type="text"
-        value={draft}
-        maxLength={maxLength}
-        disabled={busy}
-        aria-label="Edit name"
-        aria-invalid={error !== null}
-        onChange={(event) => {
-          setDraft(event.target.value)
-          setError(null)
-        }}
-        onBlur={() => void commit()}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') {
-            event.preventDefault()
-            void commit()
-          } else if (event.key === 'Escape') {
-            event.preventDefault()
-            settled.current = true
-            onCancel()
-          }
-        }}
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
-        onDragStart={(event) => event.preventDefault()}
-      />
+      <div className="inline-edit-row">
+        <input
+          ref={inputRef}
+          type="text"
+          value={draft}
+          maxLength={maxLength}
+          disabled={busy}
+          aria-label="Edit name"
+          aria-invalid={error !== null}
+          onChange={(event) => {
+            setDraft(event.target.value)
+            setError(null)
+          }}
+          onBlur={() => void commit()}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault()
+              void commit()
+            } else if (event.key === 'Escape') {
+              event.preventDefault()
+              settled.current = true
+              onCancel()
+            }
+          }}
+          onClick={(event) => event.stopPropagation()}
+          onDoubleClick={(event) => event.stopPropagation()}
+          onDragStart={(event) => event.preventDefault()}
+        />
+        {suffix && <span className="inline-edit-suffix">{suffix}</span>}
+      </div>
       {error && (
         <p className="inline-edit-error" role="alert">
           {error}

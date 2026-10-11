@@ -1,6 +1,9 @@
-import { memo } from 'react'
-import type { TrackKind } from '../../shared/types'
+import { memo, useState, type MouseEvent } from 'react'
+import { textOffsetAt } from '../../lib/caret'
 import { formatDuration } from '../../lib/formatDuration'
+import { MAX_FILE_STEM, splitFileName } from '../../shared/files'
+import type { TrackKind } from '../../shared/types'
+import InlineEdit from './InlineEdit'
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
 import TrackActions from './TrackActions'
@@ -22,6 +25,7 @@ type Props = {
   allTags: TagOption[]
   isPlaying: boolean
   onPlay?: (id: number, filename: string) => void
+  onRename?: (id: number, name: string) => Promise<void>
   onSetKind?: (id: number, kind: TrackKind) => void
   onFinish?: (id: number) => void
   onDelete?: (id: number, filename: string) => void
@@ -40,6 +44,7 @@ function TrackItem({
   allTags,
   isPlaying,
   onPlay,
+  onRename,
   onSetKind,
   onFinish,
   onDelete,
@@ -47,13 +52,46 @@ function TrackItem({
   onAddTag,
   onCreateTag
 }: Props) {
+  const [caret, setCaret] = useState<number | null>(null)
+  const { stem, ext } = splitFileName(filename)
   const ownedIds = new Set(tags.map((tag) => tag.id))
   const availableTags = allTags.filter((tag) => !ownedIds.has(tag.id))
-  console.log('row', filename)
+
+  function startEdit(event: MouseEvent<HTMLDivElement>) {
+    const offset = textOffsetAt(event.currentTarget, event.clientX, event.clientY)
+    setCaret(Math.min(offset, stem.length))
+  }
+
   return (
     <div className="track-item">
       <div className="track-main">
-        <div className="track-name">{filename}</div>
+        {caret !== null && onRename ? (
+          <InlineEdit
+            value={stem}
+            suffix={ext}
+            caret={caret}
+            maxLength={MAX_FILE_STEM}
+            onSubmit={async (next) => {
+              await onRename(id, next)
+              setCaret(null)
+            }}
+            onCancel={() => setCaret(null)}
+          />
+        ) : (
+          <div
+            className="track-name"
+            onMouseDown={
+              onRename
+                ? (event) => {
+                    if (event.detail > 1) event.preventDefault()
+                  }
+                : undefined
+            }
+            onDoubleClick={onRename ? startEdit : undefined}
+          >
+            {filename}
+          </div>
+        )}
         <div className="track-meta">
           <span>{formatDuration(durationSec)}</span>
           {peakDb !== null && <span>{peakDb} dB max</span>}

@@ -30,5 +30,6 @@ export const CHANNELS = {
   purgeGoneDeletedTracks: 'tracks:purge-gone-deleted',
   renameCategory: 'categories:rename',
   recolorCategory: 'categories:recolor',
-  deleteCategory: 'categories:delete'
+  deleteCategory: 'categories:delete',
+  renameTrack: 'tracks:rename'
 } as const satisfies Record<keyof Api, string>

@@ -1,3 +1,4 @@
+import { errorMessage } from '../../lib/errors'
 import { useState } from 'react'
 import './AddField.css'
 
@@ -5,12 +6,6 @@ type Props = {
   label: string
   placeholder: string
   onSubmit: (value: string) => Promise<void>
-}
-
-function messageOf(error: unknown): string {
-  const text = error instanceof Error ? error.message : String(error)
-  const match = text.match(/Error: ([^:]+)$/)
-  return match ? match[1] : 'That did not work.'
 }
 
 export default function AddField({ label, placeholder, onSubmit }: Props) {
@@ -27,7 +22,7 @@ export default function AddField({ label, placeholder, onSubmit }: Props) {
       await onSubmit(wanted)
       setValue('')
     } catch (failure) {
-      setError(messageOf(failure))
+      setError(errorMessage(failure))
     } finally {
       setBusy(false)
     }

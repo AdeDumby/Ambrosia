@@ -21,7 +21,7 @@ export default function Review() {
   const { tracks, tags: allTags, categories } = useLibrary()
   const { currentTrack, isPlaying, toggleTrack, playTrack } = usePlayer()
   const { settings } = useSettings()
-  const { addTag, createTag, removeTag, setReviewed, deleteTrack } = useTrackActions()
+  const { addTag, createTag, removeTag, setReviewed, deleteTrack, renameTrack } = useTrackActions()
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 32))
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -109,6 +109,7 @@ export default function Review() {
         onRemoveTag={removeTag}
         onAddTag={addTag}
         onCreateTag={createTag}
+        onRename={renameTrack}
       />
 
       <div className="review-columns">

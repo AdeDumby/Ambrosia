@@ -58,6 +58,16 @@ export function useTrackActions() {
     [setTracks]
   )
 
+  const renameTrack = useCallback(
+    async (trackId: number, name: string) => {
+      const filename = await window.api.renameTrack(trackId, name)
+      setTracks((previous) =>
+        previous.map((track) => (track.id === trackId ? { ...track, filename } : track))
+      )
+    },
+    [setTracks]
+  )
+
   const setReviewed = useCallback(
     async (trackId: number, reviewed: boolean) => {
       await window.api.setTrackReviewed(trackId, reviewed)
@@ -78,5 +88,5 @@ export function useTrackActions() {
     [setTracks, stopTrack, refreshTags]
   )
 
-  return { addTag, createTag, removeTag, setKind, setReviewed, deleteTrack }
+  return { addTag, createTag, removeTag, setKind, setReviewed, deleteTrack, renameTrack }
 }

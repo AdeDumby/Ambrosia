@@ -21,7 +21,7 @@ export default function Home() {
     useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
-  const { addTag, createTag, removeTag, setKind, deleteTrack } = useTrackActions()
+  const { addTag, createTag, removeTag, setKind, deleteTrack, renameTrack } = useTrackActions()
   const pageSize = settings.list.batchSize
 
   const filteredTracks = useVisibleTracks()
@@ -122,6 +122,7 @@ export default function Home() {
           isPlaying={isPlaying && currentTrack?.id === track.id}
           onPlay={play}
           onSetKind={setKind}
+          onRename={renameTrack}
           onDelete={requestDelete}
           onRemoveTag={removeTag}
           onAddTag={addTag}

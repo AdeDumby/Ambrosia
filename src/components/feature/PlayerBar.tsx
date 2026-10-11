@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
 import { formatDuration } from '../../lib/formatDuration'
 import { usePlayer } from '../../store/PlayerContext'
+import { useLibrary } from '../../store/LibraryContext'
 import './PlayerBar.css'
 
 export default function PlayerBar() {
   const { audioRef, currentTrack, isPlaying, volume, togglePause, seek, setVolume } = usePlayer()
+  const { tracks } = useLibrary()
+  const title = currentTrack
+    ? (tracks.find((track) => track.id === currentTrack.id)?.filename ?? currentTrack.filename)
+    : null
   const [time, setTime] = useState(0)
   const [duration, setDuration] = useState(0)
 
@@ -45,8 +50,8 @@ export default function PlayerBar() {
         </svg>
       </button>
 
-      <div className="player-title" title={currentTrack?.filename}>
-        {currentTrack ? currentTrack.filename : 'Nothing playing'}
+      <div className="player-title" title={title ?? undefined}>
+        {title ?? 'Nothing playing'}
       </div>
 
       <div className="player-seek">
