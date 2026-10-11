@@ -4,7 +4,6 @@
 
 ## Settings
 
-- Loudness bounds
 - Export DB in settings
 
 ---
