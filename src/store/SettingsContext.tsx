@@ -132,10 +132,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       change((previous) => ({
         ...previous,
         appearance: { ...preset.appearance, mode: previous.appearance.mode },
-        playback:
-          preset.defaultVolume === undefined
-            ? previous.playback
-            : { ...previous.playback, defaultVolume: preset.defaultVolume },
+        playback: {
+          ...previous.playback,
+          defaultVolume: preset.defaultVolume ?? previous.playback.defaultVolume,
+          normalize: preset.normalize ?? previous.playback.normalize,
+          targetLufs: preset.targetLufs ?? previous.playback.targetLufs
+        },
         review:
           preset.hiddenFolders === undefined
             ? previous.review
@@ -160,6 +162,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             borderColor: current.borderColor
           },
           defaultVolume: previous.playback.defaultVolume,
+          normalize: previous.playback.normalize,
+          targetLufs: previous.playback.targetLufs,
           hiddenFolders: [...previous.review.hiddenFolders]
         }
         const others = previous.presets.filter(

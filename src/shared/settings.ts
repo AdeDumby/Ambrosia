@@ -14,6 +14,14 @@ export const BATCH_SIZE_MIN = 20
 export const BATCH_SIZE_MAX = 300
 export const BATCH_SIZE_STEP = 10
 
+export const LOUDNESS_MIN = -24
+export const LOUDNESS_MAX = -8
+export const LOUDNESS_PRESETS = [
+  { value: -19, label: 'Quiet' },
+  { value: -14, label: 'Normal' },
+  { value: -11, label: 'Loud' }
+]
+
 export const MAX_PRESET_NAME = 40
 export const MAX_PRESETS = 50
 
@@ -34,6 +42,8 @@ export type Preset = {
   name: string
   appearance: PresetAppearance
   defaultVolume?: number
+  normalize?: boolean
+  targetLufs?: number
   hiddenFolders?: string[]
 }
 
@@ -43,6 +53,8 @@ export type LibrarySettings = {
 
 export type PlaybackSettings = {
   defaultVolume: number
+  normalize: boolean
+  targetLufs: number
 }
 
 export type ReviewSettings = {
@@ -133,7 +145,9 @@ export const DEFAULT_LIBRARY: LibrarySettings = {
 }
 
 export const DEFAULT_PLAYBACK: PlaybackSettings = {
-  defaultVolume: 0.5
+  defaultVolume: 0.5,
+  normalize: true,
+  targetLufs: -14
 }
 
 export const DEFAULT_REVIEW: ReviewSettings = {
@@ -170,6 +184,12 @@ export function presetMatches(settings: Settings, preset: Preset): boolean {
     preset.defaultVolume !== undefined &&
     Math.abs(settings.playback.defaultVolume - preset.defaultVolume) > 0.001
   ) {
+    return false
+  }
+  if (preset.normalize !== undefined && settings.playback.normalize !== preset.normalize) {
+    return false
+  }
+  if (preset.targetLufs !== undefined && settings.playback.targetLufs !== preset.targetLufs) {
     return false
   }
 

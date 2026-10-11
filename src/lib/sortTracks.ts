@@ -42,8 +42,8 @@ function byNumber(value: (track: Track) => number | null, direction: 'asc' | 'de
 const COMPARATORS: Record<SortKey, (a: Track, b: Track) => number> = {
   'name-asc': byName,
   'name-desc': (a, b) => byName(b, a),
-  loudest: byNumber((track) => track.peakDb, 'desc'),
-  quietest: byNumber((track) => track.peakDb, 'asc'),
+  loudest: byNumber((track) => track.loudnessLufs, 'desc'),
+  quietest: byNumber((track) => track.loudnessLufs, 'asc'),
   shortest: byNumber((track) => track.durationSec, 'asc'),
   longest: byNumber((track) => track.durationSec, 'desc'),
   'most-tags': byNumber((track) => track.tags.length, 'desc'),

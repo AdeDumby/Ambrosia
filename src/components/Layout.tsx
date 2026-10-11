@@ -16,8 +16,8 @@ export default function Layout() {
 
   return (
     <SettingsProvider>
-      <PlayerProvider>
-        <LibraryProvider>
+      <LibraryProvider>
+        <PlayerProvider>
           <AnalysisProvider>
             <FilterProvider>
               <div className="app-shell">
@@ -32,8 +32,8 @@ export default function Layout() {
               </div>
             </FilterProvider>
           </AnalysisProvider>
-        </LibraryProvider>
-      </PlayerProvider>
+        </PlayerProvider>
+      </LibraryProvider>
     </SettingsProvider>
   )
 }

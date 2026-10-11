@@ -19,7 +19,9 @@ import {
   type Preset,
   type PresetAppearance,
   type ReviewSettings,
-  type Settings
+  type Settings,
+  LOUDNESS_MAX,
+  LOUDNESS_MIN
 } from '../../src/shared/settings.ts'
 
 const SETTINGS_KEY = 'settings'
@@ -92,10 +94,19 @@ function parseLibrary(raw: unknown): LibrarySettings {
   }
 }
 
+function targetLoudness(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(Math.max(Math.round(value), LOUDNESS_MIN), LOUDNESS_MAX)
+    : undefined
+}
+
 function parsePlayback(raw: unknown): PlaybackSettings {
   const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.playback
   return {
-    defaultVolume: volume(source.defaultVolume) ?? DEFAULT_SETTINGS.playback.defaultVolume
+    defaultVolume: volume(source.defaultVolume) ?? defaults.defaultVolume,
+    normalize: typeof source.normalize === 'boolean' ? source.normalize : defaults.normalize,
+    targetLufs: targetLoudness(source.targetLufs) ?? defaults.targetLufs
   }
 }
 
@@ -132,6 +143,8 @@ function parsePresets(raw: unknown): Preset[] {
       name,
       appearance: parsePalette(source.appearance),
       defaultVolume: volume(source.defaultVolume),
+      normalize: typeof source.normalize === 'boolean' ? source.normalize : undefined,
+      targetLufs: targetLoudness(source.targetLufs),
       hiddenFolders: folderList(source.hiddenFolders) ?? undefined
     })
     if (presets.length >= MAX_PRESETS) break

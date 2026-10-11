@@ -9,14 +9,54 @@
   flex-shrink: 0;
 }
 
-.slider-field input {
+.slider-field-track {
+  position: relative;
   flex: 1;
   min-width: 0;
+}
+
+.slider-field-track.has-ticks {
+  padding-bottom: 22px;
+}
+
+.slider-field-track input {
+  width: 100%;
+  margin: 0;
   accent-color: var(--accent);
 }
 
+.slider-field-ticks {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 18px;
+}
+
+.slider-field-tick {
+  position: absolute;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.slider-field-tick.active {
+  color: var(--accent);
+}
+
+.slider-field-tick:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .slider-field-value {
-  width: 56px;
+  width: 80px;
+  flex-shrink: 0;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   text-align: right;
