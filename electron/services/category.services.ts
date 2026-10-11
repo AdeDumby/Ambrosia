@@ -38,6 +38,35 @@ function assertEditable(db: DatabaseSync, id: number): TagCategory {
   return folder
 }
 
+function editHiddenFolders(db: DatabaseSync, edit: (names: string[]) => string[]): void {
+  const row = db.prepare("SELECT value FROM setting WHERE key = 'settings'").get() as unknown as
+    { value: string } | undefined
+  if (!row) return
+
+  let settings: Record<string, unknown>
+  try {
+    settings = JSON.parse(row.value)
+  } catch {
+    return
+  }
+
+  const apply = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? edit(value.filter((item): item is string => typeof item === 'string'))
+      : value
+
+  const review = settings.review as Record<string, unknown> | undefined
+  if (review) review.hiddenFolders = apply(review.hiddenFolders)
+
+  if (Array.isArray(settings.presets)) {
+    for (const preset of settings.presets as Record<string, unknown>[]) {
+      if (preset) preset.hiddenFolders = apply(preset.hiddenFolders)
+    }
+  }
+
+  db.prepare("UPDATE setting SET value = ? WHERE key = 'settings'").run(JSON.stringify(settings))
+}
+
 export function createCategory(db: DatabaseSync, name: string, color = '#888888'): TagCategory {
   const trimmed = checkName(db, name)
   const row = db
@@ -69,7 +98,9 @@ export function renameCategory(db: DatabaseSync, id: number, name: string): void
   db.exec('BEGIN')
   try {
     db.prepare('UPDATE tag_category SET name = ? WHERE id = ?').run(trimmed, id)
-    renameInSettings(db, folder.name, trimmed)
+    editHiddenFolders(db, (names) =>
+      names.map((item) => (item.toLowerCase() === folder.name.toLowerCase() ? trimmed : item))
+    )
     db.exec('COMMIT')
   } catch (error) {
     db.exec('ROLLBACK')
@@ -81,6 +112,27 @@ export function recolorCategory(db: DatabaseSync, id: number, color: string): vo
   assertEditable(db, id)
   if (!HEX_COLOR.test(color)) throw new Error('Invalid color.')
   db.prepare('UPDATE tag_category SET color = ? WHERE id = ?').run(color.toLowerCase(), id)
+}
+
+export function deleteCategory(db: DatabaseSync, id: number, withTags: boolean): void {
+  const folder = assertEditable(db, id)
+
+  db.exec('BEGIN')
+  try {
+    if (withTags) {
+      db.prepare('DELETE FROM tag WHERE category_id = ?').run(id)
+    } else {
+      db.prepare('UPDATE tag SET category_id = NULL WHERE category_id = ?').run(id)
+    }
+    db.prepare('DELETE FROM tag_category WHERE id = ?').run(id)
+    editHiddenFolders(db, (names) =>
+      names.filter((item) => item.toLowerCase() !== folder.name.toLowerCase())
+    )
+    db.exec('COMMIT')
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
 }
 
 export function reorderCategories(db: DatabaseSync, orderedIds: number[]): void {
@@ -102,35 +154,4 @@ export function reorderCategories(db: DatabaseSync, orderedIds: number[]): void 
     db.exec('ROLLBACK')
     throw error
   }
-}
-
-function renameInSettings(db: DatabaseSync, oldName: string, newName: string): void {
-  const row = db.prepare("SELECT value FROM setting WHERE key = 'settings'").get() as unknown as
-    { value: string } | undefined
-  if (!row) return
-
-  let settings: Record<string, unknown>
-  try {
-    settings = JSON.parse(row.value)
-  } catch {
-    return
-  }
-
-  const swap = (names: unknown): unknown =>
-    Array.isArray(names)
-      ? names.map((item) =>
-          typeof item === 'string' && item.toLowerCase() === oldName.toLowerCase() ? newName : item
-        )
-      : names
-
-  const review = settings.review as Record<string, unknown> | undefined
-  if (review) review.hiddenFolders = swap(review.hiddenFolders)
-
-  if (Array.isArray(settings.presets)) {
-    for (const preset of settings.presets as Record<string, unknown>[]) {
-      if (preset) preset.hiddenFolders = swap(preset.hiddenFolders)
-    }
-  }
-
-  db.prepare("UPDATE setting SET value = ? WHERE key = 'settings'").run(JSON.stringify(settings))
 }

@@ -33,6 +33,7 @@ type SettingsState = {
   applyPreset: (preset: Preset) => void
   savePreset: (name: string) => void
   deletePreset: (name: string) => void
+  reloadSettings: () => Promise<void>
 }
 
 const SAVE_DELAY_MS = 400
@@ -184,6 +185,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [change]
   )
 
+  const reloadSettings = useCallback(async () => {
+    const fresh = await window.api.getSettings()
+    dirty.current = false
+    setSettings(fresh)
+  }, [])
+
   const value = useMemo(
     () =>
       settings
@@ -197,7 +204,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             updateList,
             applyPreset,
             savePreset,
-            deletePreset
+            deletePreset,
+            reloadSettings
           }
         : null,
     [
@@ -210,7 +218,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       updateList,
       applyPreset,
       savePreset,
-      deletePreset
+      deletePreset,
+      reloadSettings
     ]
   )
 

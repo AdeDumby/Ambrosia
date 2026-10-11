@@ -137,7 +137,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     },
     countDeletedTracks: () => restore.countDeletedTracks(db),
     restoreDeletedTracks: () => restore.restoreDeletedTracks(db),
-    purgeGoneDeletedTracks: () => purge.purgeGoneDeletedTracks(db)
+    purgeGoneDeletedTracks: () => purge.purgeGoneDeletedTracks(db),
+    deleteCategory: (id, withTags) => {
+      assertId(id)
+      categories.deleteCategory(db, id, withTags === true)
+    }
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

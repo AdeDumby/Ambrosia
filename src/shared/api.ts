@@ -19,6 +19,7 @@ export type Api = {
   reorderCategories(ids: number[]): Promise<void>
   renameCategory(id: number, name: string): Promise<void>
   recolorCategory(id: number, color: string): Promise<void>
+  deleteCategory(id: number, withTags: boolean): Promise<void>
 
   listTags(): Promise<Tag[]>
   createTag(name: string, categoryId: number | null): Promise<Tag>

@@ -9,6 +9,7 @@ import {
   type SetStateAction
 } from 'react'
 import type { Tag, TagCategory, Track } from '../shared/types'
+import { useSettings } from './SettingsContext'
 
 type LibraryState = {
   categories: TagCategory[]
@@ -22,11 +23,13 @@ type LibraryState = {
   createFolder: (name: string) => Promise<void>
   renameFolder: (id: number, name: string) => Promise<void>
   recolorFolder: (id: number, color: string) => Promise<void>
+  deleteFolder: (id: number, withTags: boolean) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
+  const { reloadSettings } = useSettings()
   const [categories, setCategories] = useState<TagCategory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tracks, setTracks] = useState<Track[]>([])
@@ -51,15 +54,34 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     await window.api.createCategory(name)
     setCategories(await window.api.listCategories())
   }, [])
-  const renameFolder = useCallback(async (id: number, name: string) => {
-    await window.api.renameCategory(id, name)
-    setCategories(await window.api.listCategories())
-  }, [])
+
+  const renameFolder = useCallback(
+    async (id: number, name: string) => {
+      await window.api.renameCategory(id, name)
+      setCategories(await window.api.listCategories())
+      await reloadSettings()
+    },
+    [reloadSettings]
+  )
 
   const recolorFolder = useCallback(async (id: number, color: string) => {
     await window.api.recolorCategory(id, color)
     setCategories(await window.api.listCategories())
   }, [])
+
+  const deleteFolder = useCallback(
+    async (id: number, withTags: boolean) => {
+      await window.api.deleteCategory(id, withTags)
+      const [folders] = await Promise.all([
+        window.api.listCategories(),
+        refreshTags(),
+        refreshTracks(),
+        reloadSettings()
+      ])
+      setCategories(folders)
+    },
+    [refreshTags, refreshTracks, reloadSettings]
+  )
 
   useEffect(() => {
     window.api.listCategories().then(setCategories)
@@ -80,7 +102,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         moveTag,
         createFolder,
         renameFolder,
-        recolorFolder
+        recolorFolder,
+        deleteFolder
       }}
     >
       {children}
