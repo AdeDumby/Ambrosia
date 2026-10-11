@@ -27,5 +27,7 @@ export const CHANNELS = {
   clearAnalysisErrors: 'analysis:clear-errors',
   countDeletedTracks: 'tracks:count-deleted',
   restoreDeletedTracks: 'tracks:restore-deleted',
-  purgeGoneDeletedTracks: 'tracks:purge-gone-deleted'
+  purgeGoneDeletedTracks: 'tracks:purge-gone-deleted',
+  renameCategory: 'categories:rename',
+  recolorCategory: 'categories:recolor'
 } as const satisfies Record<keyof Api, string>

@@ -38,6 +38,16 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       }
       categories.reorderCategories(db, ids)
     },
+    renameCategory: (id, name) => {
+      assertId(id)
+      assertName(name)
+      categories.renameCategory(db, id, name)
+    },
+    recolorCategory: (id, color) => {
+      assertId(id)
+      if (typeof color !== 'string') throw new Error('Invalid color.')
+      categories.recolorCategory(db, id, color)
+    },
 
     listTags: () => tags.listTags(db),
     createTag: (name, categoryId) => {

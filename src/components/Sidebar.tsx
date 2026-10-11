@@ -1,13 +1,15 @@
 import { useMemo, useState, type DragEvent, type MouseEvent } from 'react'
-import type { Tag } from '../shared/types'
+import { isProtectedFolder, MAX_FOLDER_NAME } from '../shared/folders'
+import type { Tag, TagCategory } from '../shared/types'
 import AddField from './item/AddField'
-import TagItem from './item/TagItem'
+import ColorDialog from './item/ColorDialog'
+import ContextMenu, { type MenuItem } from './item/ContextMenu'
 import FolderItem from './item/FolderItem'
 import SegmentedControl from './item/SegmentedControl'
-import ContextMenu, { type MenuItem } from './item/ContextMenu'
-import { useLibrary } from './../store/LibraryContext'
-import { useFilters, type MatchMode, type TypeFilter } from './../store/FilterContext'
-import { useVisibleTracks } from './../hooks/useVisibleTracks'
+import TagItem from './item/TagItem'
+import { useVisibleTracks } from '../hooks/useVisibleTracks'
+import { useFilters, type MatchMode, type TypeFilter } from '../store/FilterContext'
+import { useLibrary } from '../store/LibraryContext'
 import '../styles/Sidebar.css'
 
 const matchOptions: { value: MatchMode; label: string }[] = [
@@ -21,8 +23,21 @@ const typeOptions: { value: TypeFilter; label: string }[] = [
   { value: 'sfx', label: 'SFX' }
 ]
 
+type Menu =
+  | { kind: 'tag'; x: number; y: number; tag: Tag }
+  | { kind: 'folder'; x: number; y: number; folder: TagCategory }
+
 export default function Sidebar() {
-  const { categories, setCategories, tags, moveTag, createFolder } = useLibrary()
+  const {
+    categories,
+    setCategories,
+    tags,
+    moveTag,
+    createFolder,
+    renameFolder,
+    recolorFolder,
+    refreshTracks
+  } = useLibrary()
   const {
     matchMode,
     setMatchMode,
@@ -36,7 +51,9 @@ export default function Sidebar() {
   } = useFilters()
   const visibleTracks = useVisibleTracks()
 
-  const [menu, setMenu] = useState<{ x: number; y: number; tag: Tag } | null>(null)
+  const [menu, setMenu] = useState<Menu | null>(null)
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [recoloring, setRecoloring] = useState<TagCategory | null>(null)
   const [draggedId, setDraggedId] = useState<number | null>(null)
   const [dropTarget, setDropTarget] = useState<{
     id: number
@@ -53,7 +70,12 @@ export default function Sidebar() {
 
   function openTagMenu(event: MouseEvent<HTMLButtonElement>, tag: Tag) {
     event.preventDefault()
-    setMenu({ x: event.clientX, y: event.clientY, tag })
+    setMenu({ kind: 'tag', x: event.clientX, y: event.clientY, tag })
+  }
+
+  function openFolderMenu(event: MouseEvent<HTMLDivElement>, folder: TagCategory) {
+    event.preventDefault()
+    setMenu({ kind: 'folder', x: event.clientX, y: event.clientY, folder })
   }
 
   async function moveTagTo(tagId: number, categoryId: number | null) {
@@ -61,24 +83,61 @@ export default function Sidebar() {
     await moveTag(tagId, categoryId)
   }
 
-  const menuItems: MenuItem[] = menu
-    ? [
-        ...categories.map((category) => ({
-          label: category.name,
-          color: category.color,
-          checked: category.id === menu.tag.categoryId,
-          disabled: category.id === menu.tag.categoryId,
-          onSelect: () => moveTagTo(menu.tag.id, category.id)
-        })),
-        {
-          label: 'Ungrouped',
-          color: '#888888',
-          checked: menu.tag.categoryId === null,
-          disabled: menu.tag.categoryId === null,
-          onSelect: () => moveTagTo(menu.tag.id, null)
-        }
+  async function applyColor(color: string) {
+    const folder = recoloring
+    setRecoloring(null)
+    if (!folder) return
+    try {
+      await recolorFolder(folder.id, color)
+      await refreshTracks()
+    } catch {
+      setCategories(await window.api.listCategories())
+    }
+  }
+
+  function folderMenuItems(folder: TagCategory): MenuItem[] {
+    if (isProtectedFolder(folder.name)) {
+      return [
+        { label: 'The Franchise folder cannot be changed', disabled: true, onSelect: () => {} }
       ]
-    : []
+    }
+    return [
+      {
+        label: 'Recolor...',
+        color: folder.color,
+        onSelect: () => {
+          setMenu(null)
+          setRecoloring(folder)
+        }
+      },
+      {
+        label: 'Rename',
+        onSelect: () => {
+          setMenu(null)
+          setEditingId(folder.id)
+        }
+      }
+    ]
+  }
+
+  function tagMenuItems(tag: Tag): MenuItem[] {
+    return [
+      ...categories.map((category) => ({
+        label: category.name,
+        color: category.color,
+        checked: category.id === tag.categoryId,
+        disabled: category.id === tag.categoryId,
+        onSelect: () => moveTagTo(tag.id, category.id)
+      })),
+      {
+        label: 'Ungrouped',
+        color: '#888888',
+        checked: tag.categoryId === null,
+        disabled: tag.categoryId === null,
+        onSelect: () => moveTagTo(tag.id, null)
+      }
+    ]
+  }
 
   function renderTag(tag: Tag) {
     return (
@@ -144,6 +203,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <AddField label="Create folder" placeholder="+ Create folder" onSubmit={createFolder} />
+
       <div className="sidebar-header">
         <button type="button" className="btn sidebar-clear" onClick={clearFilters}>
           Clear filters
@@ -181,22 +241,36 @@ export default function Sidebar() {
           }
         }}
       >
-        {categories.map((category) => (
-          <FolderItem
-            key={category.id}
-            name={category.name}
-            color={category.color}
-            draggable
-            isDragging={draggedId === category.id}
-            dropIndicator={dropTarget && dropTarget.id === category.id ? dropTarget.position : null}
-            onDragStart={(event) => handleDragStart(event, category.id)}
-            onDragOver={(event) => handleDragOver(event, category.id)}
-            onDrop={handleDrop}
-            onDragEnd={resetDrag}
-          >
-            {tags.filter((tag) => tag.categoryId === category.id).map(renderTag)}
-          </FolderItem>
-        ))}
+        {categories.map((category) => {
+          const protectedFolder = isProtectedFolder(category.name)
+          return (
+            <FolderItem
+              key={category.id}
+              name={category.name}
+              color={category.color}
+              draggable
+              isDragging={draggedId === category.id}
+              dropIndicator={
+                dropTarget && dropTarget.id === category.id ? dropTarget.position : null
+              }
+              editing={editingId === category.id}
+              maxNameLength={MAX_FOLDER_NAME}
+              onStartEdit={protectedFolder ? undefined : () => setEditingId(category.id)}
+              onSubmitName={async (name) => {
+                await renameFolder(category.id, name)
+                setEditingId(null)
+              }}
+              onCancelEdit={() => setEditingId(null)}
+              onContextMenu={(event) => openFolderMenu(event, category)}
+              onDragStart={(event) => handleDragStart(event, category.id)}
+              onDragOver={(event) => handleDragOver(event, category.id)}
+              onDrop={handleDrop}
+              onDragEnd={resetDrag}
+            >
+              {tags.filter((tag) => tag.categoryId === category.id).map(renderTag)}
+            </FolderItem>
+          )
+        })}
 
         {ungroupedTags.length > 0 && (
           <FolderItem name="Ungrouped" color="#888888">
@@ -209,11 +283,19 @@ export default function Sidebar() {
         <ContextMenu
           x={menu.x}
           y={menu.y}
-          title={`Move "${menu.tag.name}" to`}
-          items={menuItems}
+          title={menu.kind === 'tag' ? `Move "${menu.tag.name}" to` : menu.folder.name}
+          items={menu.kind === 'tag' ? tagMenuItems(menu.tag) : folderMenuItems(menu.folder)}
           onClose={() => setMenu(null)}
         />
       )}
+
+      <ColorDialog
+        open={recoloring !== null}
+        title={recoloring ? `Color of ${recoloring.name}` : ''}
+        initial={recoloring?.color ?? '#888888'}
+        onApply={applyColor}
+        onCancel={() => setRecoloring(null)}
+      />
     </aside>
   )
 }

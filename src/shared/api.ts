@@ -17,6 +17,8 @@ export type Api = {
   listCategories(): Promise<TagCategory[]>
   createCategory(name: string, color?: string): Promise<TagCategory>
   reorderCategories(ids: number[]): Promise<void>
+  renameCategory(id: number, name: string): Promise<void>
+  recolorCategory(id: number, color: string): Promise<void>
 
   listTags(): Promise<Tag[]>
   createTag(name: string, categoryId: number | null): Promise<Tag>
@@ -43,6 +45,7 @@ export type Api = {
   listPendingAnalysis(): Promise<PendingAnalysis[]>
   saveAnalysis(id: number, input: AnalysisInput): Promise<void>
   clearAnalysisErrors(): Promise<void>
+
   countDeletedTracks(): Promise<number>
   restoreDeletedTracks(): Promise<RestoreResult>
   purgeGoneDeletedTracks(): Promise<PurgeResult>

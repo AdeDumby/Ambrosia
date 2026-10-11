@@ -20,6 +20,8 @@ type LibraryState = {
   refreshTracks: () => Promise<void>
   moveTag: (tagId: number, categoryId: number | null) => Promise<void>
   createFolder: (name: string) => Promise<void>
+  renameFolder: (id: number, name: string) => Promise<void>
+  recolorFolder: (id: number, color: string) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
@@ -49,6 +51,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     await window.api.createCategory(name)
     setCategories(await window.api.listCategories())
   }, [])
+  const renameFolder = useCallback(async (id: number, name: string) => {
+    await window.api.renameCategory(id, name)
+    setCategories(await window.api.listCategories())
+  }, [])
+
+  const recolorFolder = useCallback(async (id: number, color: string) => {
+    await window.api.recolorCategory(id, color)
+    setCategories(await window.api.listCategories())
+  }, [])
 
   useEffect(() => {
     window.api.listCategories().then(setCategories)
@@ -67,7 +78,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         setTracks,
         refreshTracks,
         moveTag,
-        createFolder
+        createFolder,
+        renameFolder,
+        recolorFolder
       }}
     >
       {children}

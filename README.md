@@ -18,7 +18,7 @@
 ## Pages
 
 - Download page to create
-- Folder management? (renaming, recoloring, deleting)
+- Folder management? (deleting)
 - Player controls (Previous, next, shuffle, repeat?)
 
 ---
