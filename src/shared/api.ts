@@ -4,11 +4,13 @@ import type {
   ApplyResult,
   LibraryPaths,
   PendingAnalysis,
+  RestoreResult,
   ScanReport,
   Tag,
   TagCategory,
   Track,
-  TrackKind
+  TrackKind,
+  PurgeResult
 } from './types'
 
 export type Api = {
@@ -41,4 +43,7 @@ export type Api = {
   listPendingAnalysis(): Promise<PendingAnalysis[]>
   saveAnalysis(id: number, input: AnalysisInput): Promise<void>
   clearAnalysisErrors(): Promise<void>
+  countDeletedTracks(): Promise<number>
+  restoreDeletedTracks(): Promise<RestoreResult>
+  purgeGoneDeletedTracks(): Promise<PurgeResult>
 }

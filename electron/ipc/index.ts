@@ -1,17 +1,19 @@
-import { BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
 import type { DatabaseSync } from 'node:sqlite'
 import type { Api } from '../../src/shared/api.ts'
 import { CHANNELS } from '../../src/shared/channels.ts'
-import * as categories from '../services/category.services.ts'
-import * as tags from '../services/tag.services.ts'
-import * as tracks from '../services/track.services.ts'
-import * as settings from '../services/settings.services.ts'
-import * as library from '../services/library.services.ts'
-import * as scan from '../services/scan.services.ts'
-import * as apply from '../services/apply-scan.services.ts'
-import * as deletion from '../services/delete.services.ts'
-import * as analysis from '../services/analysis.service.ts'
 import { assertId, assertName, parseAnalysisInput } from './validate.ts'
+import { BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
+import * as tags from '../services/tag.services.ts'
+import * as scan from '../services/scan.services.ts'
+import * as purge from '../services/purge.services.ts'
+import * as tracks from '../services/track.services.ts'
+import * as deletion from '../services/delete.services.ts'
+import * as library from '../services/library.services.ts'
+import * as restore from '../services/restore.services.ts'
+import * as apply from '../services/apply-scan.services.ts'
+import * as settings from '../services/settings.services.ts'
+import * as analysis from '../services/analysis.services.ts'
+import * as categories from '../services/category.services.ts'
 
 type Handlers = {
   [K in keyof Api]: (
@@ -122,7 +124,10 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     },
     clearAnalysisErrors: () => {
       analysis.clearAnalysisErrors(db)
-    }
+    },
+    countDeletedTracks: () => restore.countDeletedTracks(db),
+    restoreDeletedTracks: () => restore.restoreDeletedTracks(db),
+    purgeGoneDeletedTracks: () => purge.purgeGoneDeletedTracks(db)
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

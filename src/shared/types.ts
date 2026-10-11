@@ -105,3 +105,14 @@ export type PendingAnalysis = {
 
 export type AnalysisInput =
   { ok: true; integrated: number; peak: number; curve: number[] } | { ok: false; message: string }
+
+export type RestoreResult = {
+  restored: number
+  unhidden: number
+  failed: { filename: string; message: string }[]
+}
+
+export type PurgeResult = {
+  purged: number
+  tagsRemoved: number
+}

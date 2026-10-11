@@ -10,7 +10,6 @@
 
 ## Library
 
-- Move the tracks into the good location (personal)
 - Move deleted tracks to _Deleted?
 - Button to restore _Deleted tracks
 - Scan progress updates (popup page that keeps control? (danger usage page while beign written in DB))

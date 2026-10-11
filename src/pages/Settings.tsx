@@ -7,12 +7,13 @@ import ColorField from '../components/item/ColorField'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import SettingsSection from '../components/item/SettingsSection'
 import SegmentedControl from '../components/item/SegmentedControl'
+import AnalysisPanel from '../components/feature/AnalysisPanel'
 import ReviewSettings from '../components/feature/ReviewSettings'
 import ScanReportView from '../components/feature/ScanReportView'
 import PresetSettings from '../components/feature/PresetSettings'
-import AnalysisPanel from '../components/feature/AnalysisPanel'
 import PlaybackSettings from '../components/feature/PlaybackSettings'
 import TrackListSettings from '../components/feature/TrackListSettings'
+import RestoreDeletedPanel from '../components/feature/RestoreDeletedPanel'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
 import type { AppearanceMode, DeleteMode, Density } from '../shared/settings'
 import './Settings.css'
@@ -184,7 +185,7 @@ export default function Settings() {
           />
         </div>
         <p className="settings-hint">{deleteModeHelp[library.deleteMode]}</p>
-
+        <RestoreDeletedPanel />
         <div className="settings-row">
           <span>Look for new and missing files</span>
           <div className="settings-actions">

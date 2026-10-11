@@ -16,8 +16,12 @@ async function reserveName(folder: string, fileName: string): Promise<string> {
   throw new Error('Could not find a free file name')
 }
 
-export async function moveFileUnique(source: string, folder: string): Promise<string> {
-  const target = await reserveName(folder, path.basename(source))
+export async function moveFileUnique(
+  source: string,
+  folder: string,
+  fileName: string = path.basename(source)
+): Promise<string> {
+  const target = await reserveName(folder, fileName)
   try {
     try {
       await rename(source, target)
