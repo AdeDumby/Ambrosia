@@ -7,14 +7,23 @@ export type TagCategory = {
   sortOrder: number
 }
 
+const MAX_NAME = 40
+
 export function createCategory(db: DatabaseSync, name: string, color = '#888888'): TagCategory {
+  const trimmed = name.trim()
+  if (trimmed === '') throw new Error('Give the folder a name.')
+  if (trimmed.length > MAX_NAME) throw new Error(`Use at most ${MAX_NAME} characters.`)
+
+  const taken = db.prepare('SELECT 1 FROM tag_category WHERE name = ? COLLATE NOCASE').get(trimmed)
+  if (taken) throw new Error('A folder with that name already exists.')
+
   const row = db
     .prepare(
       `INSERT INTO tag_category (name, color, sort_order)
        VALUES (?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM tag_category))
        RETURNING id, name, color, sort_order AS sortOrder`
     )
-    .get(name, color)
+    .get(trimmed, color)
   return row as unknown as TagCategory
 }
 

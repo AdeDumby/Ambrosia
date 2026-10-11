@@ -1,12 +1,13 @@
 import { useMemo, useState, type DragEvent, type MouseEvent } from 'react'
 import type { Tag } from '../shared/types'
-import ContextMenu, { type MenuItem } from './item/ContextMenu'
+import AddField from './item/AddField'
+import TagItem from './item/TagItem'
 import FolderItem from './item/FolderItem'
 import SegmentedControl from './item/SegmentedControl'
-import TagItem from './item/TagItem'
-import { useVisibleTracks } from './../hooks/useVisibleTracks'
-import { useFilters, type MatchMode, type TypeFilter } from './../store/FilterContext'
+import ContextMenu, { type MenuItem } from './item/ContextMenu'
 import { useLibrary } from './../store/LibraryContext'
+import { useFilters, type MatchMode, type TypeFilter } from './../store/FilterContext'
+import { useVisibleTracks } from './../hooks/useVisibleTracks'
 import '../styles/Sidebar.css'
 
 const matchOptions: { value: MatchMode; label: string }[] = [
@@ -21,7 +22,7 @@ const typeOptions: { value: TypeFilter; label: string }[] = [
 ]
 
 export default function Sidebar() {
-  const { categories, setCategories, tags, moveTag } = useLibrary()
+  const { categories, setCategories, tags, moveTag, createFolder } = useLibrary()
   const {
     matchMode,
     setMatchMode,
@@ -142,6 +143,7 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
+      <AddField label="Create folder" placeholder="+ Create folder" onSubmit={createFolder} />
       <div className="sidebar-header">
         <button type="button" className="btn sidebar-clear" onClick={clearFilters}>
           Clear filters

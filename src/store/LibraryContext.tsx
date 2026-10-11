@@ -19,6 +19,7 @@ type LibraryState = {
   setTracks: Dispatch<SetStateAction<Track[]>>
   refreshTracks: () => Promise<void>
   moveTag: (tagId: number, categoryId: number | null) => Promise<void>
+  createFolder: (name: string) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
@@ -44,6 +45,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [refreshTags, refreshTracks]
   )
 
+  const createFolder = useCallback(async (name: string) => {
+    await window.api.createCategory(name)
+    setCategories(await window.api.listCategories())
+  }, [])
+
   useEffect(() => {
     window.api.listCategories().then(setCategories)
     void refreshTags()
@@ -60,7 +66,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         tracks,
         setTracks,
         refreshTracks,
-        moveTag
+        moveTag,
+        createFolder
       }}
     >
       {children}

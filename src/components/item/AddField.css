@@ -1,0 +1,50 @@
+.add-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.add-field-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.add-field-row input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.add-field-row button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.add-field-row button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.add-field-row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.add-field-error {
+  margin: 4px 0 0;
+  color: #e05555;
+  font-size: 0.75rem;
+}
