@@ -18,7 +18,6 @@
 ## Pages
 
 - Download page to create
-- Folder management? (deleting)
 - Player controls (Previous, next, shuffle, repeat?)
 
 ---
