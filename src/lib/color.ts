@@ -66,3 +66,21 @@ export function flipLightness(hex: string): string {
   const [hue, saturation, lightness] = hexToHsl(hex)
   return hslToHex(hue, saturation * FLIP_SATURATION, 1 - lightness)
 }
+
+export function parseHex(text: string): string | null {
+  const match = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(text.trim())
+  if (!match) return null
+  const digits = match[1].toLowerCase()
+  const full =
+    digits.length === 3
+      ? digits
+          .split('')
+          .map((digit) => digit + digit)
+          .join('')
+      : digits
+  return `#${full}`
+}
+
+export function isFullHex(text: string): boolean {
+  return /^#?[0-9a-f]{6}$/i.test(text.trim())
+}

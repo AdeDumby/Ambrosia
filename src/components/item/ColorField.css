@@ -1,11 +1,13 @@
 .color-field {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
 }
 
 .color-field-label {
   flex: 1;
+  min-width: 140px;
 }
 
 .color-field input[type='color'] {
@@ -18,9 +20,44 @@
   cursor: pointer;
 }
 
-.color-field-value {
-  width: 70px;
-  color: var(--muted);
+.color-field-hex {
+  width: 88px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
   font-family: monospace;
   font-size: 0.8rem;
+}
+
+.color-field-hex:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.color-field-hex.invalid {
+  border-color: #e05555;
+}
+
+.color-field-button {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.color-field-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.color-field-note {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.75rem;
 }
