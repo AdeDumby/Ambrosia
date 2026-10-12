@@ -158,6 +158,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       assertId(id)
       if (typeof name !== 'string') throw new Error('Invalid name')
       return renaming.renameTrack(db, id, name)
+    },
+    renameTag: (id, name) => {
+      assertId(id)
+      if (typeof name !== 'string') throw new Error('Invalid name')
+      return tags.renameTag(db, id, name)
     }
   }
 

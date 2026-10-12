@@ -9,6 +9,7 @@ import {
   type SetStateAction
 } from 'react'
 import type { Tag, TagCategory, Track } from '../shared/types'
+import { compareNames } from '../shared/tags'
 import { useSettings } from './SettingsContext'
 
 type LibraryState = {
@@ -24,6 +25,7 @@ type LibraryState = {
   renameFolder: (id: number, name: string) => Promise<void>
   recolorFolder: (id: number, color: string) => Promise<void>
   deleteFolder: (id: number, withTags: boolean) => Promise<void>
+  renameTag: (id: number, name: string) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
@@ -34,13 +36,22 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [tags, setTags] = useState<Tag[]>([])
   const [tracks, setTracks] = useState<Track[]>([])
 
-  const refreshTags = useCallback(async () => {
-    setTags(await window.api.listTags())
-  }, [])
-
   const refreshTracks = useCallback(async () => {
     setTracks(await window.api.listTracks())
   }, [])
+
+  const refreshTags = useCallback(async () => {
+    const loaded = await window.api.listTags()
+    setTags([...loaded].sort((a, b) => compareNames(a.name, b.name)))
+  }, [])
+
+  const renameTag = useCallback(
+    async (id: number, name: string) => {
+      await window.api.renameTag(id, name)
+      await Promise.all([refreshTags(), refreshTracks()])
+    },
+    [refreshTags, refreshTracks]
+  )
 
   const moveTag = useCallback(
     async (tagId: number, categoryId: number | null) => {
@@ -103,7 +114,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         createFolder,
         renameFolder,
         recolorFolder,
-        deleteFolder
+        deleteFolder,
+        renameTag
       }}
     >
       {children}

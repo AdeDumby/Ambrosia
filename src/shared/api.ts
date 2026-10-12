@@ -28,6 +28,7 @@ export type Api = {
   untagTrack(trackId: number, tagId: number): Promise<boolean>
   addTagToTrackByName(trackId: number, name: string, categoryId?: number | null): Promise<boolean>
   setTagCategory(tagId: number, categoryId: number | null): Promise<void>
+  renameTag(id: number, name: string): Promise<string>
 
   listTracks(): Promise<Track[]>
   getTrack(id: number): Promise<Track | null>

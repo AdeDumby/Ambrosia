@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { compareNames } from '../../src/shared/tags.ts'
 import type { Track, TrackKind, TrackTag } from '../../src/shared/types.ts'
 
 type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }

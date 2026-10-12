@@ -1,6 +1,5 @@
+import { foldText } from '../shared/tags'
+
 export function normalizeForSearch(value: string): string {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
+  return foldText(value)
 }

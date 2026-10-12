@@ -17,7 +17,6 @@
 ## Pages
 
 - Download page to create
-- Player controls (Previous, next, shuffle, repeat?)
 
 ---
 
@@ -32,10 +31,5 @@
 ### KNOWN ISSUES TO FIX FOR FUTURE VERSIONS
 
 - Every row gets redrawn on tag change between folders
-- Tag sorting ignores accents
-- Tags aren't name conventioned
 - Moved or renamed files are lost
 - Pressing finish too quickly auto-marks two tracks as reviewed
-
-Rename 999 to Zero Escape: 999
-Rename PMMM to Puella Magi Madoka Magica

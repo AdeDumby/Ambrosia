@@ -60,7 +60,8 @@ export default function Sidebar() {
     renameFolder,
     recolorFolder,
     deleteFolder,
-    refreshTracks
+    refreshTracks,
+    renameTag
   } = useLibrary()
   const {
     matchMode,
@@ -77,6 +78,7 @@ export default function Sidebar() {
 
   const [menu, setMenu] = useState<Menu | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingTagId, setEditingTagId] = useState<number | null>(null)
   const [recoloring, setRecoloring] = useState<TagCategory | null>(null)
   const [deleting, setDeleting] = useState<Deleting | null>(null)
   const [folderError, setFolderError] = useState<string | null>(null)
@@ -186,6 +188,13 @@ export default function Sidebar() {
 
   function tagMenuItems(tag: Tag): MenuItem[] {
     return [
+      {
+        label: 'Rename',
+        onSelect: () => {
+          setMenu(null)
+          setEditingTagId(tag.id)
+        }
+      },
       ...categories.map((category) => ({
         label: category.name,
         color: category.color,
@@ -210,8 +219,17 @@ export default function Sidebar() {
         name={tag.name}
         count={counts.get(tag.id) ?? 0}
         state={tagFilters[tag.id]}
+        editing={editingTagId === tag.id}
         onClick={() => cycleTagFilter(tag.id)}
+        onDoubleClick={() => {
+          setEditingTagId(tag.id)
+        }}
         onContextMenu={(event) => openTagMenu(event, tag)}
+        onSubmitName={async (next) => {
+          await renameTag(tag.id, next)
+          setEditingTagId(null)
+        }}
+        onCancelEdit={() => setEditingTagId(null)}
       />
     )
   }

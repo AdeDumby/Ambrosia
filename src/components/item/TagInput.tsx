@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent } from 'react'
+import { foldText } from '../../shared/tags'
 import './TagInput.css'
 
 export type TagOption = { id: number; name: string }
@@ -14,10 +15,10 @@ const MIN_CHARS = 3
 export default function TagInput({ options, onAdd, onCreate }: Props) {
   const [value, setValue] = useState('')
 
-  const typed = value.toLowerCase()
+  const typed = foldText(value)
   const suggestion =
     value.length >= MIN_CHARS
-      ? options.find((option) => option.name.toLowerCase().startsWith(typed))
+      ? options.find((option) => foldText(option.name).startsWith(typed))
       : undefined
   const remainder = suggestion ? suggestion.name.slice(value.length) : ''
 
@@ -30,7 +31,7 @@ export default function TagInput({ options, onAdd, onCreate }: Props) {
       const wanted = value.trim()
       if (wanted === '') return
 
-      const exact = options.find((option) => option.name.toLowerCase() === wanted.toLowerCase())
+      const exact = options.find((option) => foldText(option.name) === foldText(wanted))
       if (exact) {
         onAdd(exact.id)
       } else if (onCreate) {

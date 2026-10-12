@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { MAX_TAG_NAME, foldText, formatTagName } from '../../src/shared/tags.ts'
 
 export type Tag = {
   id: number
@@ -6,14 +7,42 @@ export type Tag = {
   categoryId: number | null
 }
 
+function cleanTagName(raw: string, ignoreId?: number): string {
+  const name = formatTagName(raw)
+  if (name === '') throw new Error('Give the tag a name.')
+  if (name.length > MAX_TAG_NAME) throw new Error(`Use at most ${MAX_TAG_NAME} characters.`)
+  return name
+}
+
+function findTagId(db: DatabaseSync, name: string): number | undefined {
+  const key = foldText(name)
+  const rows = db.prepare('SELECT id, name FROM tag').all() as unknown as {
+    id: number
+    name: string
+  }[]
+  return rows.find((row) => foldText(row.name) === key)?.id
+}
+
 export function createTag(db: DatabaseSync, name: string, categoryId: number | null): Tag {
-  const row = db
+  const cleaned = cleanTagName(name)
+  if (findTagId(db, cleaned) !== undefined) throw new Error('A tag with that name already exists.')
+  return db
     .prepare(
       `INSERT INTO tag (name, category_id) VALUES (?, ?)
        RETURNING id, name, category_id AS categoryId`
     )
-    .get(name, categoryId)
-  return row as unknown as Tag
+    .get(cleaned, categoryId) as unknown as Tag
+}
+
+export function renameTag(db: DatabaseSync, id: number, name: string): string {
+  const cleaned = cleanTagName(name)
+  const existing = findTagId(db, cleaned)
+  if (existing !== undefined && existing !== id) {
+    throw new Error('A tag with that name already exists.')
+  }
+  const result = db.prepare('UPDATE tag SET name = ? WHERE id = ?').run(cleaned, id)
+  if (Number(result.changes) === 0) throw new Error('That tag does not exist.')
+  return cleaned
 }
 
 export function listTags(db: DatabaseSync): Tag[] {
@@ -52,23 +81,23 @@ export function addTagToTrackByName(
 ): boolean {
   db.exec('BEGIN')
   try {
-    const existing = db.prepare('SELECT id FROM tag WHERE name = ?').get(name) as unknown as
-      { id: number } | undefined
+    const cleaned = cleanTagName(name)
+    const existingId = findTagId(db, cleaned)
 
-    const tagId = existing
-      ? existing.id
-      : (
-          db
-            .prepare('INSERT INTO tag (name, category_id) VALUES (?, ?) RETURNING id')
-            .get(name, categoryId) as unknown as { id: number }
-        ).id
+    const tagId =
+      existingId ??
+      (
+        db
+          .prepare('INSERT INTO tag (name, category_id) VALUES (?, ?) RETURNING id')
+          .get(cleaned, categoryId) as unknown as { id: number }
+      ).id
 
     db.prepare('INSERT OR IGNORE INTO track_tag (track_id, tag_id) VALUES (?, ?)').run(
       trackId,
       tagId
     )
     db.exec('COMMIT')
-    return existing === undefined
+    return existingId === undefined
   } catch (error) {
     db.exec('ROLLBACK')
     throw error

@@ -26,6 +26,7 @@ export type NewTrack = {
 }
 
 export type TrackTag = {
+  folderOrder: number
   id: number
   name: string
   color: string | null
