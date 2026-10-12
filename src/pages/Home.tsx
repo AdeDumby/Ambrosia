@@ -53,9 +53,13 @@ export default function Home() {
     return () => observer.disconnect()
   }, [hasMore, limit, listKey, pageSize])
 
+  const queue = useMemo(
+    () => visibleTracks.map((track) => ({ id: track.id, filename: track.filename })),
+    [visibleTracks]
+  )
   const play = useCallback(
-    (id: number, filename: string) => toggleTrack({ id, filename }),
-    [toggleTrack]
+    (id: number, filename: string) => toggleTrack({ id, filename }, queue),
+    [toggleTrack, queue]
   )
   const requestDelete = useCallback(
     (id: number, filename: string) => setPendingDelete({ id, filename }),
