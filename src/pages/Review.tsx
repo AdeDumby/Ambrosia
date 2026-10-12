@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useRef } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import InlineError from '../components/item/InlineError'
 import TrackItem from '../components/item/TrackItem'
@@ -42,8 +42,12 @@ export default function Review() {
     playTrack({ id: currentId, filename: currentName })
   }, [currentId, currentName, playTrack])
 
+  const lastFinish = useRef(0)
   async function finish() {
-    if (current) await setReviewed(current.id, true)
+    const now = Date.now()
+    if (!current || now - lastFinish.current < 500) return
+    lastFinish.current = now
+    await setReviewed(current.id, true)
   }
 
   async function confirmDelete() {
