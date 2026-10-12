@@ -7,6 +7,7 @@ import * as tags from '../services/tag.services.ts'
 import * as scan from '../services/scan.services.ts'
 import * as purge from '../services/purge.services.ts'
 import * as tracks from '../services/track.services.ts'
+import * as scanState from '../services/scan-progress.ts'
 import * as deletion from '../services/delete.services.ts'
 import * as renaming from '../services/rename.services.ts'
 import * as library from '../services/library.services.ts'
@@ -126,8 +127,18 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       const problem = await shell.openPath(folder)
       if (problem) throw new Error(problem)
     },
-    scanLibrary: () => scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder)),
-    applyScan: () => apply.applyScan(db, library.getLibraryPaths(db, documentsFolder)),
+    scanLibrary: () =>
+      scanState.withScanRun(() =>
+        scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder))
+      ),
+    applyScan: () =>
+      scanState.withScanRun(() =>
+        apply.applyScan(db, library.getLibraryPaths(db, documentsFolder))
+      ),
+    getScanProgress: () => scanState.getScanProgress(),
+    cancelScan: () => {
+      scanState.cancelScan()
+    },
     listPendingAnalysis: () => analysis.listPendingAnalysis(db),
     saveAnalysis: (id, input) => {
       assertId(id)

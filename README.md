@@ -38,3 +38,4 @@
 - Pressing finish too quickly auto-marks two tracks as reviewed
 
 Rename 999 to Zero Escape: 999
+Rename PMMM to Puella Magi Madoka Magica

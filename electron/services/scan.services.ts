@@ -12,6 +12,7 @@ import type {
 } from '../../src/shared/types.ts'
 import { AUDIO_EXTENSIONS } from './audio.services.ts'
 import { probeDuration } from './probe.services.ts'
+import { advanceScan, showScanning, throwIfCancelled, updateScan } from './scan-progress.ts'
 
 const PROBE_PARALLELISM = 4
 const STAT_PARALLELISM = 16
@@ -40,13 +41,28 @@ async function mapLimit<T, R>(
 ): Promise<R[]> {
   const results = new Array<R>(items.length)
   let next = 0
+  let aborted = false
+
   async function worker(): Promise<void> {
-    while (next < items.length) {
-      const index = next++
-      results[index] = await work(items[index])
+    while (next < items.length && !aborted) {
+      try {
+        throwIfCancelled()
+        const index = next++
+        results[index] = await work(items[index])
+      } catch (error) {
+        aborted = true
+        throw error
+      }
     }
   }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+
+  const settled = await Promise.allSettled(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  )
+  const failed = settled.find(
+    (outcome): outcome is PromiseRejectedResult => outcome.status === 'rejected'
+  )
+  if (failed) throw failed.reason
   return results
 }
 
@@ -98,6 +114,7 @@ async function walk(
   files: string[],
   problems: ScanProblem[]
 ): Promise<void> {
+  throwIfCancelled()
   let entries: Dirent[]
   try {
     entries = await readdir(folder, { withFileTypes: true })
@@ -107,11 +124,13 @@ async function walk(
   }
 
   for (const entry of entries) {
+    throwIfCancelled()
     const full = path.join(folder, entry.name)
     if (entry.isDirectory()) {
       if (pathKey(full) !== skipKey) await walk(full, skipKey, files, problems)
     } else if (entry.isFile() && AUDIO_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) {
       files.push(full)
+      updateScan({ found: files.length, current: entry.name })
     }
   }
 }
@@ -148,7 +167,16 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
 
   const unknownFiles = files.filter((file) => !knownKeys.has(pathKey(file)))
 
+  updateScan({
+    phase: 'reading',
+    found: files.length,
+    done: 0,
+    total: unknownFiles.length + known.length,
+    current: ''
+  })
+
   const probed = await mapLimit(unknownFiles, PROBE_PARALLELISM, async (file) => {
+    showScanning(path.basename(file))
     try {
       const [durationSec, info] = await Promise.all([probeDuration(file), stat(file)])
       const candidate: ScanCandidate = {
@@ -162,17 +190,26 @@ export async function scanLibrary(db: DatabaseSync, paths: LibraryPaths): Promis
     } catch (error) {
       problems.push({ path: file, message: describe(error) })
       return null
+    } finally {
+      advanceScan()
     }
   })
   const toAdd = probed.filter((candidate): candidate is ScanCandidate => candidate !== null)
 
+  updateScan({ phase: 'checking', current: '' })
+
   const statuses = await mapLimit(known, STAT_PARALLELISM, async (row) => {
+    showScanning(row.filename)
     let status = await fileStatus(row.path)
     if (status === 'missing' && row.deleted === 1 && row.original_path) {
       status = await fileStatus(row.original_path)
     }
+    advanceScan()
     return { row, status }
   })
+
+  throwIfCancelled()
+
   const missing: ScanMissing[] = []
   for (const { row, status } of statuses) {
     if (status === 'missing') {

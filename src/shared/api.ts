@@ -10,7 +10,8 @@ import type {
   TagCategory,
   Track,
   TrackKind,
-  PurgeResult
+  PurgeResult,
+  ScanProgress
 } from './types'
 
 export type Api = {
@@ -51,4 +52,7 @@ export type Api = {
   countDeletedTracks(): Promise<number>
   restoreDeletedTracks(): Promise<RestoreResult>
   purgeGoneDeletedTracks(): Promise<PurgeResult>
+
+  getScanProgress(): Promise<ScanProgress>
+  cancelScan(): Promise<void>
 }

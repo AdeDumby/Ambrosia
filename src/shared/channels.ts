@@ -31,5 +31,7 @@ export const CHANNELS = {
   renameCategory: 'categories:rename',
   recolorCategory: 'categories:recolor',
   deleteCategory: 'categories:delete',
-  renameTrack: 'tracks:rename'
+  renameTrack: 'tracks:rename',
+  getScanProgress: 'library:scan-progress',
+  cancelScan: 'library:cancel-scan'
 } as const satisfies Record<keyof Api, string>

@@ -12,13 +12,18 @@ import type { PendingAnalysis } from '../shared/types'
 import { useLibrary } from './LibraryContext'
 
 type Progress = { done: number; total: number; current: string }
-type Summary = { analyzed: number; failed: number; stopped: boolean; errors: string[] }
+export type AnalysisSummary = {
+  analyzed: number
+  failed: number
+  stopped: boolean
+  errors: string[]
+}
 
 type AnalysisState = {
   running: boolean
   progress: Progress | null
-  summary: Summary | null
-  start: (options?: { retryErrors?: boolean }) => Promise<void>
+  summary: AnalysisSummary | null
+  start: (options?: { retryErrors?: boolean }) => Promise<AnalysisSummary | null>
   stop: () => void
 }
 
@@ -32,13 +37,13 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
   const { refreshTracks } = useLibrary()
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState<Progress | null>(null)
-  const [summary, setSummary] = useState<Summary | null>(null)
+  const [summary, setSummary] = useState<AnalysisSummary | null>(null)
   const runningRef = useRef(false)
   const stopRef = useRef(false)
 
   const start = useCallback(
-    async (options?: { retryErrors?: boolean }) => {
-      if (runningRef.current) return
+    async (options?: { retryErrors?: boolean }): Promise<AnalysisSummary | null> => {
+      if (runningRef.current) return null
       runningRef.current = true
       stopRef.current = false
       setRunning(true)
@@ -47,6 +52,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
       let analyzed = 0
       let failed = 0
       const errors: string[] = []
+      let result: AnalysisSummary
 
       try {
         if (options?.retryErrors) await window.api.clearAnalysisErrors()
@@ -58,14 +64,14 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           setProgress({ done: index, total: pending.length, current: track.filename })
 
           try {
-            const result = await analyzeTrack(track.id, track.durationSec)
+            const measured = await analyzeTrack(track.id, track.durationSec)
             await window.api.saveAnalysis(track.id, {
               ok: true,
-              integrated: result.loudness.integrated,
-              peak: result.loudness.peak,
-              curve: result.loudness.curve
+              integrated: measured.loudness.integrated,
+              peak: measured.loudness.peak,
+              curve: measured.loudness.curve
             })
-            if (Number.isFinite(result.loudness.integrated)) analyzed += 1
+            if (Number.isFinite(measured.loudness.integrated)) analyzed += 1
             else failed += 1
           } catch (error) {
             const message = describeError(error)
@@ -79,15 +85,17 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        setSummary({ analyzed, failed, stopped: stopRef.current, errors })
+        result = { analyzed, failed, stopped: stopRef.current, errors }
       } catch (error) {
-        setSummary({ analyzed, failed, stopped: true, errors: [describeError(error)] })
-      } finally {
-        runningRef.current = false
-        setRunning(false)
-        setProgress(null)
-        await refreshTracks().catch(() => {})
+        result = { analyzed, failed, stopped: true, errors: [describeError(error)] }
       }
+
+      runningRef.current = false
+      setSummary(result)
+      setRunning(false)
+      setProgress(null)
+      await refreshTracks().catch(() => {})
+      return result
     },
     [refreshTracks]
   )

@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite'
 import type { ApplyResult, LibraryPaths } from '../../src/shared/types.ts'
+import { throwIfCancelled, updateScan } from './scan-progress.ts'
 import { removeUnusedLooseTags } from './tag.services.ts'
 import { scanLibrary } from './scan.services.ts'
 
@@ -9,6 +10,8 @@ type IdRow = { id: number }
 
 export async function applyScan(db: DatabaseSync, paths: LibraryPaths): Promise<ApplyResult> {
   const report = await scanLibrary(db, paths)
+  throwIfCancelled()
+  updateScan({ phase: 'applying', done: 0, total: null, current: '' })
   const toDrop = report.missing.filter((track) => !track.folderGone)
 
   let added = 0
@@ -99,6 +102,7 @@ export async function applyScan(db: DatabaseSync, paths: LibraryPaths): Promise<
     skipped: report.missing.length - toDrop.length,
     tagsCreated,
     tagsRemoved,
-    problems: report.problems
+    problems: report.problems,
+    filesFound: report.filesFound
   }
 }

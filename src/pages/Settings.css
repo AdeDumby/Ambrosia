@@ -86,3 +86,11 @@
   color: inherit;
   font: inherit;
 }
+
+.analysis-errors {
+  margin: 0;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}

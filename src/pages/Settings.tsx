@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react'
-import { useLibrary } from '../store/LibraryContext'
-import { useAnalysis } from '../store/AnalysisContext'
-import { useSettings } from '../store/SettingsContext'
-import PathField from '../components/item/PathField'
-import ColorField from '../components/item/ColorField'
-import ConfirmDialog from '../components/item/ConfirmDialog'
-import SettingsSection from '../components/item/SettingsSection'
-import SegmentedControl from '../components/item/SegmentedControl'
-import AnalysisPanel from '../components/feature/AnalysisPanel'
+import PlaybackSettings from '../components/feature/PlaybackSettings'
+import PresetSettings from '../components/feature/PresetSettings'
+import RestoreDeletedPanel from '../components/feature/RestoreDeletedPanel'
 import ReviewSettings from '../components/feature/ReviewSettings'
 import ScanReportView from '../components/feature/ScanReportView'
-import PresetSettings from '../components/feature/PresetSettings'
-import PlaybackSettings from '../components/feature/PlaybackSettings'
 import TrackListSettings from '../components/feature/TrackListSettings'
-import RestoreDeletedPanel from '../components/feature/RestoreDeletedPanel'
-import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
+import ColorField from '../components/item/ColorField'
+import ConfirmDialog from '../components/item/ConfirmDialog'
+import PathField from '../components/item/PathField'
+import SegmentedControl from '../components/item/SegmentedControl'
+import SettingsSection from '../components/item/SettingsSection'
+import { useScanRun } from '../store/ScanRunContext'
+import { useSettings } from '../store/SettingsContext'
 import type { AppearanceMode, DeleteMode, Density } from '../shared/settings'
+import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
 import './Settings.css'
 
 const densityOptions: { value: Density; label: string }[] = [
@@ -55,7 +53,7 @@ function confirmMessage(report: ScanReport): string {
   const dropped = droppableCount(report)
   if (dropped > 0) actions.push(`remove ${plural(dropped, 'missing track')} from the library`)
 
-  let message = `This will ${actions.join(' and ')}. Files on disk are not touched. Tags without a folder that end up on no track are removed too.`
+  let message = `This will ${actions.join(' and ')}, then measure the loudness of the new tracks. Files on disk are not touched. Tags without a folder that end up on no track are removed too.`
   const skipped = report.missing.length - dropped
   if (skipped > 0) {
     message += ` ${plural(skipped, 'track')} in missing folders will be left alone.`
@@ -73,17 +71,12 @@ function describeResult(result: ApplyResult): string {
 
 export default function Settings() {
   const { settings, updateAppearance, resetAppearance, updateLibrary } = useSettings()
-  const { refreshTracks, refreshTags } = useLibrary()
+  const { lastReport, lastApplyResult, busy, startScan, startApply, clearReport } = useScanRun()
   const { appearance, library } = settings
 
   const [paths, setPaths] = useState<LibraryPaths | null>(null)
   const [libraryError, setLibraryError] = useState<string | null>(null)
-  const [report, setReport] = useState<ScanReport | null>(null)
-  const [scanning, setScanning] = useState(false)
-  const [applying, setApplying] = useState(false)
   const [confirmingApply, setConfirmingApply] = useState(false)
-  const [applyResult, setApplyResult] = useState<ApplyResult | null>(null)
-  const { start: startAnalysis } = useAnalysis()
 
   useEffect(() => {
     window.api
@@ -92,7 +85,8 @@ export default function Settings() {
       .catch(() => setLibraryError('Could not read the library location.'))
   }, [])
 
-  const canApply = report !== null && (report.toAdd.length > 0 || droppableCount(report) > 0)
+  const canApply =
+    lastReport !== null && (lastReport.toAdd.length > 0 || droppableCount(lastReport) > 0)
 
   async function chooseFolder() {
     setLibraryError(null)
@@ -100,8 +94,7 @@ export default function Settings() {
       const chosen = await window.api.chooseLibraryFolder()
       if (chosen) {
         setPaths(chosen)
-        setReport(null)
-        setApplyResult(null)
+        clearReport()
       }
     } catch {
       setLibraryError('That folder cannot be used. It may be read-only or unavailable.')
@@ -115,47 +108,6 @@ export default function Settings() {
     } catch {
       setLibraryError('Could not open the library folder. It may have been moved or deleted.')
     }
-  }
-
-  async function scan() {
-    setLibraryError(null)
-    setApplyResult(null)
-    setScanning(true)
-    try {
-      setReport(await window.api.scanLibrary())
-    } catch {
-      setReport(null)
-      setLibraryError('The scan failed. Check that the library folder is available.')
-    } finally {
-      setScanning(false)
-    }
-  }
-
-  async function applyScan() {
-    setConfirmingApply(false)
-    setLibraryError(null)
-    setApplying(true)
-
-    let result: ApplyResult
-    try {
-      result = await window.api.applyScan()
-    } catch {
-      setLibraryError('Applying the scan failed, and nothing was changed.')
-      setApplying(false)
-      return
-    }
-
-    setApplyResult(result)
-    try {
-      await Promise.all([refreshTracks(), refreshTags()])
-      setReport(await window.api.scanLibrary())
-    } catch {
-      setLibraryError(
-        'The changes were applied, but the view could not be refreshed. Reload the window.'
-      )
-    }
-    setApplying(false)
-    void startAnalysis()
   }
 
   return (
@@ -185,21 +137,23 @@ export default function Settings() {
           />
         </div>
         <p className="settings-hint">{deleteModeHelp[library.deleteMode]}</p>
+
         <RestoreDeletedPanel />
+
         <div className="settings-row">
           <span>Look for new and missing files</span>
           <div className="settings-actions">
-            <button type="button" className="btn" disabled={scanning || applying} onClick={scan}>
-              {scanning ? 'Scanning...' : 'Scan library'}
+            <button type="button" className="btn" disabled={busy} onClick={() => void startScan()}>
+              Scan library
             </button>
             {canApply && (
               <button
                 type="button"
                 className="btn btn-primary"
-                disabled={scanning || applying}
+                disabled={busy}
                 onClick={() => setConfirmingApply(true)}
               >
-                {applying ? 'Applying...' : 'Apply changes'}
+                Apply changes
               </button>
             )}
           </div>
@@ -208,7 +162,6 @@ export default function Settings() {
           A file that was moved or renamed counts as one removed track and one new track, so it
           starts again without its tags.
         </p>
-        <AnalysisPanel />
 
         {libraryError && (
           <p className="settings-error" role="alert">
@@ -216,15 +169,17 @@ export default function Settings() {
           </p>
         )}
 
-        {applyResult && (
+        {lastApplyResult && (
           <p className="settings-success" role="status">
-            {describeResult(applyResult)}
+            {describeResult(lastApplyResult)}
           </p>
         )}
 
-        {report && <ScanReportView report={report} />}
+        {lastReport && <ScanReportView report={lastReport} />}
       </SettingsSection>
+
       <PresetSettings />
+
       <SettingsSection
         title="Appearance"
         description="Changes apply immediately and are saved automatically."
@@ -242,6 +197,7 @@ export default function Settings() {
           The colors below are your base palette. In the other mode, the app converts them
           automatically.
         </p>
+
         <ColorField
           label="Accent color"
           value={appearance.accentColor}
@@ -283,16 +239,21 @@ export default function Settings() {
           Reset to default
         </button>
       </SettingsSection>
+
       <PlaybackSettings />
       <ReviewSettings />
       <TrackListSettings />
+
       <ConfirmDialog
         open={confirmingApply}
         title="Apply the scan?"
-        message={report ? confirmMessage(report) : ''}
+        message={lastReport ? confirmMessage(lastReport) : ''}
         confirmLabel="Apply"
         cancelLabel="Cancel"
-        onConfirm={applyScan}
+        onConfirm={() => {
+          setConfirmingApply(false)
+          void startApply()
+        }}
         onCancel={() => setConfirmingApply(false)}
       />
     </div>

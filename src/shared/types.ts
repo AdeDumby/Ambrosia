@@ -89,6 +89,7 @@ export type ScanReport = {
 }
 
 export type ApplyResult = {
+  filesFound: number
   added: number
   dropped: number
   skipped: number
@@ -115,4 +116,15 @@ export type RestoreResult = {
 export type PurgeResult = {
   purged: number
   tagsRemoved: number
+}
+
+export type ScanPhase = 'idle' | 'walking' | 'reading' | 'checking' | 'applying'
+
+export type ScanProgress = {
+  running: boolean
+  phase: ScanPhase
+  found: number
+  done: number
+  total: number | null
+  current: string
 }
