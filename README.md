@@ -10,8 +10,7 @@
 
 ## Library
 
-- Scan progress updates (popup page that keeps control? (danger usage page while beign written in DB))
-- Double click on a track to rename it (fieldInput with content already inside, looks at where the click was done, not default full select)
+- Nothing left here!
 
 ---
 
@@ -37,3 +36,5 @@
 - Tags aren't name conventioned
 - Moved or renamed files are lost
 - Pressing finish too quickly auto-marks two tracks as reviewed
+
+Rename 999 to Zero Escape: 999
