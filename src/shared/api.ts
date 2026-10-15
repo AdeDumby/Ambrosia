@@ -1,4 +1,5 @@
 import type { Settings } from './settings'
+import type { DownloadState } from './download'
 import type {
   AnalysisInput,
   ApplyResult,
@@ -56,4 +57,9 @@ export type Api = {
 
   getScanProgress(): Promise<ScanProgress>
   cancelScan(): Promise<void>
+
+  getDownloadState(): Promise<DownloadState>
+  startDownload(franchise: string, url: string): Promise<void>
+  cancelDownload(): Promise<void>
+  resetDownload(): Promise<void>
 }

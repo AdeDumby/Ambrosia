@@ -34,5 +34,9 @@ export const CHANNELS = {
   renameTrack: 'tracks:rename',
   getScanProgress: 'library:scan-progress',
   cancelScan: 'library:cancel-scan',
-  renameTag: 'tags:rename'
+  renameTag: 'tags:rename',
+  getDownloadState: 'download:state',
+  startDownload: 'download:start',
+  cancelDownload: 'download:cancel',
+  resetDownload: 'download:reset'
 } as const satisfies Record<keyof Api, string>

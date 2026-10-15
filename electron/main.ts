@@ -6,6 +6,7 @@ import { registerIpc } from './ipc/index.ts'
 import { serveAudio } from './services/audio.services.ts'
 import { getTrackPath } from './services/track.services.ts'
 import { ensureLibraryFolders, getLibraryPaths } from './services/library.services.ts'
+import { cancelDownload } from './services/download.service.ts'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -63,6 +64,7 @@ app.whenReady().then(() => {
   createWindow()
 })
 
+app.on('before-quit', cancelDownload)
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })

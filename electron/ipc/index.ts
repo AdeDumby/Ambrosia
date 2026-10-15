@@ -13,6 +13,7 @@ import * as renaming from '../services/rename.services.ts'
 import * as library from '../services/library.services.ts'
 import * as restore from '../services/restore.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
+import * as downloads from '../services/download.service.ts'
 import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
 import * as categories from '../services/category.services.ts'
@@ -163,6 +164,21 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
       assertId(id)
       if (typeof name !== 'string') throw new Error('Invalid name')
       return tags.renameTag(db, id, name)
+    },
+    getDownloadState: () => downloads.getDownloadState(),
+    startDownload: (franchise, url) => {
+      if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')
+      return downloads.startDownload(
+        library.getLibraryPaths(db, documentsFolder).folder,
+        franchise,
+        url
+      )
+    },
+    cancelDownload: () => {
+      downloads.cancelDownload()
+    },
+    resetDownload: () => {
+      downloads.resetDownload()
     }
   }
 

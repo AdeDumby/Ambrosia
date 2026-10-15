@@ -9,8 +9,9 @@ import { LibraryProvider } from '../store/LibraryContext'
 import { PlayerProvider } from '../store/PlayerContext'
 import { ScanRunProvider } from '../store/ScanRunContext'
 import { SettingsProvider } from '../store/SettingsContext'
+import { DownloadProvider } from '../store/DownloadContext'
 
-const FOCUSED_PAGES = ['/review', '/settings']
+const FOCUSED_PAGES = ['/review', '/settings', '/download']
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -22,19 +23,21 @@ export default function Layout() {
         <PlayerProvider>
           <AnalysisProvider>
             <ScanRunProvider>
-              <FilterProvider>
-                <div className="app-shell">
-                  {!focused && <Sidebar />}
-                  <div className="main-area">
-                    <Topbar minimal={focused} />
-                    <main className="content">
-                      <Outlet />
-                    </main>
-                    <Footer />
+              <DownloadProvider>
+                <FilterProvider>
+                  <div className="app-shell">
+                    {!focused && <Sidebar />}
+                    <div className="main-area">
+                      <Topbar minimal={focused} />
+                      <main className="content">
+                        <Outlet />
+                      </main>
+                      <Footer />
+                    </div>
                   </div>
-                </div>
-                <ScanDialog />
-              </FilterProvider>
+                  <ScanDialog />
+                </FilterProvider>
+              </DownloadProvider>
             </ScanRunProvider>
           </AnalysisProvider>
         </PlayerProvider>

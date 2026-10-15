@@ -5,6 +5,7 @@ import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import { SORT_OPTIONS } from '../lib/sortTracks'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
+import { useDownload } from '../store/DownloadContext'
 import '../styles/Topbar.css'
 
 type TopbarProps = {
@@ -13,12 +14,14 @@ type TopbarProps = {
 
 const tabs = [
   { to: '/', label: 'Library', end: true },
-  { to: '/review', label: 'Review' }
+  { to: '/review', label: 'Review' },
+  { to: '/download', label: 'Download' }
 ]
 
 export default function Topbar({ minimal = false }: TopbarProps) {
   const { tracks } = useLibrary()
   const { search, setSearch, sort, setSort } = useFilters()
+  const { state: download } = useDownload()
   const visibleTracks = useVisibleTracks()
   const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`
 
@@ -49,6 +52,9 @@ export default function Topbar({ minimal = false }: TopbarProps) {
         {tabs.map((tab) => (
           <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab">
             {tab.label}
+            {tab.to === '/download' && download.phase === 'downloading' && (
+              <span className="tab-dot" aria-label="Download in progress" />
+            )}
           </NavLink>
         ))}
         <NavLink to="/settings" className="tab tab-right">
