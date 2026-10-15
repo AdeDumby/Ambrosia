@@ -1,5 +1,4 @@
-import type { MouseEvent } from 'react'
-import { useRef } from 'react'
+import { useEffect, useRef, type MouseEvent } from 'react'
 import { MAX_TAG_NAME } from '../../shared/tags'
 import InlineEdit from './InlineEdit'
 import './TagItem.css'
@@ -16,6 +15,8 @@ type Props = {
   onCancelEdit?: () => void
 }
 
+const CLICK_DELAY_MS = 250
+
 export default function TagItem({
   name,
   count,
@@ -27,19 +28,8 @@ export default function TagItem({
   onSubmitName,
   onCancelEdit
 }: Props) {
-  const marker = state === 'include' ? '+' : state === 'exclude' ? '−' : ''
-
   const timer = useRef<number | undefined>(undefined)
-
-  function handleClick() {
-    window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => onClick?.(), 250)
-  }
-
-  function handleDoubleClick() {
-    window.clearTimeout(timer.current)
-    onDoubleClick?.()
-  }
+  useEffect(() => () => window.clearTimeout(timer.current), [])
 
   if (editing && onSubmitName && onCancelEdit) {
     return (
@@ -54,13 +44,21 @@ export default function TagItem({
     )
   }
 
+  const marker = state === 'include' ? '+' : state === 'exclude' ? '−' : ''
+
   return (
     <button
       type="button"
       className={`tag-item ${state ?? ''}`}
       aria-pressed={state !== undefined}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={() => {
+        window.clearTimeout(timer.current)
+        timer.current = window.setTimeout(() => onClick?.(), CLICK_DELAY_MS)
+      }}
+      onDoubleClick={() => {
+        window.clearTimeout(timer.current)
+        onDoubleClick?.()
+      }}
       onContextMenu={onContextMenu}
     >
       <span className="tag-item-marker" aria-hidden="true">

@@ -221,9 +221,7 @@ export default function Sidebar() {
         state={tagFilters[tag.id]}
         editing={editingTagId === tag.id}
         onClick={() => cycleTagFilter(tag.id)}
-        onDoubleClick={() => {
-          setEditingTagId(tag.id)
-        }}
+        onDoubleClick={() => setEditingTagId(tag.id)}
         onContextMenu={(event) => openTagMenu(event, tag)}
         onSubmitName={async (next) => {
           await renameTag(tag.id, next)
