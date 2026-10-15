@@ -1,5 +1,6 @@
 import { app, BrowserWindow, protocol } from 'electron'
 import path from 'node:path'
+import { removeEmptyLooseTags } from './services/tag.services.ts'
 import { openDatabase } from './db/database.ts'
 import { registerIpc } from './ipc/index.ts'
 import { serveAudio } from './services/audio.services.ts'
@@ -41,6 +42,7 @@ function createWindow() {
 app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
+  removeEmptyLooseTags(db)
 
   const documents = app.getPath('documents')
   try {

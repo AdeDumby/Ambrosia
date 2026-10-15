@@ -46,7 +46,7 @@ function deleteMessage(deleting: Deleting, summary: { tags: number; tracks: numb
         : `They will be removed from ${plural(summary.tracks, 'track')}.`
     return `Delete ${name} and its ${plural(summary.tags, 'tag')}? ${effect} This cannot be undone.`
   }
-  return `Delete ${name}? Its ${plural(summary.tags, 'tag')} will be kept and moved to Ungrouped, so no track changes.`
+  return `Delete ${name}? Its ${plural(summary.tags, 'tag')} will move to Ungrouped, and any used by no track are removed.`
 }
 
 export default function Sidebar() {

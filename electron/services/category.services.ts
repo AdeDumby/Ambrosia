@@ -1,4 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
+import { removeEmptyLooseTags } from './tag.services.ts'
 import { MAX_FOLDER_NAME, isProtectedFolder } from '../../src/shared/folders.ts'
 
 export type TagCategory = {
@@ -125,6 +126,7 @@ export function deleteCategory(db: DatabaseSync, id: number, withTags: boolean):
       db.prepare('UPDATE tag SET category_id = NULL WHERE category_id = ?').run(id)
     }
     db.prepare('DELETE FROM tag_category WHERE id = ?').run(id)
+    if (!withTags) removeEmptyLooseTags(db)
     editHiddenFolders(db, (names) =>
       names.filter((item) => item.toLowerCase() !== folder.name.toLowerCase())
     )

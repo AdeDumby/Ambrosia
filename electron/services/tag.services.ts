@@ -104,8 +104,20 @@ export function addTagToTrackByName(
   }
 }
 
+export function removeEmptyLooseTags(db: DatabaseSync): number {
+  const result = db
+    .prepare(
+      `DELETE FROM tag
+       WHERE category_id IS NULL
+         AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = tag.id)`
+    )
+    .run()
+  return Number(result.changes)
+}
+
 export function setTagCategory(db: DatabaseSync, tagId: number, categoryId: number | null): void {
   db.prepare('UPDATE tag SET category_id = ? WHERE id = ?').run(categoryId, tagId)
+  if (categoryId === null) removeEmptyLooseTags(db)
 }
 
 export function removeUnusedLooseTags(db: DatabaseSync, tagIds: Iterable<number>): number {
