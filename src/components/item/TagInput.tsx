@@ -5,20 +5,20 @@ import './TagInput.css'
 export type TagOption = { id: number; name: string }
 
 type Props = {
-  options: TagOption[]
+  getOptions: () => TagOption[]
   onAdd: (tagId: number) => void
   onCreate?: (name: string) => void
 }
 
 const MIN_CHARS = 3
 
-export default function TagInput({ options, onAdd, onCreate }: Props) {
+export default function TagInput({ getOptions, onAdd, onCreate }: Props) {
   const [value, setValue] = useState('')
 
   const typed = foldText(value)
   const suggestion =
     value.length >= MIN_CHARS
-      ? options.find((option) => foldText(option.name).startsWith(typed))
+      ? getOptions().find((option) => foldText(option.name).startsWith(typed))
       : undefined
   const remainder = suggestion ? suggestion.name.slice(value.length) : ''
 
@@ -31,7 +31,7 @@ export default function TagInput({ options, onAdd, onCreate }: Props) {
       const wanted = value.trim()
       if (wanted === '') return
 
-      const exact = options.find((option) => foldText(option.name) === foldText(wanted))
+      const exact = getOptions().find((option) => foldText(option.name) === foldText(wanted))
       if (exact) {
         onAdd(exact.id)
       } else if (onCreate) {

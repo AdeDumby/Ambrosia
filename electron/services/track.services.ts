@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite'
-import { compareNames } from '../../src/shared/tags.ts'
+import { sortTrackTags } from '../../src/shared/tags.ts'
 import type { Track, TrackKind, TrackTag } from '../../src/shared/types.ts'
 
 type TrackRow = Omit<Track, 'reviewed' | 'tags'> & { reviewed: number }
@@ -12,7 +12,7 @@ const TRACK_COLUMNS = `id, path, filename, kind,
 const TAG_ORDER = `c.sort_order IS NULL, c.sort_order, c.name, g.name COLLATE NOCASE`
 
 function toTrack(row: TrackRow, tags: TrackTag[]): Track {
-  return { ...row, reviewed: row.reviewed === 1, tags }
+  return { ...row, reviewed: row.reviewed === 1, tags: sortTrackTags(tags) }
 }
 
 export function setTrackKind(db: DatabaseSync, id: number, kind: TrackKind): void {

@@ -2,18 +2,12 @@ import { memo, useState, type MouseEvent } from 'react'
 import { textOffsetAt } from '../../lib/caret'
 import { formatDuration } from '../../lib/formatDuration'
 import { MAX_FILE_STEM, splitFileName } from '../../shared/files'
-import type { TrackKind } from '../../shared/types'
+import type { TrackKind, TrackTag } from '../../shared/types'
 import InlineEdit from './InlineEdit'
 import TagBubble from './TagBubble'
 import TagInput, { type TagOption } from './TagInput'
 import TrackActions from './TrackActions'
 import './TrackItem.css'
-
-type TrackTag = {
-  id: number
-  name: string
-  color: string | null
-}
 
 type Props = {
   id: number
@@ -22,7 +16,7 @@ type Props = {
   peakDb: number | null
   kind?: TrackKind
   tags: TrackTag[]
-  allTags: TagOption[]
+  getTagOptions: () => TagOption[]
   isPlaying: boolean
   onPlay?: (id: number, filename: string) => void
   onRename?: (id: number, name: string) => Promise<void>
@@ -41,7 +35,7 @@ function TrackItem({
   peakDb,
   kind,
   tags,
-  allTags,
+  getTagOptions,
   isPlaying,
   onPlay,
   onRename,
@@ -55,7 +49,6 @@ function TrackItem({
   const [caret, setCaret] = useState<number | null>(null)
   const { stem, ext } = splitFileName(filename)
   const ownedIds = new Set(tags.map((tag) => tag.id))
-  const availableTags = allTags.filter((tag) => !ownedIds.has(tag.id))
 
   function startEdit(event: MouseEvent<HTMLDivElement>) {
     const offset = textOffsetAt(event.currentTarget, event.clientX, event.clientY)
@@ -108,7 +101,7 @@ function TrackItem({
             ))}
             {onAddTag && (
               <TagInput
-                options={availableTags}
+                getOptions={() => getTagOptions().filter((tag) => !ownedIds.has(tag.id))}
                 onAdd={(tagId) => onAddTag(id, tagId)}
                 onCreate={onCreateTag ? (name) => onCreateTag(id, name) : undefined}
               />

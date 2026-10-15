@@ -105,7 +105,7 @@ export default function Review() {
         durationSec={current.durationSec}
         peakDb={current.peakDb}
         tags={current.tags}
-        allTags={allTags}
+        getTagOptions={() => allTags}
         isPlaying={isPlaying && currentTrack?.id === current.id}
         onPlay={(id, filename) => toggleTrack({ id, filename })}
         onFinish={finish}

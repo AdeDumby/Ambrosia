@@ -3,13 +3,14 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type Dispatch,
   type ReactNode,
   type SetStateAction
 } from 'react'
-import type { Tag, TagCategory, Track } from '../shared/types'
-import { compareNames } from '../shared/tags'
+import { compareNames, sortTrackTags } from '../shared/tags'
+import type { Tag, TagCategory, Track, TrackTag } from '../shared/types'
 import { useSettings } from './SettingsContext'
 
 type LibraryState = {
@@ -21,11 +22,11 @@ type LibraryState = {
   setTracks: Dispatch<SetStateAction<Track[]>>
   refreshTracks: () => Promise<void>
   moveTag: (tagId: number, categoryId: number | null) => Promise<void>
+  renameTag: (id: number, name: string) => Promise<void>
   createFolder: (name: string) => Promise<void>
   renameFolder: (id: number, name: string) => Promise<void>
   recolorFolder: (id: number, color: string) => Promise<void>
   deleteFolder: (id: number, withTags: boolean) => Promise<void>
-  renameTag: (id: number, name: string) => Promise<void>
 }
 
 const LibraryContext = createContext<LibraryState | null>(null)
@@ -35,30 +36,57 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<TagCategory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tracks, setTracks] = useState<Track[]>([])
+  const tagsRef = useRef<Tag[]>([])
+
+  const refreshTags = useCallback(async () => {
+    const loaded = await window.api.listTags()
+    const sorted = [...loaded].sort((a, b) => compareNames(a.name, b.name))
+    tagsRef.current = sorted
+    setTags(sorted)
+  }, [])
 
   const refreshTracks = useCallback(async () => {
     setTracks(await window.api.listTracks())
   }, [])
 
-  const refreshTags = useCallback(async () => {
-    const loaded = await window.api.listTags()
-    setTags([...loaded].sort((a, b) => compareNames(a.name, b.name)))
+  const patchTracks = useCallback((tagIds: number[], update: (tag: TrackTag) => TrackTag) => {
+    if (tagIds.length === 0) return
+    const wanted = new Set(tagIds)
+    setTracks((previous) =>
+      previous.map((track) =>
+        track.tags.some((tag) => wanted.has(tag.id))
+          ? {
+              ...track,
+              tags: sortTrackTags(track.tags.map((tag) => (wanted.has(tag.id) ? update(tag) : tag)))
+            }
+          : track
+      )
+    )
   }, [])
-
-  const renameTag = useCallback(
-    async (id: number, name: string) => {
-      await window.api.renameTag(id, name)
-      await Promise.all([refreshTags(), refreshTracks()])
-    },
-    [refreshTags, refreshTracks]
-  )
 
   const moveTag = useCallback(
     async (tagId: number, categoryId: number | null) => {
       await window.api.setTagCategory(tagId, categoryId)
-      await Promise.all([refreshTags(), refreshTracks()])
+      const folders = await window.api.listCategories()
+      const folder = folders.find((candidate) => candidate.id === categoryId)
+      patchTracks([tagId], (tag) => ({
+        ...tag,
+        color: folder?.color ?? null,
+        folderOrder: folder?.sortOrder ?? 0
+      }))
+      setCategories(folders)
+      await refreshTags()
     },
-    [refreshTags, refreshTracks]
+    [patchTracks, refreshTags]
+  )
+
+  const renameTag = useCallback(
+    async (id: number, name: string) => {
+      const cleaned = await window.api.renameTag(id, name)
+      patchTracks([id], (tag) => ({ ...tag, name: cleaned }))
+      await refreshTags()
+    },
+    [patchTracks, refreshTags]
   )
 
   const createFolder = useCallback(async (name: string) => {
@@ -75,10 +103,15 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [reloadSettings]
   )
 
-  const recolorFolder = useCallback(async (id: number, color: string) => {
-    await window.api.recolorCategory(id, color)
-    setCategories(await window.api.listCategories())
-  }, [])
+  const recolorFolder = useCallback(
+    async (id: number, color: string) => {
+      await window.api.recolorCategory(id, color)
+      const ids = tagsRef.current.filter((tag) => tag.categoryId === id).map((tag) => tag.id)
+      patchTracks(ids, (tag) => ({ ...tag, color }))
+      setCategories(await window.api.listCategories())
+    },
+    [patchTracks]
+  )
 
   const deleteFolder = useCallback(
     async (id: number, withTags: boolean) => {
@@ -111,11 +144,11 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         setTracks,
         refreshTracks,
         moveTag,
+        renameTag,
         createFolder,
         renameFolder,
         recolorFolder,
-        deleteFolder,
-        renameTag
+        deleteFolder
       }}
     >
       {children}

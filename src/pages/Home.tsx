@@ -53,14 +53,22 @@ export default function Home() {
     return () => observer.disconnect()
   }, [hasMore, limit, listKey, pageSize])
 
-  const queue = useMemo(
-    () => visibleTracks.map((track) => ({ id: track.id, filename: track.filename })),
-    [visibleTracks]
-  )
+  const visibleRef = useRef(visibleTracks)
+  const tagsRef = useRef(allTags)
+  useEffect(() => {
+    visibleRef.current = visibleTracks
+    tagsRef.current = allTags
+  }, [visibleTracks, allTags])
+
   const play = useCallback(
-    (id: number, filename: string) => toggleTrack({ id, filename }, queue),
-    [toggleTrack, queue]
+    (id: number, filename: string) =>
+      toggleTrack(
+        { id, filename },
+        visibleRef.current.map((track) => ({ id: track.id, filename: track.filename }))
+      ),
+    [toggleTrack]
   )
+  const getTagOptions = useCallback(() => tagsRef.current, [])
   const requestDelete = useCallback(
     (id: number, filename: string) => setPendingDelete({ id, filename }),
     []
@@ -122,7 +130,7 @@ export default function Home() {
           peakDb={track.peakDb}
           kind={track.kind}
           tags={track.tags}
-          allTags={allTags}
+          getTagOptions={getTagOptions}
           isPlaying={isPlaying && currentTrack?.id === track.id}
           onPlay={play}
           onSetKind={setKind}

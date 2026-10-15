@@ -128,7 +128,6 @@ export default function Sidebar() {
     if (!folder) return
     try {
       await recolorFolder(folder.id, color)
-      await refreshTracks()
     } catch {
       setCategories(await window.api.listCategories())
     }
@@ -273,6 +272,7 @@ export default function Sidebar() {
 
     try {
       await window.api.reorderCategories(ids)
+      await refreshTracks()
     } catch {
       setCategories(await window.api.listCategories())
     }

@@ -27,3 +27,12 @@ const baseCollator = new Intl.Collator('en', { sensitivity: 'base', numeric: tru
 export function compareNames(a: string, b: string): number {
   return baseCollator.compare(a, b) || collator.compare(a, b)
 }
+
+export function sortTrackTags<T extends { name: string; folderOrder: number | null }>(
+  tags: T[]
+): T[] {
+  const order = (value: number | null) => value ?? Number.MAX_SAFE_INTEGER
+  return [...tags].sort(
+    (a, b) => order(a.folderOrder) - order(b.folderOrder) || compareNames(a.name, b.name)
+  )
+}
