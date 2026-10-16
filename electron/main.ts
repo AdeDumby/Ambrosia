@@ -40,6 +40,8 @@ function createWindow() {
   }
 }
 
+app.setAppUserModelId('com.ambrosia.app')
+
 app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)

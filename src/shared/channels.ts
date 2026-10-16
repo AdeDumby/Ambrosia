@@ -38,5 +38,7 @@ export const CHANNELS = {
   getDownloadState: 'download:state',
   startDownload: 'download:start',
   cancelDownload: 'download:cancel',
-  resetDownload: 'download:reset'
+  resetDownload: 'download:reset',
+  getDownloadFolderNames: 'download:folder-names',
+  finishDownload: 'download:finish'
 } as const satisfies Record<keyof Api, string>

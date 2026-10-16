@@ -5,15 +5,23 @@ import {
   useEffect,
   useMemo,
   useState,
-  type ReactNode
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction
 } from 'react'
-import { idleDownloadState, type DownloadState } from '../shared/download'
+import type { RenameRule } from '../lib/renameRules'
+import { idleDownloadState, type DownloadState, type FinishResult } from '../shared/download'
 
 type DownloadContextState = {
   state: DownloadState
+  rules: RenameRule[]
+  setRules: Dispatch<SetStateAction<RenameRule[]>>
+  manual: Record<number, string>
+  setManual: Dispatch<SetStateAction<Record<number, string>>>
   start: (franchise: string, url: string) => Promise<void>
   cancel: () => Promise<void>
   reset: () => Promise<void>
+  finish: (entries: { index: number; name: string }[]) => Promise<FinishResult>
 }
 
 const POLL_MS = 400
@@ -22,6 +30,8 @@ const DownloadContext = createContext<DownloadContextState | null>(null)
 
 export function DownloadProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DownloadState>(idleDownloadState)
+  const [rules, setRules] = useState<RenameRule[]>([])
+  const [manual, setManual] = useState<Record<number, string>>({})
 
   const refresh = useCallback(async () => {
     try {
@@ -29,6 +39,11 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     } catch {
       // the next poll tries again
     }
+  }, [])
+
+  const clearRenaming = useCallback(() => {
+    setRules([])
+    setManual({})
   }, [])
 
   useEffect(() => {
@@ -43,10 +58,11 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
   const start = useCallback(
     async (franchise: string, url: string) => {
+      clearRenaming()
       await window.api.startDownload(franchise, url)
       await refresh()
     },
-    [refresh]
+    [clearRenaming, refresh]
   )
 
   const cancel = useCallback(async () => {
@@ -56,10 +72,24 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(async () => {
     await window.api.resetDownload()
+    clearRenaming()
     await refresh()
-  }, [refresh])
+  }, [clearRenaming, refresh])
 
-  const value = useMemo(() => ({ state, start, cancel, reset }), [state, start, cancel, reset])
+  const finish = useCallback(
+    async (entries: { index: number; name: string }[]) => {
+      const result = await window.api.finishDownload(entries)
+      clearRenaming()
+      await refresh()
+      return result
+    },
+    [clearRenaming, refresh]
+  )
+
+  const value = useMemo(
+    () => ({ state, rules, setRules, manual, setManual, start, cancel, reset, finish }),
+    [state, rules, manual, start, cancel, reset, finish]
+  )
 
   return <DownloadContext.Provider value={value}>{children}</DownloadContext.Provider>
 }

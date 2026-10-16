@@ -1,14 +1,19 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
+import { readdir } from 'node:fs/promises'
 import { StringDecoder } from 'node:string_decoder'
+import { notifyDownloadFinished } from './notify.ts'
 import {
   checkFranchise,
   checkUrl,
   idleDownloadState,
   type DownloadItem,
-  type DownloadState
+  type DownloadState,
+  findNameProblems,
+  type FinishResult
 } from '../../src/shared/download.ts'
+import { renameAll } from './files.services.ts'
 import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 
 const MAX_LOG = 200
@@ -125,16 +130,24 @@ function settle(code: number | null, failure?: string): void {
   if (cancelled) {
     state.phase = 'cancelled'
     state.error = null
-  } else if (failure) {
+    return
+  }
+  if (failure) {
     state.phase = 'failed'
     state.error = failure
-  } else if (done > 0) {
-    state.phase = 'downloaded'
-    state.error = failed > 0 ? `${failed} could not be downloaded.` : null
-  } else {
+    return
+  }
+  if (done === 0) {
     state.phase = 'failed'
     state.error = lastError ?? `yt-dlp stopped with code ${code ?? 'unknown'}.`
+    return
   }
+
+  state.phase = 'downloaded'
+  state.error = failed > 0 ? `${failed} could not be downloaded.` : null
+  state.renameActive = true
+
+  notifyDownloadFinished(done, state.franchise)
 }
 
 export async function startDownload(
@@ -217,4 +230,83 @@ export function cancelDownload(): void {
 export function resetDownload(): void {
   if (state.phase === 'downloading') throw new Error('Cancel the download first.')
   state = idleDownloadState()
+}
+
+let finishing = false
+
+export async function finishDownload(
+  entries: { index: number; name: string }[]
+): Promise<FinishResult> {
+  if (state.phase !== 'downloaded' || !state.renameActive) {
+    throw new Error('There is nothing to finish.')
+  }
+  if (finishing) throw new Error('Already renaming.')
+  finishing = true
+
+  try {
+    const done = state.items.filter((item) => item.status === 'done' && item.path)
+    const wanted = new Map(entries.map((entry) => [entry.index, entry.name.trim()]))
+    if (
+      wanted.size !== entries.length ||
+      wanted.size !== done.length ||
+      !done.every((item) => wanted.has(item.index))
+    ) {
+      throw new Error('The list of names does not match the downloaded tracks.')
+    }
+
+    const folderKey = path.resolve(state.folder).toLowerCase()
+    const planned = done.map((item) => {
+      const from = item.path as string
+      if (path.resolve(path.dirname(from)).toLowerCase() !== folderKey) {
+        throw new Error('A downloaded file is outside the download folder.')
+      }
+      const ext = path.extname(from)
+      const name = wanted.get(item.index) as string
+      return { item, from, ext, name, to: path.join(path.dirname(from), name + ext) }
+    })
+    if (planned.some((plan) => plan.to.length > 259)) throw new Error('A path would be too long.')
+
+    const own = new Set(planned.map((plan) => path.basename(plan.from).toLowerCase()))
+    const existing = new Set(
+      (await listFolderNames()).map((name) => name.toLowerCase()).filter((name) => !own.has(name))
+    )
+    const problems = findNameProblems(
+      planned.map((plan) => ({
+        index: plan.item.index,
+        path: plan.from,
+        newName: plan.name === '' ? '' : plan.name + plan.ext
+      })),
+      existing
+    )
+    if (problems.size > 0) {
+      throw new Error('Some names are empty, not allowed by Windows or already used.')
+    }
+
+    const moves = planned.filter((plan) => plan.to !== plan.from)
+    try {
+      await renameAll(moves.map((move) => ({ from: move.from, to: move.to })))
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code === 'EPERM' || code === 'EBUSY' || code === 'EACCES') {
+        throw new Error('A file is in use by another program, so nothing was renamed.')
+      }
+      throw error
+    }
+
+    const result = { renamed: moves.length, total: done.length, folder: state.folder }
+    state = idleDownloadState()
+    return result
+  } finally {
+    finishing = false
+  }
+}
+
+export async function listFolderNames(): Promise<string[]> {
+  if (!state.folder) return []
+  try {
+    const entries = await readdir(state.folder, { withFileTypes: true })
+    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name)
+  } catch {
+    return []
+  }
 }

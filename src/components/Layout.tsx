@@ -1,4 +1,5 @@
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 import Footer from './Footer'
@@ -16,6 +17,16 @@ const FOCUSED_PAGES = ['/review', '/settings', '/download']
 export default function Layout() {
   const { pathname } = useLocation()
   const focused = FOCUSED_PAGES.includes(pathname)
+  const navigate = useNavigate()
+
+  useEffect(
+    () =>
+      window.appEvents.onNavigate((route) => {
+        if (route === '/download' && window.location.hash.startsWith('#/review')) return
+        navigate(route)
+      }),
+    [navigate]
+  )
 
   return (
     <SettingsProvider>

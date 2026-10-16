@@ -1,0 +1,79 @@
+.rename-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rename-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.rename-row.problem {
+  border-color: #e05555;
+}
+
+.rename-original {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.rename-original mark {
+  border-radius: 2px;
+  background: color-mix(in srgb, #e05555 40%, transparent);
+  color: var(--text);
+}
+
+.rename-edit {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rename-edit input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.rename-edit.manual input {
+  border-color: var(--accent);
+}
+
+.rename-edit input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.rename-ext {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+.rename-reset {
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.rename-problem {
+  grid-column: 1 / -1;
+  color: #e05555;
+  font-size: 0.75rem;
+}

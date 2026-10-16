@@ -179,6 +179,23 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     },
     resetDownload: () => {
       downloads.resetDownload()
+    },
+    getDownloadFolderNames: () => downloads.listFolderNames(),
+    finishDownload: (entries) => {
+      if (!Array.isArray(entries) || entries.length > 2000) throw new Error('Invalid names')
+      const parsed = entries.map((entry) => {
+        const source = typeof entry === 'object' && entry !== null ? entry : null
+        if (
+          !source ||
+          !Number.isInteger(source.index) ||
+          typeof source.name !== 'string' ||
+          source.name.length > 400
+        ) {
+          throw new Error('Invalid names')
+        }
+        return { index: source.index, name: source.name }
+      })
+      return downloads.finishDownload(parsed)
     }
   }
 

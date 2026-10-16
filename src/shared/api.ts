@@ -1,5 +1,5 @@
 import type { Settings } from './settings'
-import type { DownloadState } from './download'
+import type { DownloadState, FinishResult } from './download'
 import type {
   AnalysisInput,
   ApplyResult,
@@ -62,4 +62,6 @@ export type Api = {
   startDownload(franchise: string, url: string): Promise<void>
   cancelDownload(): Promise<void>
   resetDownload(): Promise<void>
+  getDownloadFolderNames(): Promise<string[]>
+  finishDownload(entries: { index: number; name: string }[]): Promise<FinishResult>
 }

@@ -10,3 +10,13 @@ const api = Object.fromEntries(
 ) as unknown as Api
 
 contextBridge.exposeInMainWorld('api', api)
+
+contextBridge.exposeInMainWorld('appEvents', {
+  onNavigate: (listener: (route: string) => void) => {
+    const handler = (_event: unknown, route: unknown) => {
+      if (typeof route === 'string') listener(route)
+    }
+    ipcRenderer.on('navigate', handler)
+    return () => ipcRenderer.removeListener('navigate', handler)
+  }
+})

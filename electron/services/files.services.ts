@@ -36,3 +36,42 @@ export async function moveFileUnique(
     throw error
   }
 }
+
+export async function renameAll(moves: { from: string; to: string }[]): Promise<void> {
+  const staged: { from: string; temp: string }[] = []
+  const placed: { temp: string; to: string }[] = []
+
+  try {
+    for (const [index, move] of moves.entries()) {
+      const temp = path.join(
+        path.dirname(move.from),
+        `.ambrosia-rename-${process.pid}-${index}.tmp`
+      )
+      await rename(move.from, temp)
+      staged.push({ from: move.from, temp })
+    }
+
+    for (const [index, move] of moves.entries()) {
+      try {
+        const handle = await open(move.to, 'wx')
+        await handle.close()
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+          throw new Error('A file with that name already exists in the folder.')
+        }
+        throw error
+      }
+      try {
+        await rename(staged[index].temp, move.to)
+      } catch (error) {
+        await unlink(move.to).catch(() => {})
+        throw error
+      }
+      placed.push({ temp: staged[index].temp, to: move.to })
+    }
+  } catch (error) {
+    for (const item of placed) await rename(item.to, item.temp).catch(() => {})
+    for (const item of staged) await rename(item.temp, item.from).catch(() => {})
+    throw error
+  }
+}
