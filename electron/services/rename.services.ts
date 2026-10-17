@@ -1,7 +1,7 @@
-import { open, rename, unlink } from 'node:fs/promises'
+import { rename, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
-import { MAX_FILE_STEM } from '../../src/shared/files.ts'
+import { MAX_FILE_STEM } from '../../src/shared/files'
 
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f]/
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
@@ -33,14 +33,13 @@ function explain(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error))
 }
 
-async function claim(file: string): Promise<void> {
+async function exists(file: string): Promise<boolean> {
   try {
-    const handle = await open(file, 'wx')
-    await handle.close()
+    await stat(file)
+    return true
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
-      throw new Error('A file with that name already exists in this folder.')
-    }
+    const code = (error as NodeJS.ErrnoException).code
+    if (code === 'ENOENT' || code === 'ENOTDIR') return false
     throw explain(error)
   }
 }
@@ -54,9 +53,7 @@ export async function renameTrack(db: DatabaseSync, id: number, name: string): P
   const stem = checkStem(name)
   const newName = stem + path.extname(row.path)
   const newPath = path.join(path.dirname(row.path), newName)
-
   if (newPath.length > MAX_PATH) throw new Error('The path would be too long.')
-  if (newPath === row.path && newName === row.filename) return newName
 
   const sameFile = newPath.toLowerCase() === row.path.toLowerCase()
   if (!sameFile) {
@@ -64,19 +61,15 @@ export async function renameTrack(db: DatabaseSync, id: number, name: string): P
       .prepare('SELECT id FROM track WHERE lower(path) = lower(?) AND id != ?')
       .get(newPath, id)
     if (other) throw new Error('Another track already uses that name.')
-  }
-
-  let claimed = false
-  if (!sameFile) {
-    await claim(newPath)
-    claimed = true
+    if (await exists(newPath)) {
+      throw new Error('A file with that name already exists in this folder.')
+    }
   }
 
   if (newPath !== row.path) {
     try {
       await rename(row.path, newPath)
     } catch (error) {
-      if (claimed) await unlink(newPath).catch(() => {})
       throw explain(error)
     }
   }
@@ -87,6 +80,5 @@ export async function renameTrack(db: DatabaseSync, id: number, name: string): P
     if (newPath !== row.path) await rename(newPath, row.path).catch(() => {})
     throw error
   }
-
   return newName
 }

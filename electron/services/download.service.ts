@@ -124,6 +124,19 @@ function lineReader(onLine: (line: string) => void) {
 function settle(code: number | null, failure?: string): void {
   finalizeCurrent()
   child = null
+
+  const claimed = new Set<string>()
+  for (const item of state.items) {
+    if (item.status !== 'done' || !item.path) continue
+    const key = item.path.toLowerCase()
+    if (claimed.has(key)) {
+      item.status = 'failed'
+      item.error = 'Same title as an earlier track, so it replaced that file.'
+    } else {
+      claimed.add(key)
+    }
+  }
+
   const done = state.items.filter((item) => item.status === 'done').length
   const failed = state.items.filter((item) => item.status === 'failed').length
 
@@ -146,7 +159,6 @@ function settle(code: number | null, failure?: string): void {
   state.phase = 'downloaded'
   state.error = failed > 0 ? `${failed} could not be downloaded.` : null
   state.renameActive = true
-
   notifyDownloadFinished(done, state.franchise)
 }
 
@@ -293,9 +305,12 @@ export async function finishDownload(
       throw error
     }
 
-    const result = { renamed: moves.length, total: done.length, folder: state.folder }
-    state = idleDownloadState()
-    return result
+    for (const plan of planned) {
+      plan.item.path = plan.to
+      plan.item.title = plan.name
+    }
+    state.renameActive = false
+    return { renamed: moves.length, total: done.length, folder: state.folder }
   } finally {
     finishing = false
   }
