@@ -30,4 +30,4 @@
 
 ### KNOWN ISSUES TO FIX FOR FUTURE VERSIONS
 
-Tag order wrong
+Rename not working properly
