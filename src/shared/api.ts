@@ -64,4 +64,5 @@ export type Api = {
   resetDownload(): Promise<void>
   getDownloadFolderNames(): Promise<string[]>
   finishDownload(entries: { index: number; name: string }[]): Promise<FinishResult>
+  applyDownloads(): Promise<ApplyResult>
 }

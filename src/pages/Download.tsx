@@ -4,13 +4,13 @@ import RuleEditor from '../components/feature/RuleEditor'
 import InlineError from '../components/item/InlineError'
 import { errorMessage } from '../lib/errors'
 import { compileRules, matchRanges, runStages, splitByRanges } from '../lib/renameRules'
+import DownloadProgress from '../components/feature/DownloadProgress'
 import {
   checkFranchise,
   checkUrl,
   findNameProblems,
   MAX_FRANCHISE_NAME,
-  splitName,
-  type FinishResult
+  splitName
 } from '../shared/download'
 import { useDownload } from '../store/DownloadContext'
 import './Download.css'
@@ -31,14 +31,13 @@ const PHASE_TEXT = {
 const basename = (file: string) => file.split(/[\\/]/).pop() ?? file
 
 export default function Download() {
-  const { state, start, cancel, reset, finish, rules, setRules, manual, setManual } = useDownload()
+  const { state, chainBusy, chain, start, reset, finish, rules, setRules, manual, setManual } =
+    useDownload()
   const [franchise, setFranchise] = useState('')
   const [url, setUrl] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [folderNames, setFolderNames] = useState<Set<string>>(new Set())
   const [activeRuleId, setActiveRuleId] = useState<number | null>(null)
-  const [finishing, setFinishing] = useState(false)
-  const [finished, setFinished] = useState<FinishResult | null>(null)
 
   const idle = state.phase === 'idle'
   const running = state.phase === 'downloading'
@@ -142,7 +141,6 @@ export default function Download() {
 
   async function begin() {
     setError(null)
-    setFinished(null)
     try {
       await start(franchise, url)
     } catch (failure) {
@@ -150,154 +148,57 @@ export default function Download() {
     }
   }
 
-  async function run(action: () => Promise<void>) {
-    setError(null)
-    try {
-      await action()
-    } catch (failure) {
-      setError(errorMessage(failure))
-    }
-  }
-
   async function complete() {
     setError(null)
-    setFinishing(true)
     try {
-      setFinished(await finish(rows.map((row) => ({ index: row.index, name: row.name.trim() }))))
+      await finish(rows.map((row) => ({ index: row.index, name: row.name.trim() })))
     } catch (failure) {
       setError(errorMessage(failure))
-    } finally {
-      setFinishing(false)
     }
   }
+  const showForm = state.phase === 'idle' && chain === null
 
   return (
     <div className="download">
-      {idle ? (
-        <form
-          className="download-form"
-          onSubmit={(event) => {
-            event.preventDefault()
-            if (canStart) void begin()
-          }}
-        >
-          <label>
-            <span>Franchise folder</span>
-            <input
-              type="text"
-              value={franchise}
-              maxLength={MAX_FRANCHISE_NAME}
-              placeholder="FTL"
-              onChange={(event) => setFranchise(event.target.value)}
-            />
-            {franchiseProblem && <small className="download-problem">{franchiseProblem}</small>}
-          </label>
-          <label>
-            <span>YouTube playlist or video link</span>
-            <input
-              type="text"
-              value={url}
-              placeholder="https://www.youtube.com/playlist?list=..."
-              onChange={(event) => setUrl(event.target.value)}
-            />
-            {urlProblem && <small className="download-problem">{urlProblem}</small>}
-          </label>
-          <button type="submit" className="btn btn-primary" disabled={!canStart}>
-            Start download
-          </button>
-        </form>
-      ) : (
-        <div className="download-summary">
-          <div>
-            <strong>{state.franchise}</strong>
-            <span className="download-folder">{state.folder}</span>
-          </div>
-          {running ? (
-            <button type="button" className="btn" onClick={() => void run(cancel)}>
-              Cancel
+      <div className="download-main">
+        {showForm && (
+          <form
+            className="download-form"
+            onSubmit={(event) => {
+              event.preventDefault()
+              if (canStart) void begin()
+            }}
+          >
+            <label>
+              <span>Franchise folder</span>
+              <input
+                type="text"
+                value={franchise}
+                maxLength={MAX_FRANCHISE_NAME}
+                placeholder="FTL"
+                onChange={(event) => setFranchise(event.target.value)}
+              />
+              {franchiseProblem && <small className="download-problem">{franchiseProblem}</small>}
+            </label>
+            <label>
+              <span>YouTube playlist or video link</span>
+              <input
+                type="text"
+                value={url}
+                placeholder="https://www.youtube.com/playlist?list=..."
+                onChange={(event) => setUrl(event.target.value)}
+              />
+              {urlProblem && <small className="download-problem">{urlProblem}</small>}
+            </label>
+            <button type="submit" className="btn btn-primary" disabled={!canStart}>
+              Start download
             </button>
-          ) : (
-            <button type="button" className="btn" onClick={() => void run(reset)}>
-              Start over
-            </button>
-          )}
-        </div>
-      )}
+          </form>
+        )}
 
-      {error && <InlineError message={error} onDismiss={() => setError(null)} />}
+        {error && <InlineError message={error} onDismiss={() => setError(null)} />}
 
-      {idle && finished && (
-        <p className="settings-success" role="status">
-          {finished.renamed} of {finished.total} tracks renamed in {finished.folder}. They are not
-          in the library yet: use Scan library, then Apply changes in Settings.
-        </p>
-      )}
-
-      {running && (
-        <div className="download-overall">
-          <progress max={100} value={overall} />
-          <span>{state.total ? `${done} of ${state.total} tracks` : 'Starting...'}</span>
-        </div>
-      )}
-
-      {!idle && !running && (
-        <p
-          className={
-            state.phase === 'downloaded' && !state.error ? 'settings-success' : 'settings-error'
-          }
-        >
-          {PHASE_TEXT[state.phase as keyof typeof PHASE_TEXT]} {state.error}
-        </p>
-      )}
-
-      {state.renameActive ? (
-        <>
-          <section className="download-section">
-            <h2>Rename rules</h2>
-            <p className="download-hint">
-              Each rule finds text with a regular expression and replaces it. Leave the right side
-              empty to delete what it finds, and use $1 to reuse the first captured group. Rules run
-              in order on the name without .mp3.
-            </p>
-            <RuleEditor
-              rules={rules}
-              compiled={compiled}
-              counts={counts}
-              total={staged.length}
-              activeId={activeRuleId}
-              onActivate={setActiveRuleId}
-              onChange={setRules}
-            />
-          </section>
-
-          <section className="download-section">
-            <h2>Names</h2>
-            <p className="download-hint">
-              {activeIndex >= 0
-                ? `Highlighted: what rule ${activeIndex + 1} captures, in the name as it reaches that rule.`
-                : 'Click into a rule to see what it captures. Names you type yourself are left alone by the rules.'}
-            </p>
-            <RenameList rows={rows} onEdit={editName} onReset={resetName} />
-          </section>
-
-          <div className="download-finish">
-            <button
-              type="button"
-              className="btn btn-primary"
-              disabled={rows.length === 0 || problemCount > 0 || finishing}
-              onClick={() => void complete()}
-            >
-              {finishing ? 'Renaming...' : 'Finish'}
-            </button>
-            <span className={problemCount > 0 ? 'download-problem' : 'download-hint'}>
-              {problemCount > 0
-                ? 'Fix the highlighted names first.'
-                : `${changing} of ${rows.length} names will change.`}
-            </span>
-          </div>
-        </>
-      ) : (
-        state.items.length > 0 && (
+        {!showForm && !state.renameActive && state.phase === 'downloading' && (
           <ul className="download-list">
             {state.items.map((item) => (
               <li key={item.index} className={`download-item ${item.status}`}>
@@ -314,15 +215,65 @@ export default function Download() {
               </li>
             ))}
           </ul>
-        )
-      )}
+        )}
 
-      {state.log.length > 0 && (
-        <details className="download-details">
-          <summary>Details</summary>
-          <pre>{state.log.join('\n')}</pre>
-        </details>
-      )}
+        {state.renameActive && (
+          <>
+            <section className="download-section">
+              <h2>Rename rules</h2>
+              <p className="download-hint">
+                Each rule finds text with a regular expression and replaces it. Leave the right side
+                empty to delete what it finds, and use $1 to reuse the first captured group. Rules
+                run in order on the name without .mp3.
+              </p>
+              <RuleEditor
+                rules={rules}
+                compiled={compiled}
+                counts={counts}
+                total={staged.length}
+                activeId={activeRuleId}
+                onActivate={setActiveRuleId}
+                onChange={setRules}
+              />
+            </section>
+
+            <section className="download-section">
+              <h2>Names</h2>
+              <p className="download-hint">
+                {activeIndex >= 0
+                  ? `Highlighted: what rule ${activeIndex + 1} captures, in the name as it reaches that rule.`
+                  : 'Click into a rule to see what it captures. Names you type yourself are left alone by the rules.'}
+              </p>
+              <RenameList rows={rows} onEdit={editName} onReset={resetName} />
+            </section>
+
+            <div className="download-finish">
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={rows.length === 0 || problemCount > 0 || chainBusy}
+                onClick={() => void complete()}
+              >
+                Finish
+              </button>
+              <span className={problemCount > 0 ? 'download-problem' : 'download-hint'}>
+                {problemCount > 0
+                  ? 'Fix the highlighted names first.'
+                  : `${changing} of ${rows.length} names will change. Finish renames the files, adds them to the library and measures their loudness.`}
+              </span>
+            </div>
+          </>
+        )}
+
+        {state.log.length > 0 && (
+          <details className="download-details">
+            <summary>Details</summary>
+            <pre>{state.log.join('\n')}</pre>
+          </details>
+        )}
+      </div>
+
+      <DownloadProgress />
     </div>
   )
 }

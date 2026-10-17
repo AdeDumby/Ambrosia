@@ -1,9 +1,17 @@
 .download {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 24px;
+  align-items: start;
+  max-width: 1400px;
+  padding: 16px 32px;
+}
+
+.download-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 1000px;
-  padding: 16px 32px;
+  min-width: 0;
 }
 
 .download-form {
@@ -40,27 +48,10 @@
   color: #e05555;
 }
 
-.download-summary,
-.download-overall {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
 .download-folder {
   margin-left: 12px;
   color: var(--muted);
   font-size: 0.8rem;
-}
-
-.download-overall progress,
-.download-item progress {
-  accent-color: var(--accent);
-}
-
-.download-overall progress {
-  flex: 1;
 }
 
 .download-list {

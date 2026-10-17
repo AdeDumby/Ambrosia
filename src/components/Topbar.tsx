@@ -21,7 +21,7 @@ const tabs = [
 export default function Topbar({ minimal = false }: TopbarProps) {
   const { tracks } = useLibrary()
   const { search, setSearch, sort, setSort } = useFilters()
-  const { state: download } = useDownload()
+  const { state: download, chainBusy } = useDownload()
   const visibleTracks = useVisibleTracks()
   const trackLabel = `${visibleTracks.length} / ${tracks.length} tracks`
 
@@ -52,9 +52,8 @@ export default function Topbar({ minimal = false }: TopbarProps) {
         {tabs.map((tab) => (
           <NavLink key={tab.to} to={tab.to} end={tab.end} className="tab">
             {tab.label}
-            {tab.to === '/download' && download.phase === 'downloading' && (
-              <span className="tab-dot" aria-label="Download in progress" />
-            )}
+            {(tab.to === '/download' && download.phase === 'downloading') ||
+              (chainBusy && <span className="tab-dot" aria-label="Download in progress" />)}
           </NavLink>
         ))}
         <NavLink to="/settings" className="tab tab-right">

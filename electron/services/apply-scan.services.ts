@@ -8,11 +8,16 @@ const FRANCHISE_FOLDER = 'Franchise'
 
 type IdRow = { id: number }
 
-export async function applyScan(db: DatabaseSync, paths: LibraryPaths): Promise<ApplyResult> {
+export async function applyScan(
+  db: DatabaseSync,
+  paths: LibraryPaths,
+  options: { dropMissing?: boolean } = {}
+): Promise<ApplyResult> {
   const report = await scanLibrary(db, paths)
+  const dropMissing = options.dropMissing ?? true
+  const toDrop = dropMissing ? report.missing.filter((track) => !track.folderGone) : []
   throwIfCancelled()
   updateScan({ phase: 'applying', done: 0, total: null, current: '' })
-  const toDrop = report.missing.filter((track) => !track.folderGone)
 
   let added = 0
   let tagsCreated = 0
@@ -99,7 +104,7 @@ export async function applyScan(db: DatabaseSync, paths: LibraryPaths): Promise<
   return {
     added,
     dropped: toDrop.length,
-    skipped: report.missing.length - toDrop.length,
+    skipped: dropMissing ? report.missing.length - toDrop.length : 0,
     tagsCreated,
     tagsRemoved,
     problems: report.problems,

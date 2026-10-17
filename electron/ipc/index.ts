@@ -196,7 +196,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
         return { index: source.index, name: source.name }
       })
       return downloads.finishDownload(parsed)
-    }
+    },
+    applyDownloads: () =>
+      scanState.withScanRun(() =>
+        apply.applyScan(db, library.getLibraryPaths(db, documentsFolder), { dropMissing: false })
+      )
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {
