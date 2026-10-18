@@ -4,7 +4,7 @@
 
 ## Settings
 
-- Export DB in settings
+- Nothing left here!
 
 ---
 
@@ -24,6 +24,8 @@
 
 - README page tutorial
 - Packaging
+- Good icon on the app in taskbar
+- DB backups
 
 ---
 
