@@ -215,7 +215,7 @@ export async function startDownload(
     settled = true
     out.end()
     err.end()
-    settle(code, failure)
+    void reconcilePaths().then(() => settle(code, failure))
   }
   proc.on('error', (error: NodeJS.ErrnoException) =>
     once(
@@ -226,6 +226,37 @@ export async function startDownload(
     )
   )
   proc.on('close', (code) => once(code))
+}
+
+function fold(text: string): string {
+  return text
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, '')
+}
+
+async function reconcilePaths(): Promise<void> {
+  try {
+    const names = await listFolderNames()
+    const present = new Set(names.map((name) => name.toLowerCase()))
+    const byKey = new Map<string, string>()
+    for (const name of names) byKey.set(fold(name), name)
+
+    for (const item of state.items) {
+      if (!item.path) continue
+      const printed = path.basename(item.path)
+      if (present.has(printed.toLowerCase())) continue
+      const key = fold(printed)
+      const real = key === '' ? undefined : byKey.get(key)
+      if (real) {
+        item.path = path.join(state.folder, real)
+        item.title = stemOf(real)
+      }
+    }
+  } catch {
+    // keep the printed names if the folder cannot be read
+  }
 }
 
 export function cancelDownload(): void {

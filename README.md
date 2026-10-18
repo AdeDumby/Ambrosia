@@ -24,10 +24,7 @@
 
 - README page tutorial
 - Packaging
-- Logo color changes depending on theme used
 
 ---
 
 ### KNOWN ISSUES TO FIX FOR FUTURE VERSIONS
-
-Rename not working properly

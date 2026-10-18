@@ -1,7 +1,7 @@
 import { rename, stat } from 'node:fs/promises'
 import path from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
-import { MAX_FILE_STEM } from '../../src/shared/files'
+import { MAX_FILE_STEM } from '../../src/shared/files.ts'
 
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f]/
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
