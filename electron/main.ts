@@ -21,6 +21,10 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.yourcompany.yourappname')
+}
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1000,
@@ -40,7 +44,7 @@ function createWindow() {
   }
 }
 
-app.setAppUserModelId('com.ambrosia.app')
+// app.setAppUserModelId('com.ambrosia.app')
 
 app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
