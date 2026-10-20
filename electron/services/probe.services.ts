@@ -3,11 +3,12 @@ import { promisify } from 'node:util'
 import ffprobe from '@ffprobe-installer/ffprobe'
 
 const run = promisify(execFile)
+const ffprobePath = ffprobe.path.replace('app.asar', 'app.asar.unpacked')
 
 export async function probeDuration(file: string): Promise<number> {
   try {
     const { stdout } = await run(
-      ffprobe.path,
+      ffprobePath,
       ['-v', 'error', '-show_entries', 'format=duration', '-of', 'json', file],
       { timeout: 30_000 }
     )

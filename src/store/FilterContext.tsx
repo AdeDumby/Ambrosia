@@ -43,15 +43,6 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  function setTagFilter(tagId: number, state: TagFilterState | undefined) {
-    setTagFilters((previous) => {
-      const next = { ...previous }
-      if (state === undefined) delete next[tagId]
-      else next[tagId] = state
-      return next
-    })
-  }
-
   function clearTagFilter(tagId: number) {
     setTagFilters((previous) => {
       const next = { ...previous }

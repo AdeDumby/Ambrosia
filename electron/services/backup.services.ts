@@ -160,6 +160,7 @@ export function backupIfDue(db: DatabaseSync, backupFolder: string): string | nu
 }
 
 export function backupNow(db: DatabaseSync, backupFolder: string, manualFolder: string): string {
+  backupFolder
   const file = path.join(manualFolder, `ambrosia-backup-${stamp()}.db`)
   exportDatabase(db, file)
   return file

@@ -8,6 +8,7 @@ export type Tag = {
 }
 
 function cleanTagName(raw: string, ignoreId?: number): string {
+  ignoreId
   const name = formatTagName(raw)
   if (name === '') throw new Error('Give the tag a name.')
   if (name.length > MAX_TAG_NAME) throw new Error(`Use at most ${MAX_TAG_NAME} characters.`)

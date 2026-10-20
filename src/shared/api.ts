@@ -1,5 +1,5 @@
-import type { Settings } from './settings'
-import type { DownloadState, FinishResult } from './download'
+import type { Settings } from './settings.js'
+import type { DownloadState, FinishResult } from './download.js'
 import type {
   AnalysisInput,
   ApplyResult,
@@ -15,7 +15,7 @@ import type {
   ScanProgress,
   BackupEntry,
   ImportPreview
-} from './types'
+} from './types.js'
 
 export type Api = {
   listCategories(): Promise<TagCategory[]>

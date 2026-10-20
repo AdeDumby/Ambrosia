@@ -4,13 +4,16 @@
   "version": "0.14.0",
   "type": "module",
   "main": "dist-electron/main.js",
+  "description": "Music library manager",
+  "author": "AdeDumby",
   "scripts": {
     "test": "vitest run",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",
@@ -25,6 +28,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",

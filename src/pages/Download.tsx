@@ -22,16 +22,10 @@ const STATUS_TEXT = {
   failed: 'Failed'
 }
 
-const PHASE_TEXT = {
-  downloaded: 'Downloads finished.',
-  failed: 'The download failed.',
-  cancelled: 'The download was cancelled.'
-}
-
 const basename = (file: string) => file.split(/[\\/]/).pop() ?? file
 
 export default function Download() {
-  const { state, chainBusy, chain, start, reset, finish, rules, setRules, manual, setManual } =
+  const { state, chainBusy, chain, start, finish, rules, setRules, manual, setManual } =
     useDownload()
   const [franchise, setFranchise] = useState('')
   const [url, setUrl] = useState('')
@@ -40,14 +34,10 @@ export default function Download() {
   const [activeRuleId, setActiveRuleId] = useState<number | null>(null)
 
   const idle = state.phase === 'idle'
-  const running = state.phase === 'downloading'
   const franchiseProblem = franchise.trim() === '' ? null : checkFranchise(franchise)
   const urlProblem = url.trim() === '' ? null : checkUrl(url)
   const canStart =
     idle && franchise.trim() !== '' && url.trim() !== '' && !franchiseProblem && !urlProblem
-
-  const done = state.items.filter((item) => item.status === 'done').length
-  const overall = state.total ? Math.round((done / state.total) * 100) : undefined
 
   useEffect(() => {
     if (!state.renameActive) return

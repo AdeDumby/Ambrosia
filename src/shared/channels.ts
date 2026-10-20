@@ -1,4 +1,4 @@
-import type { Api } from './api'
+import type { Api } from './api.js'
 
 export const CHANNELS = {
   listCategories: 'categories:list',
