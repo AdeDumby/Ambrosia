@@ -1,6 +1,7 @@
 import { app, BrowserWindow, protocol } from 'electron'
 import path from 'node:path'
 import { removeEmptyLooseTags } from './services/tag.services.ts'
+import { backupIfDue } from './services/backup.services.ts'
 import { openDatabase } from './db/database.ts'
 import { registerIpc } from './ipc/index.ts'
 import { serveAudio } from './services/audio.services.ts'
@@ -50,6 +51,11 @@ app.whenReady().then(() => {
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
   removeEmptyLooseTags(db)
+  try {
+    backupIfDue(db, path.join(path.dirname(dbPath), 'backups'))
+  } catch (error) {
+    console.error('Startup backup failed:', error)
+  }
 
   const documents = app.getPath('documents')
   try {
@@ -58,7 +64,7 @@ app.whenReady().then(() => {
     console.error('Could not create the library folders:', error)
   }
 
-  registerIpc(db, documents)
+  registerIpc(db, documents, dbPath)
 
   protocol.handle('ambrosia-audio', (request) => {
     const id = Number(new URL(request.url).pathname.slice(1))

@@ -12,7 +12,9 @@ import type {
   Track,
   TrackKind,
   PurgeResult,
-  ScanProgress
+  ScanProgress,
+  BackupEntry,
+  ImportPreview
 } from './types'
 
 export type Api = {
@@ -65,4 +67,10 @@ export type Api = {
   getDownloadFolderNames(): Promise<string[]>
   finishDownload(entries: { index: number; name: string }[]): Promise<FinishResult>
   applyDownloads(): Promise<ApplyResult>
+
+  listBackups(): Promise<BackupEntry[]>
+  backupNow(): Promise<string>
+  openBackupFolder(): Promise<void>
+  chooseBackupFile(): Promise<ImportPreview | null>
+  restoreBackup(path: string | null): Promise<void>
 }

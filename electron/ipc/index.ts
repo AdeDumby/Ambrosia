@@ -17,6 +17,10 @@ import * as downloads from '../services/download.service.ts'
 import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
 import * as categories from '../services/category.services.ts'
+import * as backup from '../services/backup.services.ts'
+import path from 'node:path'
+import { mkdirSync } from 'node:fs'
+import { app } from 'electron/main'
 
 type Handlers = {
   [K in keyof Api]: (
@@ -24,7 +28,20 @@ type Handlers = {
   ) => ReturnType<Api[K]> | Awaited<ReturnType<Api[K]>>
 }
 
-export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
+export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: string): void {
+  const backupFolder = path.join(path.dirname(dbPath), 'backups')
+  const manualFolder = app.getPath('downloads')
+  let pendingFile: string | null = null
+
+  const guard = <T>(action: () => T): T => {
+    try {
+      return action()
+    } catch (error) {
+      throw new Error(
+        `The safety backup could not be made, so nothing was changed. ${error instanceof Error ? error.message : ''}`.trim()
+      )
+    }
+  }
   const handlers: Handlers = {
     listCategories: () => categories.listCategories(db),
     createCategory: (name, color) => {
@@ -97,6 +114,9 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     },
     deleteTrack: (id) => {
       assertId(id)
+      if (settings.getSettings(db).library.deleteMode === 'permanent') {
+        guard(() => backup.backupBefore(db, backupFolder, 'before-delete'))
+      }
       return deletion.deleteTrackWithFile(
         db,
         library.getLibraryPaths(db, documentsFolder),
@@ -133,9 +153,10 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
         scan.scanLibrary(db, library.getLibraryPaths(db, documentsFolder))
       ),
     applyScan: () =>
-      scanState.withScanRun(() =>
-        apply.applyScan(db, library.getLibraryPaths(db, documentsFolder))
-      ),
+      scanState.withScanRun(() => {
+        guard(() => backup.backupBefore(db, backupFolder, 'before-apply'))
+        return apply.applyScan(db, library.getLibraryPaths(db, documentsFolder))
+      }),
     getScanProgress: () => scanState.getScanProgress(),
     cancelScan: () => {
       scanState.cancelScan()
@@ -153,6 +174,9 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     purgeGoneDeletedTracks: () => purge.purgeGoneDeletedTracks(db),
     deleteCategory: (id, withTags) => {
       assertId(id)
+      if (withTags === true) {
+        guard(() => backup.backupBefore(db, backupFolder, 'before-folder-delete'))
+      }
       categories.deleteCategory(db, id, withTags === true)
     },
     renameTrack: (id, name) => {
@@ -200,7 +224,54 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string): void {
     applyDownloads: () =>
       scanState.withScanRun(() =>
         apply.applyScan(db, library.getLibraryPaths(db, documentsFolder), { dropMissing: false })
-      )
+      ),
+    listBackups: () => backup.listBackups(backupFolder, manualFolder),
+    backupNow: () => backup.backupNow(db, backupFolder, manualFolder),
+    openBackupFolder: async () => {
+      mkdirSync(backupFolder, { recursive: true })
+      const problem = await shell.openPath(backupFolder)
+      if (problem) throw new Error(problem)
+    },
+    chooseBackupFile: async () => {
+      const options: OpenDialogOptions = {
+        title: 'Choose a backup to restore',
+        defaultPath: manualFolder,
+        filters: [{ name: 'Ambrosia library', extensions: ['db'] }],
+        properties: ['openFile']
+      }
+      const parent = BrowserWindow.getFocusedWindow()
+      const result = parent
+        ? await dialog.showOpenDialog(parent, options)
+        : await dialog.showOpenDialog(options)
+      pendingFile = null
+      if (result.canceled || result.filePaths.length === 0) return null
+
+      const file = result.filePaths[0]
+      if (backup.samePath(file, dbPath)) {
+        throw new Error('That is the library you are already using.')
+      }
+      const preview = backup.inspectDatabase(file)
+      pendingFile = file
+      return preview
+    },
+    restoreBackup: (file) => {
+      if (scanState.getScanProgress().running) {
+        throw new Error('A scan is running. Wait for it to finish.')
+      }
+      const chosen = typeof file === 'string' ? file : pendingFile
+      pendingFile = null
+      if (!chosen) throw new Error('Choose a backup first.')
+      if (backup.samePath(chosen, dbPath)) {
+        throw new Error('That is the library you are already using.')
+      }
+      const known = backup.listBackups(backupFolder, manualFolder)
+      if (typeof file === 'string' && !known.some((entry) => backup.samePath(entry.path, chosen))) {
+        throw new Error('That backup is not in the list.')
+      }
+      backup.inspectDatabase(chosen)
+      guard(() => backup.backupBefore(db, backupFolder, 'before-restore'))
+      backup.importDatabase(db, chosen)
+    }
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

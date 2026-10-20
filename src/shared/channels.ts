@@ -41,5 +41,10 @@ export const CHANNELS = {
   resetDownload: 'download:reset',
   getDownloadFolderNames: 'download:folder-names',
   finishDownload: 'download:finish',
-  applyDownloads: 'library:apply-downloads'
+  applyDownloads: 'library:apply-downloads',
+  listBackups: 'backup:list',
+  backupNow: 'backup:now',
+  openBackupFolder: 'backup:open-folder',
+  chooseBackupFile: 'backup:choose-file',
+  restoreBackup: 'backup:restore'
 } as const satisfies Record<keyof Api, string>

@@ -129,3 +129,18 @@ export type ScanProgress = {
   total: number | null
   current: string
 }
+
+export type ImportPreview = {
+  fileName: string
+  tracks: number
+  tags: number
+  folders: number
+}
+
+export type BackupEntry = {
+  name: string
+  path: string
+  bytes: number
+  modified: number
+  manual: boolean
+}

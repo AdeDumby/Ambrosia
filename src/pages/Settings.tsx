@@ -14,6 +14,7 @@ import { useScanRun } from '../store/ScanRunContext'
 import { useSettings } from '../store/SettingsContext'
 import type { AppearanceMode, DeleteMode, Density } from '../shared/settings'
 import type { ApplyResult, LibraryPaths, ScanReport } from '../shared/types'
+import BackupSettings from '../components/feature/BackupSettings'
 import './Settings.css'
 
 const densityOptions: { value: Density; label: string }[] = [
@@ -243,6 +244,7 @@ export default function Settings() {
       <PlaybackSettings />
       <ReviewSettings />
       <TrackListSettings />
+      <BackupSettings />
 
       <ConfirmDialog
         open={confirmingApply}
