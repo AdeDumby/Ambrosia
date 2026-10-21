@@ -29,7 +29,7 @@ if (process.platform === 'win32') {
 function createWindow() {
   const win = new BrowserWindow({
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#120623', symbolColor: '#f2eef8', height: 36 },
+    titleBarOverlay: { color: '#120623', symbolColor: '#f2eef8', height: 32 },
     width: 1000,
     height: 700,
     icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),

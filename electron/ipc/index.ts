@@ -280,7 +280,7 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
         BrowserWindow.getAllWindows()[0]?.setTitleBarOverlay({
           color: background,
           symbolColor: symbol,
-          height: 36
+          height: 32
         })
       } catch {
         // Nothing

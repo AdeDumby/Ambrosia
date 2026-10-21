@@ -49,39 +49,7 @@
   color: inherit;
 }
 
-.topbar-tabs {
-  display: flex;
-  gap: 32px;
-  padding: 0 32px;
-}
-
-.tab {
-  padding: 12px 0;
-  border-bottom: 2px solid transparent;
-  color: var(--muted);
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
 .tab.active {
   color: inherit;
   border-bottom-color: var(--accent);
-}
-.tab-right {
-  margin-left: auto;
-}
-
-.topbar.minimal .tab {
-  padding: 8px 0;
-}
-
-.tab-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-left: 6px;
-  border-radius: 50%;
-  background: var(--accent);
 }

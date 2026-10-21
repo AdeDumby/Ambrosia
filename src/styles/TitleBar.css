@@ -2,19 +2,87 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 8px;
+  gap: 20px;
   width: env(titlebar-area-width, 100%);
-  height: 36px;
+  height: 32px;
   padding-left: 12px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   font-size: 0.8rem;
-  letter-spacing: 0.05em;
   -webkit-app-region: drag;
   user-select: none;
 }
 
+.titlebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.05em;
+}
+
 .titlebar-logo {
+  color: var(--accent);
+}
+
+.titlebar-nav {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  align-self: stretch;
+  gap: 4px;
+  min-width: 0;
+}
+
+.titlebar-tab {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  padding: 0 10px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-tab:hover {
+  color: var(--text);
+}
+
+.titlebar-tab.active {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+}
+
+.titlebar-tab-right {
+  margin-left: auto;
+}
+
+.titlebar-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.titlebar-keys {
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.7rem;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+.titlebar-keys.on {
+  border-color: var(--accent);
   color: var(--accent);
 }
 
