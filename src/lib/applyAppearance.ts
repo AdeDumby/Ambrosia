@@ -18,7 +18,10 @@ function adapt(appearance: Appearance, wantLight: boolean): Appearance {
   }
 }
 
-export function applyAppearance(appearance: Appearance, systemPrefersLight: boolean): void {
+export function applyAppearance(
+  appearance: Appearance,
+  systemPrefersLight: boolean
+): { background: string; symbol: string } {
   const wantLight = appearance.mode === 'system' ? systemPrefersLight : appearance.mode === 'light'
   const palette = adapt(appearance, wantLight)
 
@@ -32,4 +35,5 @@ export function applyAppearance(appearance: Appearance, systemPrefersLight: bool
   root.style.setProperty('--text', readableOn(palette.pageBackground))
   root.style.setProperty('--density', String(DENSITY_FACTOR[palette.density]))
   root.style.colorScheme = isLight(palette.pageBackground) ? 'light' : 'dark'
+  return { background: palette.panelBackground, symbol: readableOn(palette.panelBackground) }
 }

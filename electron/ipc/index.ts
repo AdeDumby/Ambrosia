@@ -271,6 +271,20 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
       backup.inspectDatabase(chosen)
       guard(() => backup.backupBefore(db, backupFolder, 'before-restore'))
       backup.importDatabase(db, chosen)
+    },
+    setTitleBarColors: (background, symbol) => {
+      const valid = (value: unknown): value is string =>
+        typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+      if (!valid(background) || !valid(symbol)) throw new Error('Invalid color')
+      try {
+        BrowserWindow.getAllWindows()[0]?.setTitleBarOverlay({
+          color: background,
+          symbolColor: symbol,
+          height: 36
+        })
+      } catch {
+        // Nothing
+      }
     }
   }
 

@@ -1,8 +1,9 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import Sidebar from './Sidebar'
-import Topbar from './Topbar'
 import Footer from './Footer'
+import Topbar from './Topbar'
+import TitleBar from './TitleBar'
 import ScanDialog from './feature/ScanDialog'
 import { AnalysisProvider } from '../store/AnalysisContext'
 import { FilterProvider } from '../store/FilterContext'
@@ -36,14 +37,17 @@ export default function Layout() {
             <ScanRunProvider>
               <DownloadProvider>
                 <FilterProvider>
-                  <div className="app-shell">
-                    {!focused && <Sidebar />}
-                    <div className="main-area">
-                      <Topbar minimal={focused} />
-                      <main className="content">
-                        <Outlet />
-                      </main>
-                      <Footer />
+                  <div className="window">
+                    <TitleBar />
+                    <div className="app-shell">
+                      {!focused && <Sidebar />}
+                      <div className="main-area">
+                        <Topbar minimal={focused} />
+                        <main className="content">
+                          <Outlet />
+                        </main>
+                        <Footer />
+                      </div>
                     </div>
                   </div>
                   <ScanDialog />

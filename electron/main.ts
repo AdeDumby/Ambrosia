@@ -1,4 +1,4 @@
-import { app, BrowserWindow, protocol } from 'electron'
+import { app, BrowserWindow, protocol, Menu } from 'electron'
 import path from 'node:path'
 import { removeEmptyLooseTags } from './services/tag.services.ts'
 import { backupIfDue } from './services/backup.services.ts'
@@ -28,6 +28,8 @@ if (process.platform === 'win32') {
 
 function createWindow() {
   const win = new BrowserWindow({
+    titleBarStyle: 'hidden',
+    titleBarOverlay: { color: '#120623', symbolColor: '#f2eef8', height: 36 },
     width: 1000,
     height: 700,
     icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
@@ -43,11 +45,23 @@ function createWindow() {
   } else {
     win.loadFile(path.join(app.getAppPath(), 'dist/index.html'))
   }
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return
+    const key = input.key.toLowerCase()
+    if (input.control && input.shift && key === 'i') {
+      win.webContents.toggleDevTools()
+      event.preventDefault()
+    } else if ((input.control && key === 'r') || key === 'f5') {
+      win.webContents.reload()
+      event.preventDefault()
+    }
+  })
 }
 
 // app.setAppUserModelId('com.ambrosia.app')
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
   removeEmptyLooseTags(db)

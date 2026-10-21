@@ -46,5 +46,6 @@ export const CHANNELS = {
   backupNow: 'backup:now',
   openBackupFolder: 'backup:open-folder',
   chooseBackupFile: 'backup:choose-file',
-  restoreBackup: 'backup:restore'
+  restoreBackup: 'backup:restore',
+  setTitleBarColors: 'window:title-bar-colors'
 } as const satisfies Record<keyof Api, string>

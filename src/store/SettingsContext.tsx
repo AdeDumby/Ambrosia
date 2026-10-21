@@ -68,7 +68,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const appearance = settings?.appearance
   useEffect(() => {
-    if (appearance) applyAppearance(appearance, systemPrefersLight)
+    if (!appearance) return
+    const bar = applyAppearance(appearance, systemPrefersLight)
+    void window.api.setTitleBarColors(bar.background, bar.symbol).catch(() => {})
   }, [appearance, systemPrefersLight])
 
   useEffect(() => {
