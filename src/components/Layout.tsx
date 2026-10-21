@@ -5,6 +5,7 @@ import Footer from './Footer'
 import Topbar from './Topbar'
 import TitleBar from './TitleBar'
 import ScanDialog from './feature/ScanDialog'
+import Shortcuts from './feature/Shortcuts'
 import { AnalysisProvider } from '../store/AnalysisContext'
 import { FilterProvider } from '../store/FilterContext'
 import { LibraryProvider } from '../store/LibraryContext'
@@ -50,6 +51,7 @@ export default function Layout() {
                       </div>
                     </div>
                   </div>
+                  <Shortcuts />
                   <ScanDialog />
                 </FilterProvider>
               </DownloadProvider>
