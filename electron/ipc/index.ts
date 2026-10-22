@@ -272,20 +272,19 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
       guard(() => backup.backupBefore(db, backupFolder, 'before-restore'))
       backup.importDatabase(db, chosen)
     },
-    setTitleBarColors: (background, symbol) => {
-      const valid = (value: unknown): value is string =>
-        typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
-      if (!valid(background) || !valid(symbol)) throw new Error('Invalid color')
-      try {
-        BrowserWindow.getAllWindows()[0]?.setTitleBarOverlay({
-          color: background,
-          symbolColor: symbol,
-          height: 32
-        })
-      } catch {
-        // Nothing
-      }
-    }
+    controlWindow: (action) => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+      if (!win) return
+      if (action === 'minimize') win.minimize()
+      else if (action === 'maximize') {
+        if (win.isMaximized()) win.unmaximize()
+        else win.maximize()
+      } else if (action === 'close') win.close()
+      else throw new Error('Invalid action')
+    },
+    getWindowState: () => ({
+      maximized: BrowserWindow.getAllWindows()[0]?.isMaximized() ?? false
+    })
   }
 
   for (const name of Object.keys(CHANNELS) as (keyof Api)[]) {

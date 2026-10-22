@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useDownload } from '../store/DownloadContext'
 import { useShortcutsEnabled } from '../store/ShortcutsContext'
+import WindowControls from './WindowsControl'
 import '../styles/TitleBar.css'
 
 const tabs = [
@@ -30,7 +31,10 @@ export default function TitleBar() {
             )}
           </NavLink>
         ))}
-        <NavLink to="/settings" className="titlebar-tab titlebar-tab-right">
+      </nav>
+
+      <div className="titlebar-right">
+        <NavLink to="/settings" className="titlebar-tab">
           ⚙ Settings
         </NavLink>
         <button
@@ -42,7 +46,8 @@ export default function TitleBar() {
         >
           Keys {enabled ? 'on' : 'off'}
         </button>
-      </nav>
+        <WindowControls />
+      </div>
     </div>
   )
 }

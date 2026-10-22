@@ -29,7 +29,6 @@ if (process.platform === 'win32') {
 function createWindow() {
   const win = new BrowserWindow({
     titleBarStyle: 'hidden',
-    titleBarOverlay: { color: '#120623', symbolColor: '#f2eef8', height: 32 },
     width: 1000,
     height: 700,
     icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
@@ -39,6 +38,11 @@ function createWindow() {
       preload: path.join(app.getAppPath(), 'dist-electron', 'preload.mjs')
     }
   })
+
+  const sendWindowState = () =>
+    win.webContents.send('window-state', { maximized: win.isMaximized() })
+  win.on('maximize', sendWindowState)
+  win.on('unmaximize', sendWindowState)
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL)

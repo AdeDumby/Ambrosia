@@ -3,9 +3,9 @@
   flex-shrink: 0;
   align-items: center;
   gap: 20px;
-  width: env(titlebar-area-width, 100%);
+  width: 100%;
   height: 32px;
-  padding-left: 12px;
+  padding: 0 0 0 12px;
   border-bottom: 1px solid var(--border);
   background: var(--panel);
   font-size: 0.8rem;
@@ -56,10 +56,6 @@
   color: var(--text);
 }
 
-.titlebar-tab-right {
-  margin-left: auto;
-}
-
 .titlebar-dot {
   display: inline-block;
   width: 6px;
@@ -69,14 +65,24 @@
   background: var(--accent);
 }
 
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  gap: 10px;
+}
+
 .titlebar-keys {
-  padding: 2px 8px;
+  align-self: center;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
   font: inherit;
   font-size: 0.7rem;
+  line-height: 20px;
+  white-space: nowrap;
   -webkit-app-region: no-drag;
   cursor: pointer;
 }

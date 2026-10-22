@@ -18,5 +18,14 @@ contextBridge.exposeInMainWorld('appEvents', {
     }
     ipcRenderer.on('navigate', handler)
     return () => ipcRenderer.removeListener('navigate', handler)
+  },
+  onWindowState: (listener: (state: { maximized: boolean }) => void) => {
+    const handler = (_event: unknown, state: unknown) => {
+      if (typeof state === 'object' && state !== null && 'maximized' in state) {
+        listener({ maximized: state.maximized === true })
+      }
+    }
+    ipcRenderer.on('window-state', handler)
+    return () => ipcRenderer.removeListener('window-state', handler)
   }
 })

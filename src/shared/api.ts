@@ -74,5 +74,6 @@ export type Api = {
   chooseBackupFile(): Promise<ImportPreview | null>
   restoreBackup(path: string | null): Promise<void>
 
-  setTitleBarColors(background: string, symbol: string): Promise<void>
+  controlWindow(action: 'minimize' | 'maximize' | 'close'): Promise<void>
+  getWindowState(): Promise<{ maximized: boolean }>
 }
