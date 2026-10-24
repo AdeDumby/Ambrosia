@@ -8,6 +8,8 @@ import { serveAudio } from './services/audio.services.ts'
 import { getTrackPath } from './services/track.services.ts'
 import { ensureLibraryFolders, getLibraryPaths } from './services/library.services.ts'
 import { cancelDownload } from './services/download.service.ts'
+import { setupZoom } from './services/zoom.services.ts'
+import type { DatabaseSync } from 'node:sqlite'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -26,7 +28,7 @@ if (process.platform === 'win32') {
   app.setAppUserModelId('com.yourcompany.yourappname')
 }
 
-function createWindow() {
+function createWindow(db: DatabaseSync) {
   const win = new BrowserWindow({
     titleBarStyle: 'hidden',
     width: 1000,
@@ -38,6 +40,8 @@ function createWindow() {
       preload: path.join(app.getAppPath(), 'dist-electron', 'preload.mjs')
     }
   })
+
+  setupZoom(win, db)
 
   const sendWindowState = () =>
     win.webContents.send('window-state', { maximized: win.isMaximized() })
@@ -91,7 +95,7 @@ app.whenReady().then(() => {
     return serveAudio(filePath, request.headers.get('range'))
   })
 
-  createWindow()
+  createWindow(db)
 })
 
 app.on('before-quit', cancelDownload)

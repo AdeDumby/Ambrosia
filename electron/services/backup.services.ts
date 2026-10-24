@@ -7,7 +7,7 @@ import { removeEmptyLooseTags } from './tag.services.ts'
 const DELETE_ORDER = ['track_tag', 'track', 'tag', 'tag_category', 'source_folder', 'setting']
 const INSERT_ORDER = [...DELETE_ORDER].reverse()
 const REQUIRED_TABLES = ['track', 'tag', 'tag_category', 'track_tag', 'source_folder']
-const LOCAL_SETTINGS = ['library-folder']
+const LOCAL_SETTINGS = ['library-folder', 'zoom-factor']
 const KEEP_AUTOMATIC = 10
 const DAILY_MS = 24 * 60 * 60 * 1000
 
