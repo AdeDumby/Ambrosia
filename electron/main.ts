@@ -25,16 +25,22 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
+// Must match appId in electron-builder.yml so the taskbar, pins and shortcuts share one identity.
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.yourcompany.yourappname')
+  app.setAppUserModelId('com.ambrosia.app')
 }
+
+// Packaged builds copy the icon into resources/ (extraResources); assets/ is not in the app bundle.
+const iconPath = app.isPackaged
+  ? path.join(process.resourcesPath, 'icon.ico')
+  : path.join(app.getAppPath(), 'assets', 'icon.ico')
 
 function createWindow(db: DatabaseSync) {
   const win = new BrowserWindow({
     titleBarStyle: 'hidden',
     width: 1000,
     height: 700,
-    icon: path.join(app.getAppPath(), 'assets', 'icon.ico'),
+    icon: iconPath,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -66,8 +72,6 @@ function createWindow(db: DatabaseSync) {
     }
   })
 }
-
-// app.setAppUserModelId('com.ambrosia.app')
 
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null)
