@@ -31,7 +31,17 @@
 
 .settings-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
+}
+
+.settings-actions-spread {
+  width: 100%;
+}
+
+.settings-actions-spread .btn {
+  flex: 1 1 0;
+  white-space: nowrap;
 }
 
 .settings-success {

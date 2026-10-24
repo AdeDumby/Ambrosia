@@ -73,7 +73,7 @@ export default function Settings() {
           </button>
         </PathField>
 
-        <div className="settings-actions">
+        <DeletedFolderPanel>
           <button
             type="button"
             className="btn btn-primary"
@@ -82,9 +82,7 @@ export default function Settings() {
           >
             Scan library
           </button>
-        </div>
-
-        <DeletedFolderPanel />
+        </DeletedFolderPanel>
 
         {libraryError && (
           <p className="settings-error" role="alert">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { errorMessage } from '../../lib/errors'
 import type { EmptyDeletedResult, RestoreResult } from '../../shared/types'
 import { useLibrary } from '../../store/LibraryContext'
@@ -31,7 +31,12 @@ function describeErase(result: EmptyDeletedResult): Outcome {
   }
 }
 
-export default function DeletedFolderPanel() {
+type Props = {
+  /** Extra buttons shown at the start of the action row. */
+  children?: ReactNode
+}
+
+export default function DeletedFolderPanel({ children }: Props) {
   const { refreshTracks, refreshTags } = useLibrary()
   const { busy } = useScanRun()
   const [count, setCount] = useState(0)
@@ -69,7 +74,8 @@ export default function DeletedFolderPanel() {
 
   return (
     <>
-      <div className="settings-actions">
+      <div className="settings-actions settings-actions-spread">
+        {children}
         <button
           type="button"
           className="btn"
