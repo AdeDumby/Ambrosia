@@ -26,12 +26,12 @@ describe('zoomDirection', () => {
 })
 
 describe('nextZoom', () => {
-  it('moves in exact 10% steps', () => {
+  it('moves in exact 5% steps', () => {
     let factor = 1
     for (let step = 0; step < 5; step += 1) factor = nextZoom(factor, 1)
-    expect(factor).toBe(1.5)
+    expect(factor).toBe(1.25)
     for (let step = 0; step < 3; step += 1) factor = nextZoom(factor, -1)
-    expect(factor).toBe(1.2)
+    expect(factor).toBe(1.1)
   })
 
   it('stops at 50% and 200%', () => {

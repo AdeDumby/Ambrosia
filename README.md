@@ -12,6 +12,10 @@ Built with Electron, React and Vite. Your library is stored in a local SQLite da
 2. Run it. Windows shows a blue **Windows protected your PC** screen, because the installer is not signed with a paid certificate. Click **More info**, then **Run anyway**.
 3. Choose an install folder (or keep the default) and finish. Ambrosia appears in the Start Menu and on the desktop.
 
+### Updating
+
+Run the new installer over the old one. Your library, settings and backups are kept.
+
 ### Needed only for downloading
 
 The **Download** page uses two free tools that are not bundled with the app. Install them once from PowerShell:
@@ -42,18 +46,19 @@ If a command is not found, close and reopen PowerShell, or sign out and back in,
 
 Shortcuts work when no text field is focused. Press **Ctrl + Alt** together to turn them on or off (the badge in the title bar shows the state).
 
-| Key           | Action                                                                 |
-| ------------- | ---------------------------------------------------------------------- |
-| Space         | Play / pause                                                           |
-| N / P         | Next / previous track                                                  |
-| Left / Right  | Back / forward 10 seconds                                              |
-| Up / Down     | Volume +/- 2 (+/- 5 after holding 3 seconds)                           |
-| S / R         | Toggle shuffle / repeat                                                |
-| Q             | Play a random track from the current filters                           |
-| 1 / 2 / 3 / 4 | Library / Review / Download / Settings                                 |
-| /             | Focus the search box, tag box or first empty field of the current page |
+| Key                     | Action                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| Space                   | Play / pause                                                                    |
+| N / P                   | Next / previous track                                                           |
+| Left / Right            | Back / forward 10 seconds (hold to keep going)                                  |
+| Up / Down               | Volume +/- 2 (+/- 5 after holding for 3 seconds)                                |
+| S / R                   | Turn shuffle / repeat on or off                                                 |
+| Q                       | Play a random track from the current filters                                    |
+| 1 / 2 / 3 / 4           | Library / Review / Download / Settings                                          |
+| /                       | Focus the search box, the tag box, or the first empty field of the current page |
+| Ctrl + `+` / Ctrl + `-` | Zoom in / out by 5% (works in text fields too)                                  |
 
-The Play/Pause, Next and Previous keys of a keyboard or headset also control Ambrosia, through Windows media controls.
+The Play/Pause keys of a keyboard or headset also control Ambrosia, through Windows media controls.
 
 ### Library
 
@@ -143,3 +148,5 @@ Everything the page can ask the main process to do is defined once in `src/share
 - **No notification**: Windows needs the app to be installed, so notifications may not appear when running from `npm run dev`.
 - **Tracks flagged as missing**: their files were moved or deleted outside Ambrosia. Put them back, or let **Apply changes** remove them.
 - **A track plays at a different volume than others**: it may not be measured yet. Run **Apply changes**, or check that **Normalize volume** is on.
+- **Shortcuts do nothing**: check the `Keys` badge in the title bar, and press Ctrl + Alt to turn them on. They are also off while a text field has focus.
+- **Media keys do not control Ambrosia**: they only act while a track is loaded. Another media app may have taken them, so close it or press play in Ambrosia once.
