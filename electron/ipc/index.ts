@@ -5,7 +5,6 @@ import { assertId, assertName, parseAnalysisInput } from './validate.ts'
 import { BrowserWindow, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
 import * as tags from '../services/tag.services.ts'
 import * as scan from '../services/scan.services.ts'
-import * as purge from '../services/purge.services.ts'
 import * as tracks from '../services/track.services.ts'
 import * as scanState from '../services/scan-progress.ts'
 import * as deletion from '../services/delete.services.ts'
@@ -114,15 +113,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
     },
     deleteTrack: (id) => {
       assertId(id)
-      if (settings.getSettings(db).library.deleteMode === 'permanent') {
-        guard(() => backup.backupBefore(db, backupFolder, 'before-delete'))
-      }
-      return deletion.deleteTrackWithFile(
-        db,
-        library.getLibraryPaths(db, documentsFolder),
-        settings.getSettings(db).library.deleteMode,
-        id
-      )
+      return deletion.deleteTrackWithFile(db, library.getLibraryPaths(db, documentsFolder), id)
+    },
+    emptyDeletedFolder: () => {
+      guard(() => backup.backupBefore(db, backupFolder, 'before-empty-deleted'))
+      return deletion.emptyDeletedFolder(db)
     },
     getSettings: () => settings.getSettings(db),
     saveSettings: (value) => {
@@ -171,7 +166,6 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
     },
     countDeletedTracks: () => restore.countDeletedTracks(db),
     restoreDeletedTracks: () => restore.restoreDeletedTracks(db),
-    purgeGoneDeletedTracks: () => purge.purgeGoneDeletedTracks(db),
     deleteCategory: (id, withTags) => {
       assertId(id)
       if (withTags === true) {

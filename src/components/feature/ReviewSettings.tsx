@@ -16,10 +16,7 @@ export default function ReviewSettings() {
   }
 
   return (
-    <SettingsSection
-      title="Review"
-      description="Checked folders do not get a column on the Review page. Their tags are still shown on the track."
-    >
+    <SettingsSection title="Tag folders showed on the Review page">
       {categories.length === 0 && <p>No folders yet.</p>}
       {categories.map((category) => (
         <CheckboxField

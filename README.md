@@ -94,7 +94,7 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 
 ### Settings
 
-- **Library**: library folder, what delete does, restore or forget deleted tracks, scan and apply.
+- **Library**: library folder, **Scan library**, and the `_Deleted` folder (**Restore All** and **Delete All**).
 - **Presets**: appearance presets (colors and density). Presets you save also keep the default volume, the loudness settings and the Review folders.
 - **Appearance**: System / Light / Dark theme, accent color, density, and four background colors. Each color has a hex field with Copy and Paste buttons.
 - **Playback**: default volume, and **Normalize volume**. Every track gets one volume adjustment so that all tracks play at about the same loudness, as streaming services do. Pick Quiet (-19), Normal (-14) or Loud (-11). A boost never pushes a track into distortion, so a very quiet track may stay below the target. The music files are never modified.
@@ -103,8 +103,8 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 
 ## Deleting, scanning and loudness
 
-- **Delete** either moves the file to the `_Deleted` folder (default, so you can clean up by hand) or erases it for good. Choose in **Settings > Library**. **Restore all** puts back every track from `_Deleted`.
-- **Scan library** previews what would change without writing anything. **Apply changes** adds new files and removes tracks whose files are gone, then measures the loudness of the new tracks. If a whole folder cannot be found (an unplugged drive, a renamed folder), a red alarm lists it and the tracks inside are left alone.
+- **Delete** moves the file to the `_Deleted` folder inside the library folder. **Restore All in \_Deleted** puts every track back. **Delete All in \_Deleted** erases those files for good and forgets the tracks. A file you delete by hand from `_Deleted` is forgotten the next time Ambrosia starts or scans.
+- **Scan library** adds new files, removes tracks whose files are gone, then measures the loudness of the new tracks. A backup is made first. If a whole folder cannot be found (an unplugged drive, a renamed folder), the tracks inside are left alone and the scan lists the folder.
 - A file that is moved or renamed outside Ambrosia counts as one removed track and one new track, so it loses its tags. Rename tracks inside Ambrosia instead.
 
 ## Your data

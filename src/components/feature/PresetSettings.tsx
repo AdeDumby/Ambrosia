@@ -45,10 +45,7 @@ export default function PresetSettings() {
   }
 
   return (
-    <SettingsSection
-      title="Presets"
-      description="A preset sets the colors and the layout density. The ones you save also keep the default volume and the folders hidden on Review. Presets never change the delete behavior, the track list size or the library folder."
-    >
+    <SettingsSection title="Presets">
       {all.map((preset) => {
         const isActive = preset.name === settings.activePreset
         const builtIn = BUILT_IN_PRESETS.includes(preset)
@@ -100,7 +97,6 @@ export default function PresetSettings() {
           Save current settings
         </button>
       </div>
-      <p className="settings-hint">Saving under the name of one of your presets replaces it.</p>
       {error && (
         <p className="settings-error" role="alert">
           {error}

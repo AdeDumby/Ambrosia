@@ -27,7 +27,6 @@ export const CHANNELS = {
   clearAnalysisErrors: 'analysis:clear-errors',
   countDeletedTracks: 'tracks:count-deleted',
   restoreDeletedTracks: 'tracks:restore-deleted',
-  purgeGoneDeletedTracks: 'tracks:purge-gone-deleted',
   renameCategory: 'categories:rename',
   recolorCategory: 'categories:recolor',
   deleteCategory: 'categories:delete',
@@ -48,5 +47,6 @@ export const CHANNELS = {
   chooseBackupFile: 'backup:choose-file',
   restoreBackup: 'backup:restore',
   controlWindow: 'window:control',
-  getWindowState: 'window:state'
+  getWindowState: 'window:state',
+  emptyDeletedFolder: 'tracks:empty-deleted'
 } as const satisfies Record<keyof Api, string>

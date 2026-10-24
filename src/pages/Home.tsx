@@ -96,9 +96,7 @@ export default function Home() {
     }
   }
 
-  const dialog = pendingDelete
-    ? deleteDialogText(settings.library.deleteMode, pendingDelete.filename)
-    : null
+  const dialog = pendingDelete ? deleteDialogText(pendingDelete.filename) : null
 
   return (
     <div className="track-list" ref={listRef}>

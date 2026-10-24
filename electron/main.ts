@@ -10,6 +10,7 @@ import { ensureLibraryFolders, getLibraryPaths } from './services/library.servic
 import { cancelDownload } from './services/download.service.ts'
 import { setupZoom } from './services/zoom.services.ts'
 import type { DatabaseSync } from 'node:sqlite'
+import { purgeGoneDeletedTracks } from './services/purge.services.ts'
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -68,7 +69,7 @@ function createWindow(db: DatabaseSync) {
 
 // app.setAppUserModelId('com.ambrosia.app')
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   Menu.setApplicationMenu(null)
   const dbPath = path.join(app.getPath('userData'), 'ambrosia.db')
   const db = openDatabase(dbPath)
@@ -85,7 +86,7 @@ app.whenReady().then(() => {
   } catch (error) {
     console.error('Could not create the library folders:', error)
   }
-
+  await purgeGoneDeletedTracks(db).catch(() => {})
   registerIpc(db, documents, dbPath)
 
   protocol.handle('ambrosia-audio', (request) => {

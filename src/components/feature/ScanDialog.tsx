@@ -9,7 +9,7 @@ type LiveAnalysis = { done: number; total: number; current: string }
 
 const TITLES: Record<Run['kind'], string> = {
   scan: 'Scanning the library',
-  apply: 'Applying the scan',
+  apply: 'Scanning the library',
   analyze: 'Measuring loudness'
 }
 
@@ -46,7 +46,7 @@ function scanStep(run: Run): StepView {
       const detail = report
         ? `${report.toAdd.length} new, ${report.missing.length} missing`
         : applyResult
-          ? `${applyResult.added} added, ${applyResult.dropped} dropped`
+          ? `${applyResult.added} added, ${applyResult.dropped} removed${applyResult.skipped > 0 ? `, ${applyResult.skipped} left alone` : ''}`
           : ''
       return {
         current: '',
@@ -175,7 +175,18 @@ export default function ScanDialog() {
               ))}
             </ul>
           )}
-
+          {run.applyResult && run.applyResult.vanishedFolders.length > 0 && (
+            <div className="scan-dialog-alarm" role="alert">
+              <strong>Folders not found, their tracks were left alone</strong>
+              <ul>
+                {run.applyResult.vanishedFolders.map((folder) => (
+                  <li key={folder.path}>
+                    {folder.path} ({folder.tracks})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="scan-dialog-buttons">
             {finished ? (
               <button ref={closeRef} type="button" className="btn btn-primary" onClick={dismiss}>

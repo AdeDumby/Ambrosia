@@ -15,6 +15,28 @@ async function present(file: string): Promise<boolean> {
   }
 }
 
+export function forgetTracks(db: DatabaseSync, ids: number[]): number {
+  if (ids.length === 0) return 0
+  db.exec('BEGIN')
+  try {
+    const tagsOf = db.prepare('SELECT DISTINCT tag_id FROM track_tag WHERE track_id = ?')
+    const remove = db.prepare('DELETE FROM track WHERE id = ?')
+    const touched = new Set<number>()
+    for (const id of ids) {
+      for (const row of tagsOf.all(id) as unknown as { tag_id: number }[]) {
+        touched.add(row.tag_id)
+      }
+      remove.run(id)
+    }
+    const removed = removeUnusedLooseTags(db, touched)
+    db.exec('COMMIT')
+    return removed
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
+}
+
 export async function purgeGoneDeletedTracks(db: DatabaseSync): Promise<PurgeResult> {
   const rows = db
     .prepare('SELECT id, path, original_path FROM track WHERE deleted = 1')
@@ -27,24 +49,5 @@ export async function purgeGoneDeletedTracks(db: DatabaseSync): Promise<PurgeRes
     if (!inPlace && !inOriginal) gone.push(row.id)
   }
 
-  let tagsRemoved = 0
-  db.exec('BEGIN')
-  try {
-    const tagsOf = db.prepare('SELECT DISTINCT tag_id FROM track_tag WHERE track_id = ?')
-    const remove = db.prepare('DELETE FROM track WHERE id = ?')
-    const touched = new Set<number>()
-    for (const id of gone) {
-      for (const row of tagsOf.all(id) as unknown as { tag_id: number }[]) {
-        touched.add(row.tag_id)
-      }
-      remove.run(id)
-    }
-    tagsRemoved = removeUnusedLooseTags(db, touched)
-    db.exec('COMMIT')
-  } catch (error) {
-    db.exec('ROLLBACK')
-    throw error
-  }
-
-  return { purged: gone.length, tagsRemoved }
+  return { purged: gone.length, tagsRemoved: forgetTracks(db, gone) }
 }

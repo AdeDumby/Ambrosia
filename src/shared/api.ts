@@ -11,10 +11,10 @@ import type {
   TagCategory,
   Track,
   TrackKind,
-  PurgeResult,
   ScanProgress,
   BackupEntry,
-  ImportPreview
+  ImportPreview,
+  EmptyDeletedResult
 } from './types.js'
 
 export type Api = {
@@ -38,7 +38,8 @@ export type Api = {
   setTrackKind(id: number, kind: TrackKind): Promise<void>
   setTrackReviewed(id: number, reviewed: boolean): Promise<void>
   renameTrack(id: number, name: string): Promise<string>
-  deleteTrack(id: number): Promise<boolean>
+  deleteTrack(id: number): Promise<void>
+  emptyDeletedFolder(): Promise<EmptyDeletedResult>
 
   getSettings(): Promise<Settings>
   saveSettings(settings: Settings): Promise<void>
@@ -55,7 +56,6 @@ export type Api = {
 
   countDeletedTracks(): Promise<number>
   restoreDeletedTracks(): Promise<RestoreResult>
-  purgeGoneDeletedTracks(): Promise<PurgeResult>
 
   getScanProgress(): Promise<ScanProgress>
   cancelScan(): Promise<void>

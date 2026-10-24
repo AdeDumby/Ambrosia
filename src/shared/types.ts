@@ -97,6 +97,13 @@ export type ApplyResult = {
   tagsCreated: number
   tagsRemoved: number
   problems: ScanProblem[]
+  vanishedFolders: VanishedFolder[]
+}
+
+export type EmptyDeletedResult = {
+  erased: number
+  failed: { filename: string; message: string }[]
+  tagsRemoved: number
 }
 
 export type PendingAnalysis = {

@@ -90,7 +90,7 @@ export default function Review() {
       tags: allTags.filter((tag) => tag.categoryId === category.id)
     }))
   const ungrouped = allTags.filter((tag) => tag.categoryId === null)
-  const dialog = deleteDialogText(settings.library.deleteMode, current.filename)
+  const dialog = deleteDialogText(current.filename)
 
   return (
     <div className="review">

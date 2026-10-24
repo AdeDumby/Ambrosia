@@ -108,6 +108,7 @@ export async function applyScan(
     tagsCreated,
     tagsRemoved,
     problems: report.problems,
-    filesFound: report.filesFound
+    filesFound: report.filesFound,
+    vanishedFolders: report.vanishedFolders
   }
 }
