@@ -34,6 +34,7 @@ export const CHANNELS = {
   getScanProgress: 'library:scan-progress',
   cancelScan: 'library:cancel-scan',
   renameTag: 'tags:rename',
+  mergeTags: 'tags:merge',
   getDownloadState: 'download:state',
   startDownload: 'download:start',
   cancelDownload: 'download:cancel',

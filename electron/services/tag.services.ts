@@ -46,6 +46,49 @@ export function renameTag(db: DatabaseSync, id: number, name: string): string {
   return cleaned
 }
 
+/**
+ * Merges `removeId` into `keepId`: every track that had the removed tag gets the kept one
+ * (no duplicates), the removed tag is deleted, and the kept tag takes the new name.
+ * The kept tag keeps its folder. The new name may be one of the two old names.
+ */
+export function mergeTags(
+  db: DatabaseSync,
+  keepId: number,
+  removeId: number,
+  name: string,
+  beforeChange?: () => void
+): string {
+  if (keepId === removeId) throw new Error('Choose two different tags.')
+  const cleaned = cleanTagName(name)
+
+  const found = db.prepare('SELECT id FROM tag WHERE id IN (?, ?)').all(keepId, removeId)
+  if (found.length !== 2) throw new Error('That tag does not exist.')
+
+  const taken = findTagId(db, cleaned)
+  if (taken !== undefined && taken !== keepId && taken !== removeId) {
+    throw new Error('A tag with that name already exists.')
+  }
+
+  // Runs only once the merge is known to be valid, so a refused merge makes no backup.
+  beforeChange?.()
+
+  db.exec('BEGIN')
+  try {
+    db.prepare(
+      `INSERT OR IGNORE INTO track_tag (track_id, tag_id)
+       SELECT track_id, ? FROM track_tag WHERE tag_id = ?`
+    ).run(keepId, removeId)
+    db.prepare('DELETE FROM track_tag WHERE tag_id = ?').run(removeId)
+    db.prepare('DELETE FROM tag WHERE id = ?').run(removeId)
+    db.prepare('UPDATE tag SET name = ? WHERE id = ?').run(cleaned, keepId)
+    db.exec('COMMIT')
+    return cleaned
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
+}
+
 export function listTags(db: DatabaseSync): Tag[] {
   const rows = db.prepare(`SELECT id, name, category_id AS categoryId FROM tag ORDER BY name`).all()
   return rows as unknown as Tag[]

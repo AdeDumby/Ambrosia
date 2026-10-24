@@ -23,6 +23,7 @@ type LibraryState = {
   refreshTracks: () => Promise<void>
   moveTag: (tagId: number, categoryId: number | null) => Promise<void>
   renameTag: (id: number, name: string) => Promise<void>
+  mergeTags: (keepId: number, removeId: number, name: string) => Promise<void>
   createFolder: (name: string) => Promise<void>
   renameFolder: (id: number, name: string) => Promise<void>
   recolorFolder: (id: number, color: string) => Promise<void>
@@ -89,6 +90,14 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     [patchTracks, refreshTags]
   )
 
+  const mergeTags = useCallback(
+    async (keepId: number, removeId: number, name: string) => {
+      await window.api.mergeTags(keepId, removeId, name)
+      await Promise.all([refreshTracks(), refreshTags()])
+    },
+    [refreshTracks, refreshTags]
+  )
+
   const createFolder = useCallback(async (name: string) => {
     await window.api.createCategory(name)
     setCategories(await window.api.listCategories())
@@ -145,6 +154,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         refreshTracks,
         moveTag,
         renameTag,
+        mergeTags,
         createFolder,
         renameFolder,
         recolorFolder,

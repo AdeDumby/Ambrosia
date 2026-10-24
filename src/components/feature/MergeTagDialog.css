@@ -1,0 +1,54 @@
+.confirm-dialog.merge-dialog {
+  box-sizing: border-box;
+  width: min(760px, 92vw);
+  max-width: none;
+  max-height: 85vh;
+}
+
+.merge-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.merge-dialog .confirm-dialog-title,
+.merge-dialog .confirm-dialog-message {
+  margin: 0;
+}
+
+.merge-dialog-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: start;
+  min-height: 0;
+  padding: 2px;
+  overflow: auto;
+}
+
+.merge-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.merge-dialog-field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.merge-dialog-field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.merge-dialog .confirm-dialog-buttons {
+  margin-top: 4px;
+}

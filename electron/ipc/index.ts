@@ -183,6 +183,14 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
       if (typeof name !== 'string') throw new Error('Invalid name')
       return tags.renameTag(db, id, name)
     },
+    mergeTags: (keepId, removeId, name) => {
+      assertId(keepId)
+      assertId(removeId)
+      if (typeof name !== 'string') throw new Error('Invalid name')
+      return tags.mergeTags(db, keepId, removeId, name, () =>
+        guard(() => backup.backupBefore(db, backupFolder, 'before-tag-merge'))
+      )
+    },
     getDownloadState: () => downloads.getDownloadState(),
     startDownload: (franchise, url) => {
       if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')

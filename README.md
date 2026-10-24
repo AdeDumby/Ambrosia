@@ -76,6 +76,7 @@ The main page lists your tracks. On the left, tags are grouped in **folders**.
 
 - Tag names are written with a capital letter on each word (`Sea Of Stars`). Two tags cannot differ only by case or accents.
 - **Rename a tag**: double-click it. **Move it to another folder**: right-click it.
+- **Merge two tags**: right-click a tag and choose **Merge with another tag**. Pick the second tag in the list, type the name the merged tag should have (it starts with the first tag's name), then click **Merge**. Every track that had either tag gets the merged one. It stays in the folder of the tag you right-clicked, and the other tag is deleted. A backup is made first. If the folder is Franchise, a later scan of a subfolder with the old name creates that tag again.
 - A tag without a folder is listed under **Ungrouped**, and disappears by itself when no track uses it.
 - **Create a folder** with the field at the top of the sidebar. Drag folders to reorder them. Double-click to rename. Right-click for **Recolor**, **Rename**, and two ways to delete: with its tags, or keeping its tags as Ungrouped. Both ask for confirmation.
 - The **Franchise** folder is fixed: it cannot be renamed, recolored or deleted.
@@ -118,7 +119,7 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 
 Backups contain tracks, tags, folders and settings, not the music files.
 
-- A backup is made automatically once a day, and before applying a scan, deleting a folder together with its tags, permanent track deletion, and any restore. The newest 10 automatic backups are kept.
+- A backup is made automatically once a day, and before applying a scan, deleting a folder together with its tags, merging tags, permanent track deletion, and any restore. The newest 10 automatic backups are kept.
 - **Settings > Backups**: **Back up now**, **Open folder**, and **Restore** on any entry in the list or from a file. Restoring first saves a copy of your current library, so it can be undone.
 
 ## Development

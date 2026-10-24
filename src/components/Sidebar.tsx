@@ -5,6 +5,7 @@ import AddField from './item/AddField'
 import ColorDialog from './item/ColorDialog'
 import ConfirmDialog from './item/ConfirmDialog'
 import ContextMenu, { type MenuItem } from './item/ContextMenu'
+import MergeTagDialog from './feature/MergeTagDialog'
 import FolderItem from './item/FolderItem'
 import InlineError from './item/InlineError'
 import SegmentedControl from './item/SegmentedControl'
@@ -61,7 +62,8 @@ export default function Sidebar() {
     recolorFolder,
     deleteFolder,
     refreshTracks,
-    renameTag
+    renameTag,
+    mergeTags
   } = useLibrary()
   const {
     matchMode,
@@ -72,6 +74,7 @@ export default function Sidebar() {
     setTypeFilter,
     tagFilters,
     cycleTagFilter,
+    clearTagFilter,
     clearFilters
   } = useFilters()
   const visibleTracks = useVisibleTracks()
@@ -79,6 +82,7 @@ export default function Sidebar() {
   const [menu, setMenu] = useState<Menu | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editingTagId, setEditingTagId] = useState<number | null>(null)
+  const [merging, setMerging] = useState<Tag | null>(null)
   const [recoloring, setRecoloring] = useState<TagCategory | null>(null)
   const [deleting, setDeleting] = useState<Deleting | null>(null)
   const [folderError, setFolderError] = useState<string | null>(null)
@@ -120,6 +124,11 @@ export default function Sidebar() {
   async function moveTagTo(tagId: number, categoryId: number | null) {
     setMenu(null)
     await moveTag(tagId, categoryId)
+  }
+
+  async function mergeInto(keep: Tag, otherId: number, name: string) {
+    await mergeTags(keep.id, otherId, name)
+    clearTagFilter(otherId)
   }
 
   async function applyColor(color: string) {
@@ -192,6 +201,14 @@ export default function Sidebar() {
         onSelect: () => {
           setMenu(null)
           setEditingTagId(tag.id)
+        }
+      },
+      {
+        label: 'Merge with another tag',
+        disabled: tags.length < 2,
+        onSelect: () => {
+          setMenu(null)
+          setMerging(tag)
         }
       },
       ...categories.map((category) => ({
@@ -368,6 +385,15 @@ export default function Sidebar() {
           title={menu.kind === 'tag' ? `Move "${menu.tag.name}" to` : menu.folder.name}
           items={menu.kind === 'tag' ? tagMenuItems(menu.tag) : folderMenuItems(menu.folder)}
           onClose={() => setMenu(null)}
+        />
+      )}
+
+      {merging && (
+        <MergeTagDialog
+          key={merging.id}
+          tag={merging}
+          onMerge={(otherId, name) => mergeInto(merging, otherId, name)}
+          onClose={() => setMerging(null)}
         />
       )}
 
