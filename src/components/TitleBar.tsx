@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 import UpdateRestartDialog from './feature/UpdateRestartDialog'
 import { useUpdates } from '../hooks/useUpdates'
 import { useDownload } from '../store/DownloadContext'
+import { useMix } from '../store/MixContext'
 import { useShortcutsEnabled } from '../store/ShortcutsContext'
 import WindowControls from './WindowsControl'
 import '../styles/TitleBar.css'
@@ -10,13 +11,15 @@ import '../styles/TitleBar.css'
 const tabs = [
   { to: '/', label: 'Library', end: true },
   { to: '/review', label: 'Review', end: false },
-  { to: '/download', label: 'Download', end: false }
+  { to: '/download', label: 'Download', end: false },
+  { to: '/mix', label: 'Mix', end: false }
 ]
 
 export default function TitleBar() {
   const { state: download, chainBusy } = useDownload()
   const { enabled, toggle } = useShortcutsEnabled()
   const downloading = download.phase === 'downloading' || chainBusy
+  const { anyPlaying: mixing } = useMix()
   const update = useUpdates()
   const [confirmingRestart, setConfirmingRestart] = useState(false)
 
@@ -33,6 +36,9 @@ export default function TitleBar() {
             {tab.label}
             {tab.to === '/download' && downloading && (
               <span className="titlebar-dot" aria-label="Download in progress" />
+            )}
+            {tab.to === '/mix' && mixing && (
+              <span className="titlebar-dot" aria-label="Layers are playing" />
             )}
           </NavLink>
         ))}

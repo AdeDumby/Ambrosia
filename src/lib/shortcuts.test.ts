@@ -35,7 +35,8 @@ describe('actionFor', () => {
       type: 'volume',
       direction: -1
     })
-    expect(actionFor(key('5', { code: 'Digit5' }), null)).toBeNull()
+    expect(actionFor(key('5', { code: 'Digit5' }), null)).toEqual({ type: 'go', route: '/mix' })
+    expect(actionFor(key('6', { code: 'Digit6' }), null)).toBeNull()
   })
 
   it('accepts the slash with or without Shift', () => {

@@ -45,6 +45,8 @@ function createWindow(db: DatabaseSync) {
     titleBarStyle: 'hidden',
     width: 1000,
     height: 700,
+    // Below this the title bar tabs no longer fit next to the Settings button.
+    minWidth: 760,
     icon: iconPath,
     webPreferences: {
       contextIsolation: true,

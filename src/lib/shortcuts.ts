@@ -45,7 +45,8 @@ const PAGES: Record<string, string> = {
   '1': '/',
   '2': '/review',
   '3': '/download',
-  '4': '/settings'
+  '4': '/settings',
+  '5': '/mix'
 }
 
 const HOLDABLE = new Set(['seek', 'volume'])
@@ -68,8 +69,8 @@ export function actionFor(event: KeyInfo, target: Target): ShortcutAction | null
   if (isTypingTarget(target)) return null
 
   const digit =
-    /^Digit([1-4])$/.exec(event.code)?.[1] ??
-    (event.code.startsWith('Numpad') && /^[1-4]$/.test(event.key) ? event.key : undefined)
+    /^Digit([1-5])$/.exec(event.code)?.[1] ??
+    (event.code.startsWith('Numpad') && /^[1-5]$/.test(event.key) ? event.key : undefined)
   if (digit) return allowRepeat(event, { type: 'go', route: PAGES[digit] })
   if (event.key === '/') return allowRepeat(event, { type: 'focus' })
 

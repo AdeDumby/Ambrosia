@@ -45,6 +45,7 @@
   letter-spacing: 0.08em;
   text-decoration: none;
   text-transform: uppercase;
+  white-space: nowrap;
   -webkit-app-region: no-drag;
 }
 

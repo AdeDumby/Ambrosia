@@ -59,7 +59,7 @@ Shortcuts work when no text field is focused. Press **Ctrl + Alt** together to t
 | Up / Down               | Volume +/- 2 (+/- 5 after holding for 3 seconds)                                |
 | S / R                   | Turn shuffle / repeat on or off                                                 |
 | Q                       | Play a random track from the current filters                                    |
-| 1 / 2 / 3 / 4           | Library / Review / Download / Settings                                          |
+| 1 / 2 / 3 / 4 / 5       | Library / Review / Download / Settings / Mix                                    |
 | /                       | Focus the search box, the tag box, or the first empty field of the current page |
 | Ctrl + `+` / Ctrl + `-` | Zoom in / out by 5% (works in text fields too)                                  |
 
@@ -97,6 +97,16 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 1. Enter a folder name (the franchise) and the link, then **Start download**. Files go to `<library folder>\<franchise>`. The progress panel on the right follows the whole process, and you can leave the page while it runs. Windows shows a notification when the downloads finish.
 2. **Rename rules**: each rule is a regular expression and a replacement, applied in order to the file names. Leave the replacement empty to delete what matches, use `$1` to keep a captured group. The names on the left highlight what the selected rule captures, and the inputs on the right show the result. A name you type yourself is left alone by the rules. The buttons under the rules add common patterns (leading track number, text in brackets, and more). Example: `^\d+\. FTL soundtrack-` with an empty replacement turns `01. FTL soundtrack-Space Cruise` into `Space Cruise`.
 3. **Finish** renames the files, scans the library to add them, then measures their loudness. Nothing in your existing library is removed by this.
+
+### Mix
+
+Mix lets you play several tracks at the same time, for example a music track with rain and birds on top.
+
+- Every track the main player starts in the Library (play button, next, previous, shuffle, `Q`) is added to **Mix** as a layer that is **silent and paused**. Tracks played in Review are not added. Playing a track again does not add it twice.
+- For each layer: **play/pause**, a **volume** slider, **Loop**, and a button to remove it from the mix. A layer starts silent, so raise its volume and press play to hear it. A track that ends stops, unless Loop is on.
+- **Master volume** sets the level of all layers together. **Play all** starts every layer that is not silent, **Pause all** pauses them, **Remove silent** drops the layers that are silent and paused, and **Clear mix** empties the list. A dot on the **Mix** tab shows that layers are playing.
+- Layers follow **Normalize volume** like the main player, and play independently of it: the player bar and its shortcuts only control the main player.
+- The mix is kept while the app is open and is empty at the next start. The list keeps up to 100 layers: past that, the oldest layer that is not playing is dropped. Deleting a track removes its layer.
 
 ### Settings
 
