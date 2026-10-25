@@ -17,6 +17,7 @@ import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
 import * as categories from '../services/category.services.ts'
 import * as backup from '../services/backup.services.ts'
+import { updates } from '../services/update.services.ts'
 import path from 'node:path'
 import { mkdirSync } from 'node:fs'
 import { app } from 'electron/main'
@@ -191,6 +192,9 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
         guard(() => backup.backupBefore(db, backupFolder, 'before-tag-merge'))
       )
     },
+    getUpdateInfo: () => updates.getInfo(),
+    checkForUpdates: () => updates.check(),
+    installUpdate: () => updates.install(),
     getDownloadState: () => downloads.getDownloadState(),
     startDownload: (franchise, url) => {
       if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')

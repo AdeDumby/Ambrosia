@@ -20,6 +20,7 @@ import {
   type PresetAppearance,
   type ReviewSettings,
   type Settings,
+  type UpdateSettings,
   LOUDNESS_MAX,
   LOUDNESS_MIN
 } from '../../src/shared/settings.ts'
@@ -128,6 +129,14 @@ function parseList(raw: unknown): ListSettings {
   }
 }
 
+function parseUpdates(raw: unknown): UpdateSettings {
+  const source = asObject(raw)
+  return {
+    autoCheck:
+      typeof source.autoCheck === 'boolean' ? source.autoCheck : DEFAULT_SETTINGS.updates.autoCheck
+  }
+}
+
 function parsePresets(raw: unknown): Preset[] {
   if (!Array.isArray(raw)) return []
 
@@ -169,6 +178,7 @@ export function parseSettings(raw: unknown): Settings {
     playback: parsePlayback(source.playback),
     review: parseReview(source.review),
     list: parseList(source.list),
+    updates: parseUpdates(source.updates),
     presets: parsePresets(source.presets),
     activePreset: parseActivePreset(source.activePreset)
   }

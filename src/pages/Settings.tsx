@@ -5,6 +5,7 @@ import PlaybackSettings from '../components/feature/PlaybackSettings'
 import PresetSettings from '../components/feature/PresetSettings'
 import ReviewSettings from '../components/feature/ReviewSettings'
 import TrackListSettings from '../components/feature/TrackListSettings'
+import UpdateSettings from '../components/feature/UpdateSettings'
 import ColorField from '../components/item/ColorField'
 import PathField from '../components/item/PathField'
 import SegmentedControl from '../components/item/SegmentedControl'
@@ -150,6 +151,7 @@ export default function Settings() {
       <ReviewSettings />
       <TrackListSettings />
       <BackupSettings />
+      <UpdateSettings />
     </div>
   )
 }

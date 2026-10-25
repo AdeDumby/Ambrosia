@@ -13,10 +13,12 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "release": "npm run build && electron-builder --publish always"
   },
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",
+    "electron-updater": "^6.8.11",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4"

@@ -88,6 +88,26 @@
   cursor: pointer;
 }
 
+.titlebar-update {
+  align-self: center;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 20px;
+  white-space: nowrap;
+  -webkit-app-region: no-drag;
+  cursor: pointer;
+}
+
+/* The restart dialog is rendered inside the title bar, so it must not drag the window. */
+.titlebar .confirm-dialog {
+  -webkit-app-region: no-drag;
+}
+
 .titlebar-keys.on {
   border-color: var(--accent);
   color: var(--accent);

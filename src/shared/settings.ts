@@ -65,12 +65,17 @@ export type ListSettings = {
   batchSize: number
 }
 
+export type UpdateSettings = {
+  autoCheck: boolean
+}
+
 export type Settings = {
   appearance: Appearance
   library: LibrarySettings
   playback: PlaybackSettings
   review: ReviewSettings
   list: ListSettings
+  updates: UpdateSettings
   presets: Preset[]
   activePreset: string | null
 }
@@ -158,12 +163,17 @@ export const DEFAULT_LIST: ListSettings = {
   batchSize: 60
 }
 
+export const DEFAULT_UPDATES: UpdateSettings = {
+  autoCheck: true
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   appearance: DEFAULT_APPEARANCE,
   library: DEFAULT_LIBRARY,
   playback: DEFAULT_PLAYBACK,
   review: DEFAULT_REVIEW,
   list: DEFAULT_LIST,
+  updates: DEFAULT_UPDATES,
   presets: [],
   activePreset: WITHERING_LAVENDER.name
 }

@@ -8,13 +8,18 @@ Built with Electron, React and Vite. Your library is stored in a local SQLite da
 
 ## Install
 
-1. Download the installer, `Ambrosia Setup <version>.exe`, from the project's releases.
+1. Download the installer, `Ambrosia-Setup-<version>.exe`, from the project's releases.
 2. Run it. Windows shows a blue **Windows protected your PC** screen, because the installer is not signed with a paid certificate. Click **More info**, then **Run anyway**.
 3. Choose an install folder (or keep the default) and finish. Ambrosia appears in the Start Menu and on the desktop.
 
 ### Updating
 
-Run the new installer over the old one. Your library, settings and backups are kept.
+Ambrosia looks for a new version 10 seconds after it starts, downloads it in the background, and installs it the next time you close the app. When one is ready, an **Update ready** badge appears in the title bar. Click it (or **Restart to update** in **Settings > Updates**) to install right away. Your library, settings and backups are kept.
+
+- **Settings > Updates** shows your version, has a **Check for updates** button, and a switch to turn the automatic check off.
+- Updates only work in the installed app, not from `npm run dev`.
+- The first version with this feature has to be installed by hand. After that, updates install themselves.
+- You can still update by running a new installer over the old one.
 
 ### Needed only for downloading
 
@@ -101,6 +106,7 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 - **Playback**: default volume, and **Normalize volume**. Every track gets one volume adjustment so that all tracks play at about the same loudness, as streaming services do. Pick Quiet (-19), Normal (-14) or Loud (-11). A boost never pushes a track into distortion, so a very quiet track may stay below the target. The music files are never modified.
 - **Review**, **Track list**: which folders appear in Review, and how many tracks the Library draws at a time.
 - **Backups**: see below.
+- **Updates**: your version, **Check for updates**, and the automatic check (see Updating above).
 
 ## Deleting, scanning and loudness
 
@@ -130,7 +136,19 @@ npm run dev     # run the app with hot reload
 npm test        # unit tests
 npm run lint
 npm run dist    # build the installer into release/
+npm run release # build and upload a release to GitHub (see below)
 ```
+
+### Publishing a release
+
+Installed copies of Ambrosia update from the project's GitHub releases.
+
+1. Raise `version` in `package.json` (for example `1.2.0`).
+2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
+3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
+4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.
+
+Do not rename the uploaded files: `latest.yml` points to the installer by name.
 
 Project layout:
 

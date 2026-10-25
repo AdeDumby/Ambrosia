@@ -19,7 +19,8 @@ import {
   type PlaybackSettings,
   type Preset,
   type ReviewSettings,
-  type Settings
+  type Settings,
+  type UpdateSettings
 } from '../shared/settings'
 
 type SettingsState = {
@@ -30,6 +31,7 @@ type SettingsState = {
   updatePlayback: (patch: Partial<PlaybackSettings>) => void
   updateReview: (patch: Partial<ReviewSettings>) => void
   updateList: (patch: Partial<ListSettings>) => void
+  updateUpdates: (patch: Partial<UpdateSettings>) => void
   applyPreset: (preset: Preset) => void
   savePreset: (name: string) => void
   deletePreset: (name: string) => void
@@ -128,6 +130,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [change]
   )
 
+  const updateUpdates = useCallback(
+    (patch: Partial<UpdateSettings>) =>
+      change((previous) => ({ ...previous, updates: { ...previous.updates, ...patch } })),
+    [change]
+  )
+
   const applyPreset = useCallback(
     (preset: Preset) =>
       change((previous) => ({
@@ -202,6 +210,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             updatePlayback,
             updateReview,
             updateList,
+            updateUpdates,
             applyPreset,
             savePreset,
             deletePreset,
@@ -216,6 +225,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       updatePlayback,
       updateReview,
       updateList,
+      updateUpdates,
       applyPreset,
       savePreset,
       deletePreset,

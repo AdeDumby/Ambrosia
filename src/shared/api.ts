@@ -1,5 +1,6 @@
 import type { Settings } from './settings.js'
 import type { DownloadState, FinishResult } from './download.js'
+import type { UpdateInfo } from './update.js'
 import type {
   AnalysisInput,
   ApplyResult,
@@ -34,6 +35,11 @@ export type Api = {
   renameTag(id: number, name: string): Promise<string>
   /** Merges the second tag into the first, which takes the new name. Returns the cleaned name. */
   mergeTags(keepId: number, removeId: number, name: string): Promise<string>
+  getUpdateInfo(): Promise<UpdateInfo>
+  /** Looks for a newer version. The result arrives as update state events. */
+  checkForUpdates(): Promise<void>
+  /** Closes the app and installs the downloaded update, then starts it again. */
+  installUpdate(): Promise<void>
 
   listTracks(): Promise<Track[]>
   getTrack(id: number): Promise<Track | null>

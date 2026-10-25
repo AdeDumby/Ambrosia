@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import UpdateRestartDialog from './feature/UpdateRestartDialog'
+import { useUpdates } from '../hooks/useUpdates'
 import { useDownload } from '../store/DownloadContext'
 import { useShortcutsEnabled } from '../store/ShortcutsContext'
 import WindowControls from './WindowsControl'
@@ -14,6 +17,8 @@ export default function TitleBar() {
   const { state: download, chainBusy } = useDownload()
   const { enabled, toggle } = useShortcutsEnabled()
   const downloading = download.phase === 'downloading' || chainBusy
+  const update = useUpdates()
+  const [confirmingRestart, setConfirmingRestart] = useState(false)
 
   return (
     <div className="titlebar">
@@ -37,6 +42,16 @@ export default function TitleBar() {
         <NavLink to="/settings" className="titlebar-tab">
           ⚙ Settings
         </NavLink>
+        {update.state.phase === 'ready' && (
+          <button
+            type="button"
+            className="titlebar-update"
+            title={`Version ${update.state.version} is ready to install`}
+            onClick={() => setConfirmingRestart(true)}
+          >
+            Update ready
+          </button>
+        )}
         <button
           type="button"
           className={`titlebar-keys ${enabled ? 'on' : ''}`}
@@ -48,6 +63,16 @@ export default function TitleBar() {
         </button>
         <WindowControls />
       </div>
+
+      <UpdateRestartDialog
+        open={confirmingRestart && update.state.phase === 'ready'}
+        version={update.state.phase === 'ready' ? update.state.version : ''}
+        onConfirm={() => {
+          setConfirmingRestart(false)
+          void update.install()
+        }}
+        onCancel={() => setConfirmingRestart(false)}
+      />
     </div>
   )
 }

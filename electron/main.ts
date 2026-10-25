@@ -11,6 +11,11 @@ import { cancelDownload } from './services/download.service.ts'
 import { setupZoom } from './services/zoom.services.ts'
 import type { DatabaseSync } from 'node:sqlite'
 import { purgeGoneDeletedTracks } from './services/purge.services.ts'
+import { getSettings } from './services/settings.services.ts'
+import { updates } from './services/update.services.ts'
+
+// Wait a little after start so looking for an update never slows the app down.
+const UPDATE_CHECK_DELAY_MS = 10_000
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -101,6 +106,10 @@ app.whenReady().then(async () => {
   })
 
   createWindow(db)
+
+  if (getSettings(db).updates.autoCheck) {
+    setTimeout(() => void updates.check(), UPDATE_CHECK_DELAY_MS)
+  }
 })
 
 app.on('before-quit', cancelDownload)

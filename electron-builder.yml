@@ -14,7 +14,13 @@ asarUnpack:
 win:
   target: nsis
   icon: assets/icon.ico
+publish:
+  provider: github
+  owner: AdeDumby
+  repo: Ambrosia
 nsis:
+  # No spaces: GitHub renames uploaded files, and the update file must match the installer name.
+  artifactName: ${productName}-Setup-${version}.${ext}
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
