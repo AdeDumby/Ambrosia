@@ -4,7 +4,17 @@ import { DatabaseSync } from 'node:sqlite'
 import type { BackupEntry, ImportPreview } from '../../src/shared/types.ts'
 import { removeEmptyLooseTags } from './tag.services.ts'
 
-const DELETE_ORDER = ['track_tag', 'track', 'tag', 'tag_category', 'source_folder', 'setting']
+const DELETE_ORDER = [
+  'mixtape_layer',
+  'mixtape_tag',
+  'mixtape',
+  'track_tag',
+  'track',
+  'tag',
+  'tag_category',
+  'source_folder',
+  'setting'
+]
 const INSERT_ORDER = [...DELETE_ORDER].reverse()
 const REQUIRED_TABLES = ['track', 'tag', 'tag_category', 'track_tag', 'source_folder']
 const LOCAL_SETTINGS = ['library-folder', 'zoom-factor']

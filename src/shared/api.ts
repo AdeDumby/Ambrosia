@@ -1,6 +1,7 @@
 import type { Settings } from './settings.js'
 import type { DownloadState, FinishResult } from './download.js'
 import type { UpdateInfo } from './update.js'
+import type { Mixtape, MixtapeLayer } from './mixtape.js'
 import type {
   AnalysisInput,
   ApplyResult,
@@ -35,6 +36,18 @@ export type Api = {
   renameTag(id: number, name: string): Promise<string>
   /** Merges the second tag into the first, which takes the new name. Returns the cleaned name. */
   mergeTags(keepId: number, removeId: number, name: string): Promise<string>
+  listMixtapes(): Promise<Mixtape[]>
+  /** Saves layers as a new mixtape. Returns its id. */
+  createMixtape(name: string, master: number, layers: MixtapeLayer[]): Promise<number>
+  /** Replaces the components of a mixtape. Its name and tags are kept. */
+  replaceMixtape(id: number, master: number, layers: MixtapeLayer[]): Promise<void>
+  renameMixtape(id: number, name: string): Promise<string>
+  deleteMixtape(id: number): Promise<void>
+  tagMixtape(id: number, tagId: number): Promise<void>
+  /** Returns true when the tag was deleted because nothing uses it any more. */
+  untagMixtape(id: number, tagId: number): Promise<boolean>
+  /** Returns true when a new tag was created. */
+  addTagToMixtapeByName(id: number, name: string, categoryId?: number | null): Promise<boolean>
   getUpdateInfo(): Promise<UpdateInfo>
   /** Looks for a newer version. The result arrives as update state events. */
   checkForUpdates(): Promise<void>

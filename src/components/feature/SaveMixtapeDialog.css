@@ -1,0 +1,39 @@
+.confirm-dialog.save-mixtape-dialog {
+  box-sizing: border-box;
+  width: min(460px, 92vw);
+  max-width: none;
+}
+
+.save-mixtape-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.save-mixtape-dialog .confirm-dialog-title,
+.save-mixtape-dialog .confirm-dialog-message {
+  margin: 0;
+}
+
+.save-mixtape-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.save-mixtape-field input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.save-mixtape-field input:focus {
+  border-color: var(--accent);
+  outline: none;
+}

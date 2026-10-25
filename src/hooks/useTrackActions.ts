@@ -4,7 +4,7 @@ import { useLibrary } from '../store/LibraryContext'
 import { usePlayer } from '../store/PlayerContext'
 
 export function useTrackActions() {
-  const { setTracks, refreshTags } = useLibrary()
+  const { setTracks, refreshTags, refreshMixtapes } = useLibrary()
   const { stopTrack } = usePlayer()
 
   const reloadTrack = useCallback(
@@ -83,8 +83,9 @@ export function useTrackActions() {
       stopTrack(trackId)
       await window.api.deleteTrack(trackId)
       setTracks((previous) => previous.filter((track) => track.id !== trackId))
+      await refreshMixtapes().catch(() => {})
     },
-    [setTracks, stopTrack]
+    [setTracks, stopTrack, refreshMixtapes]
   )
 
   return { addTag, createTag, removeTag, setKind, setReviewed, deleteTrack, renameTrack }

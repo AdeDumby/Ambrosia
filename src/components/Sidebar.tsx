@@ -10,6 +10,7 @@ import FolderItem from './item/FolderItem'
 import InlineError from './item/InlineError'
 import SegmentedControl from './item/SegmentedControl'
 import TagItem from './item/TagItem'
+import { useVisibleMixtapes } from '../hooks/useVisibleMixtapes'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import { useFilters, type MatchMode, type TypeFilter } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
@@ -23,7 +24,8 @@ const matchOptions: { value: MatchMode; label: string }[] = [
 const typeOptions: { value: TypeFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'music', label: 'Music' },
-  { value: 'sfx', label: 'SFX' }
+  { value: 'sfx', label: 'SFX' },
+  { value: 'mixtape', label: 'Mixtapes' }
 ]
 
 type Menu =
@@ -78,6 +80,7 @@ export default function Sidebar() {
     clearFilters
   } = useFilters()
   const visibleTracks = useVisibleTracks()
+  const visibleMixtapes = useVisibleMixtapes()
 
   const [menu, setMenu] = useState<Menu | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -94,11 +97,13 @@ export default function Sidebar() {
 
   const counts = useMemo(() => {
     const result = new Map<number, number>()
-    for (const track of visibleTracks) {
-      for (const tag of track.tags) result.set(tag.id, (result.get(tag.id) ?? 0) + 1)
+    // The number next to a tag counts what is shown: tracks, or mixtapes in the Mixtapes category.
+    const shown = typeFilter === 'mixtape' ? visibleMixtapes : visibleTracks
+    for (const item of shown) {
+      for (const tag of item.tags) result.set(tag.id, (result.get(tag.id) ?? 0) + 1)
     }
     return result
-  }, [visibleTracks])
+  }, [visibleTracks, visibleMixtapes, typeFilter])
 
   const deleteSummary = useMemo(() => {
     if (!deleting) return null
@@ -319,6 +324,7 @@ export default function Sidebar() {
         <input
           type="checkbox"
           checked={unreviewedOnly}
+          disabled={typeFilter === 'mixtape'}
           onChange={(event) => setUnreviewedOnly(event.target.checked)}
         />
         Unreviewed only

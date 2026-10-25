@@ -1,0 +1,148 @@
+.mix-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 10px;
+  max-height: 42vh;
+  padding: 12px 16px;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+}
+
+.mix-panel-empty {
+  align-items: center;
+  justify-content: center;
+  min-height: 72px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.mix-panel-empty p {
+  margin: 0;
+}
+
+.mix-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mix-panel-title {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mix-panel-length {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.mix-panel-tip {
+  flex: 1;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: italic;
+  text-align: right;
+}
+
+.mix-panel-header .btn {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+}
+
+.mix-panel-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.mix-panel-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.mix-panel-group-title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+}
+
+.mix-panel-field {
+  display: grid;
+  grid-template-columns: 68px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.mix-panel-field input[type='range'] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.mix-panel-value {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mix-panel-hint {
+  overflow: hidden;
+  font-style: italic;
+  text-overflow: ellipsis;
+}
+
+.mix-panel-number {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mix-panel-number input {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.mix-panel-number input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.mix-panel-unit {
+  color: var(--muted);
+}
+
+.mix-panel-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.mix-panel-check input {
+  margin: 0;
+  accent-color: var(--accent);
+}

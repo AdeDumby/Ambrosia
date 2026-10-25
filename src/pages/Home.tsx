@@ -2,13 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ConfirmDialog from '../components/item/ConfirmDialog'
 import InlineError from '../components/item/InlineError'
 import TagBubble from '../components/item/TagBubble'
+import MixtapeItem from '../components/item/MixtapeItem'
 import TrackItem from '../components/item/TrackItem'
+import { useMixtapeActions } from '../hooks/useMixtapeActions'
 import { useTrackActions } from '../hooks/useTrackActions'
+import { useVisibleMixtapes } from '../hooks/useVisibleMixtapes'
 import { useVisibleTracks } from '../hooks/useVisibleTracks'
 import { deleteDialogText } from '../lib/deleteDialog'
+import { sortMixtapes } from '../lib/sortMixtapes'
 import { sortTracks } from '../lib/sortTracks'
 import { useFilters } from '../store/FilterContext'
+import type { Mixtape } from '../shared/mixtape'
 import { useLibrary } from '../store/LibraryContext'
+import { useMix } from '../store/MixContext'
 import { usePlayer } from '../store/PlayerContext'
 import { useSettings } from '../store/SettingsContext'
 import './Home.css'
@@ -16,15 +22,27 @@ import './Home.css'
 export default function Home() {
   const [pendingDelete, setPendingDelete] = useState<{ id: number; filename: string } | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const { tracks, tags: allTags, categories } = useLibrary()
+  const { tracks, mixtapes, tags: allTags, categories } = useLibrary()
   const { tagFilters, clearTagFilter, sort, search, typeFilter, unreviewedOnly, matchMode } =
     useFilters()
   const { currentTrack, isPlaying, toggleTrack } = usePlayer()
   const { settings } = useSettings()
   const { addTag, createTag, removeTag, setKind, deleteTrack, renameTrack } = useTrackActions()
   const pageSize = settings.list.batchSize
+  const mixtapeActions = useMixtapeActions()
+  const { loadedMixtape, anyPlaying, playMixtape, pauseAll } = useMix()
+  const [pendingMixtapeDelete, setPendingMixtapeDelete] = useState<{
+    id: number
+    name: string
+  } | null>(null)
 
   const filteredTracks = useVisibleTracks()
+  const filteredMixtapes = useVisibleMixtapes()
+  const showingMixtapes = typeFilter === 'mixtape'
+  const visibleMixtapes = useMemo(
+    () => sortMixtapes(filteredMixtapes, sort),
+    [filteredMixtapes, sort]
+  )
   const visibleTracks = useMemo(() => sortTracks(filteredTracks, sort), [filteredTracks, sort])
 
   const listKey = `${sort}|${search}|${typeFilter}|${unreviewedOnly}|${matchMode}|${JSON.stringify(tagFilters)}`
@@ -69,6 +87,18 @@ export default function Home() {
     [toggleTrack]
   )
   const getTagOptions = useCallback(() => tagsRef.current, [])
+  // Playing a mixtape puts its components in the Mix, with their saved settings, and starts them.
+  const playTape = useCallback(
+    (mixtape: Mixtape) => {
+      if (loadedMixtape?.id === mixtape.id && anyPlaying) pauseAll()
+      else playMixtape(mixtape)
+    },
+    [loadedMixtape, anyPlaying, pauseAll, playMixtape]
+  )
+  const requestTapeDelete = useCallback(
+    (id: number, name: string) => setPendingMixtapeDelete({ id, name }),
+    []
+  )
   const requestDelete = useCallback(
     (id: number, filename: string) => setPendingDelete({ id, filename }),
     []
@@ -96,6 +126,19 @@ export default function Home() {
     }
   }
 
+  async function confirmTapeDelete() {
+    if (!pendingMixtapeDelete) return
+    const { id, name } = pendingMixtapeDelete
+    setPendingMixtapeDelete(null)
+    setDeleteError(null)
+    try {
+      await mixtapeActions.remove(id)
+    } catch (error) {
+      console.error(error)
+      setDeleteError(`Could not delete the mixtape ${name}.`)
+    }
+  }
+
   const dialog = pendingDelete ? deleteDialogText(pendingDelete.filename) : null
 
   return (
@@ -116,7 +159,30 @@ export default function Home() {
 
       {deleteError && <InlineError message={deleteError} onDismiss={() => setDeleteError(null)} />}
 
-      {visibleTracks.length === 0 && (
+      {showingMixtapes && visibleMixtapes.length === 0 && (
+        <p>
+          {mixtapes.length === 0
+            ? 'No mixtapes yet. Build a mix on the Mix page and click Save as mixtape.'
+            : 'No mixtapes match the current filters.'}
+        </p>
+      )}
+      {showingMixtapes &&
+        visibleMixtapes.map((mixtape) => (
+          <MixtapeItem
+            key={mixtape.id}
+            mixtape={mixtape}
+            getTagOptions={getTagOptions}
+            isPlaying={anyPlaying && loadedMixtape?.id === mixtape.id}
+            onPlay={playTape}
+            onRename={mixtapeActions.rename}
+            onDelete={requestTapeDelete}
+            onRemoveTag={mixtapeActions.removeTag}
+            onAddTag={mixtapeActions.addTag}
+            onCreateTag={mixtapeActions.createTag}
+          />
+        ))}
+
+      {!showingMixtapes && visibleTracks.length === 0 && (
         <p>{tracks.length === 0 ? 'No tracks yet.' : 'No tracks match the current filters.'}</p>
       )}
       {shownTracks.map((track) => (
@@ -141,6 +207,15 @@ export default function Home() {
       ))}
 
       {hasMore && <div ref={sentinelRef} className="track-list-end" />}
+
+      <ConfirmDialog
+        open={pendingMixtapeDelete !== null}
+        title="Delete this mixtape?"
+        message={`"${pendingMixtapeDelete?.name ?? ''}" is removed from the Library. The tracks in it are not deleted.`}
+        confirmLabel="Delete"
+        onConfirm={confirmTapeDelete}
+        onCancel={() => setPendingMixtapeDelete(null)}
+      />
 
       <ConfirmDialog
         open={pendingDelete !== null}

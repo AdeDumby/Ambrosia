@@ -2,7 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { SortKey } from '../lib/sortTracks'
 
 export type MatchMode = 'any' | 'all'
-export type TypeFilter = 'all' | 'music' | 'sfx'
+export type TypeFilter = 'all' | 'music' | 'sfx' | 'mixtape'
 export type TagFilterState = 'include' | 'exclude'
 
 type FilterState = {

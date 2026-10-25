@@ -47,7 +47,7 @@ export function renameTag(db: DatabaseSync, id: number, name: string): string {
 }
 
 /**
- * Merges `removeId` into `keepId`: every track that had the removed tag gets the kept one
+ * Merges `removeId` into `keepId`: every track and mixtape that had the removed tag gets the kept one
  * (no duplicates), the removed tag is deleted, and the kept tag takes the new name.
  * The kept tag keeps its folder. The new name may be one of the two old names.
  */
@@ -79,6 +79,11 @@ export function mergeTags(
        SELECT track_id, ? FROM track_tag WHERE tag_id = ?`
     ).run(keepId, removeId)
     db.prepare('DELETE FROM track_tag WHERE tag_id = ?').run(removeId)
+    db.prepare(
+      `INSERT OR IGNORE INTO mixtape_tag (mixtape_id, tag_id)
+       SELECT mixtape_id, ? FROM mixtape_tag WHERE tag_id = ?`
+    ).run(keepId, removeId)
+    db.prepare('DELETE FROM mixtape_tag WHERE tag_id = ?').run(removeId)
     db.prepare('DELETE FROM tag WHERE id = ?').run(removeId)
     db.prepare('UPDATE tag SET name = ? WHERE id = ?').run(cleaned, keepId)
     db.exec('COMMIT')
@@ -106,9 +111,10 @@ export function untagTrack(db: DatabaseSync, trackId: number, tagId: number): bo
       .prepare(
         `DELETE FROM tag
          WHERE id = ? AND category_id IS NULL
-           AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = ?)`
+           AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = ?)
+           AND NOT EXISTS (SELECT 1 FROM mixtape_tag WHERE tag_id = ?)`
       )
-      .run(tagId, tagId)
+      .run(tagId, tagId, tagId)
     db.exec('COMMIT')
     return Number(result.changes) > 0
   } catch (error) {
@@ -148,12 +154,64 @@ export function addTagToTrackByName(
   }
 }
 
+export function tagMixtape(db: DatabaseSync, mixtapeId: number, tagId: number): void {
+  db.prepare('INSERT OR IGNORE INTO mixtape_tag (mixtape_id, tag_id) VALUES (?, ?)').run(
+    mixtapeId,
+    tagId
+  )
+}
+
+/** Returns true when the tag was deleted because nothing uses it any more. */
+export function untagMixtape(db: DatabaseSync, mixtapeId: number, tagId: number): boolean {
+  db.exec('BEGIN')
+  try {
+    db.prepare('DELETE FROM mixtape_tag WHERE mixtape_id = ? AND tag_id = ?').run(mixtapeId, tagId)
+    const removed = removeUnusedLooseTags(db, [tagId]) > 0
+    db.exec('COMMIT')
+    return removed
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
+}
+
+/** Returns true when a new tag was created. */
+export function addTagToMixtapeByName(
+  db: DatabaseSync,
+  mixtapeId: number,
+  name: string,
+  categoryId: number | null = null
+): boolean {
+  db.exec('BEGIN')
+  try {
+    const cleaned = cleanTagName(name)
+    const existingId = findTagId(db, cleaned)
+    const tagId =
+      existingId ??
+      (
+        db
+          .prepare('INSERT INTO tag (name, category_id) VALUES (?, ?) RETURNING id')
+          .get(cleaned, categoryId) as unknown as { id: number }
+      ).id
+    db.prepare('INSERT OR IGNORE INTO mixtape_tag (mixtape_id, tag_id) VALUES (?, ?)').run(
+      mixtapeId,
+      tagId
+    )
+    db.exec('COMMIT')
+    return existingId === undefined
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
+}
+
 export function removeEmptyLooseTags(db: DatabaseSync): number {
   const result = db
     .prepare(
       `DELETE FROM tag
        WHERE category_id IS NULL
-         AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = tag.id)`
+         AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = tag.id)
+         AND NOT EXISTS (SELECT 1 FROM mixtape_tag WHERE tag_id = tag.id)`
     )
     .run()
   return Number(result.changes)
@@ -168,9 +226,10 @@ export function removeUnusedLooseTags(db: DatabaseSync, tagIds: Iterable<number>
   const remove = db.prepare(
     `DELETE FROM tag
      WHERE id = ? AND category_id IS NULL
-       AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = ?)`
+       AND NOT EXISTS (SELECT 1 FROM track_tag WHERE tag_id = ?)
+       AND NOT EXISTS (SELECT 1 FROM mixtape_tag WHERE tag_id = ?)`
   )
   let removed = 0
-  for (const id of tagIds) removed += Number(remove.run(id, id).changes)
+  for (const id of tagIds) removed += Number(remove.run(id, id, id).changes)
   return removed
 }

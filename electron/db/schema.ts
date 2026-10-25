@@ -41,6 +41,29 @@ CREATE TABLE IF NOT EXISTS track_tag (
 
 CREATE INDEX IF NOT EXISTS idx_track_tag_tag ON track_tag(tag_id);
 
+CREATE TABLE IF NOT EXISTS mixtape (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+  master REAL NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS mixtape_layer (
+  mixtape_id INTEGER NOT NULL REFERENCES mixtape(id) ON DELETE CASCADE,
+  track_id INTEGER NOT NULL REFERENCES track(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL,
+  settings TEXT NOT NULL,
+  PRIMARY KEY (mixtape_id, track_id)
+);
+
+CREATE TABLE IF NOT EXISTS mixtape_tag (
+  mixtape_id INTEGER NOT NULL REFERENCES mixtape(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tag(id) ON DELETE CASCADE,
+  PRIMARY KEY (mixtape_id, tag_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_mixtape_tag_tag ON mixtape_tag(tag_id);
+
 CREATE TABLE IF NOT EXISTS setting (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL

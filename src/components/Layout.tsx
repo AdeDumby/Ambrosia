@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import Footer from './Footer'
+import MixPanel from './feature/MixPanel'
 import Sidebar from './Sidebar'
 import TitleBar from './TitleBar'
 import Topbar from './Topbar'
@@ -51,7 +52,7 @@ export default function Layout() {
                             <main className="content">
                               <Outlet />
                             </main>
-                            <Footer />
+                            {pathname === '/mix' ? <MixPanel /> : <Footer />}
                           </div>
                         </div>
                       </div>

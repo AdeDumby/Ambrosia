@@ -70,7 +70,7 @@ The Play/Pause keys of a keyboard or headset also control Ambrosia, through Wind
 The main page lists your tracks. On the left, tags are grouped in **folders**.
 
 - **Filter by tag**: click a tag once to include it, again to exclude it, a third time to clear it. Active filters show above the list, and clicking one clears it. **Any / All** decides whether a track needs one or every included tag.
-- **Other filters**: Music / SFX, "Unreviewed only", and the search box in the top bar (it ignores case and accents). The number next to each tag counts the tracks that match the current filters.
+- **Other filters**: Music / SFX / Mixtapes (see Mixtapes below), "Unreviewed only", and the search box in the top bar (it ignores case and accents). The number next to each tag counts the tracks that match the current filters.
 - **Sort** with the menu in the top bar: name, loudness, length, or number of tags.
 - **Tags on a track**: type in the `+ tag` field (suggestions appear after 3 letters, `Tab` accepts one, `Enter` adds it). Typing a new name creates the tag. Hover a tag and click the `x` to remove it.
 - **Rename a track**: double-click its name. The file on disk is renamed too, and the extension is kept.
@@ -103,10 +103,29 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 Mix lets you play several tracks at the same time, for example a music track with rain and birds on top.
 
 - Every track the main player starts in the Library (play button, next, previous, shuffle, `Q`) is added to **Mix** as a layer that is **silent and paused**. Tracks played in Review are not added. Playing a track again does not add it twice.
-- For each layer: **play/pause**, a **volume** slider, **Loop**, and a button to remove it from the mix. A layer starts silent, so raise its volume and press play to hear it. A track that ends stops, unless Loop is on.
-- **Master volume** sets the level of all layers together. **Play all** starts every layer that is not silent, **Pause all** pauses them, **Remove silent** drops the layers that are silent and paused, and **Clear mix** empties the list. A dot on the **Mix** tab shows that layers are playing.
-- Layers follow **Normalize volume** like the main player, and play independently of it: the player bar and its shortcuts only control the main player.
-- The mix is kept while the app is open and is empty at the next start. The list keeps up to 100 layers: past that, the oldest layer that is not playing is dropped. Deleting a track removes its layer.
+- Each layer row has **play/pause**, a **volume** slider, **M** (mute), **S** (solo: only the solo layers are heard), **Loop** and a button to remove it. A layer starts silent, so raise its volume and press play to hear it. A track that ends stops, unless Loop is on.
+- **Click a layer's name** and its settings open in the panel at the bottom of the page, which takes the place of the player bar on this page (the player's keyboard shortcuts still work). Double-click a slider to reset it.
+  - **Sound**: volume, pan (left to right), speed (0.25x to 2x) and **Keep pitch**.
+  - **Fades**: fade in and fade out, up to 30 seconds.
+  - **Part played**: **Start at** and **End at** (in seconds, 0 means until the end) to play only a part of the track, and **Random start** to begin somewhere inside that part each time.
+  - **Loop**: loop on or off, and a **pause between loops** picked at random between a minimum and a maximum. Useful for rain that comes back every so often, or a bird that calls from time to time.
+  - **Tone**: low, mid and high, from -12 to +12 dB.
+  - **Space**: reverb.
+  - **Reset effects** puts everything back except the volume, loop, mute and solo.
+- **Master volume** sets the level of all layers together. **Play all** starts every layer that is not silent, **Pause all** pauses them, **Unsolo all** turns every solo off, **Remove silent** drops the layers that are silent and paused, and **Clear mix** empties the list. A dot on the **Mix** tab shows that layers are playing.
+- Layers follow **Normalize volume** like the main player, and play independently of it.
+- The layers stay while the app is open and are empty at the next start. The list keeps up to 100 layers: past that, the oldest layer that is not playing is dropped. Deleting a track removes its layer.
+
+### Mixtapes
+
+A mixtape is a mix that you saved. It is stored in the library like a track, and listed in the **Mixtapes** category of the Library (next to All, Music and SFX).
+
+- **Save as mixtape...** on the Mix page saves the current layers, with all their settings and the master volume, under a name. Two mixtapes cannot have the same name (case and accents are ignored).
+- **Play** on a mixtape replaces the current mix with its layers, with their saved settings, and starts every layer that is not silent. Play again to pause.
+- When a mixtape is loaded, **Update "name"** on the Mix page saves your changes into it.
+- In the list, a mixtape can be **tagged** like a track (the tag filters, Any / All and the counts work on mixtapes), **renamed** with a double-click, and **deleted**. Deleting a mixtape never deletes the tracks in it. Search and the sort menu work too (by name or by number of tags).
+- A mixtape only keeps the tracks that are in the library. If you delete a track, it leaves the mixtapes that used it.
+- Merging two tags also merges them on mixtapes, and mixtapes are part of the backups.
 
 ### Settings
 

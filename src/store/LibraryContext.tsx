@@ -9,6 +9,7 @@ import {
   type ReactNode,
   type SetStateAction
 } from 'react'
+import type { Mixtape } from '../shared/mixtape'
 import { compareNames, sortTrackTags } from '../shared/tags'
 import type { Tag, TagCategory, Track, TrackTag } from '../shared/types'
 import { useSettings } from './SettingsContext'
@@ -21,6 +22,8 @@ type LibraryState = {
   tracks: Track[]
   setTracks: Dispatch<SetStateAction<Track[]>>
   refreshTracks: () => Promise<void>
+  mixtapes: Mixtape[]
+  refreshMixtapes: () => Promise<void>
   moveTag: (tagId: number, categoryId: number | null) => Promise<void>
   renameTag: (id: number, name: string) => Promise<void>
   mergeTags: (keepId: number, removeId: number, name: string) => Promise<void>
@@ -37,6 +40,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<TagCategory[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [tracks, setTracks] = useState<Track[]>([])
+  const [mixtapes, setMixtapes] = useState<Mixtape[]>([])
   const tagsRef = useRef<Tag[]>([])
 
   const refreshTags = useCallback(async () => {
@@ -46,8 +50,18 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setTags(sorted)
   }, [])
 
+  const refreshMixtapes = useCallback(async () => {
+    setMixtapes(await window.api.listMixtapes())
+  }, [])
+
+  // Deleting or scanning tracks also changes the mixtapes that used them.
   const refreshTracks = useCallback(async () => {
-    setTracks(await window.api.listTracks())
+    const [loadedTracks, loadedMixtapes] = await Promise.all([
+      window.api.listTracks(),
+      window.api.listMixtapes()
+    ])
+    setTracks(loadedTracks)
+    setMixtapes(loadedMixtapes)
   }, [])
 
   const patchTracks = useCallback((tagIds: number[], update: (tag: TrackTag) => TrackTag) => {
@@ -76,18 +90,18 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         folderOrder: folder?.sortOrder ?? 0
       }))
       setCategories(folders)
-      await refreshTags()
+      await Promise.all([refreshTags(), refreshMixtapes()])
     },
-    [patchTracks, refreshTags]
+    [patchTracks, refreshTags, refreshMixtapes]
   )
 
   const renameTag = useCallback(
     async (id: number, name: string) => {
       const cleaned = await window.api.renameTag(id, name)
       patchTracks([id], (tag) => ({ ...tag, name: cleaned }))
-      await refreshTags()
+      await Promise.all([refreshTags(), refreshMixtapes()])
     },
-    [patchTracks, refreshTags]
+    [patchTracks, refreshTags, refreshMixtapes]
   )
 
   const mergeTags = useCallback(
@@ -118,8 +132,9 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       const ids = tagsRef.current.filter((tag) => tag.categoryId === id).map((tag) => tag.id)
       patchTracks(ids, (tag) => ({ ...tag, color }))
       setCategories(await window.api.listCategories())
+      await refreshMixtapes()
     },
-    [patchTracks]
+    [patchTracks, refreshMixtapes]
   )
 
   const deleteFolder = useCallback(
@@ -152,6 +167,8 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         tracks,
         setTracks,
         refreshTracks,
+        mixtapes,
+        refreshMixtapes,
         moveTag,
         renameTag,
         mergeTags,

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { matchesSearch, matchesTags, selectTags } from '../lib/filterTags'
 import { normalizeForSearch } from '../lib/search'
 import type { Track } from '../shared/types'
 import { useFilters } from '../store/FilterContext'
@@ -9,34 +10,17 @@ export function useVisibleTracks(): Track[] {
   const { typeFilter, unreviewedOnly, matchMode, tagFilters, search } = useFilters()
 
   return useMemo(() => {
-    const knownTagIds = new Set(tags.map((tag) => tag.id))
-    const includedIds: number[] = []
-    const excludedIds: number[] = []
-    for (const [id, state] of Object.entries(tagFilters)) {
-      const tagId = Number(id)
-      if (!knownTagIds.has(tagId)) continue
-      if (state === 'include') includedIds.push(tagId)
-      else excludedIds.push(tagId)
-    }
+    // Mixtapes are a list of their own: no track is shown with them.
+    if (typeFilter === 'mixtape') return []
 
+    const selection = selectTags(tagFilters, new Set(tags.map((tag) => tag.id)))
     const terms = normalizeForSearch(search).split(/\s+/).filter(Boolean)
 
     return tracks.filter((track) => {
       if (typeFilter !== 'all' && track.kind !== typeFilter) return false
       if (unreviewedOnly && track.reviewed) return false
-
-      if (terms.length > 0) {
-        const name = normalizeForSearch(track.filename)
-        if (!terms.every((term) => name.includes(term))) return false
-      }
-
-      const trackTagIds = new Set(track.tags.map((tag) => tag.id))
-      if (excludedIds.some((id) => trackTagIds.has(id))) return false
-      if (includedIds.length === 0) return true
-
-      return matchMode === 'all'
-        ? includedIds.every((id) => trackTagIds.has(id))
-        : includedIds.some((id) => trackTagIds.has(id))
+      if (!matchesSearch(normalizeForSearch(track.filename), terms)) return false
+      return matchesTags(new Set(track.tags.map((tag) => tag.id)), selection, matchMode)
     })
   }, [tracks, tags, typeFilter, unreviewedOnly, matchMode, tagFilters, search])
 }

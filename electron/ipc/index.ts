@@ -17,6 +17,8 @@ import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
 import * as categories from '../services/category.services.ts'
 import * as backup from '../services/backup.services.ts'
+import * as mixtapes from '../services/mixtape.services.ts'
+import { parseMixtapeLayers } from '../../src/shared/mixtape.ts'
 import { updates } from '../services/update.services.ts'
 import path from 'node:path'
 import { mkdirSync } from 'node:fs'
@@ -191,6 +193,42 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
       return tags.mergeTags(db, keepId, removeId, name, () =>
         guard(() => backup.backupBefore(db, backupFolder, 'before-tag-merge'))
       )
+    },
+    listMixtapes: () => mixtapes.listMixtapes(db),
+    createMixtape: (name, master, layers) => {
+      if (typeof name !== 'string' || typeof master !== 'number') throw new Error('Invalid input')
+      return mixtapes.createMixtape(db, name, master, parseMixtapeLayers(layers))
+    },
+    replaceMixtape: (id, master, layers) => {
+      assertId(id)
+      if (typeof master !== 'number') throw new Error('Invalid input')
+      mixtapes.replaceMixtape(db, id, master, parseMixtapeLayers(layers))
+    },
+    renameMixtape: (id, name) => {
+      assertId(id)
+      if (typeof name !== 'string') throw new Error('Invalid name')
+      return mixtapes.renameMixtape(db, id, name)
+    },
+    deleteMixtape: (id) => {
+      assertId(id)
+      mixtapes.deleteMixtape(db, id)
+    },
+    tagMixtape: (id, tagId) => {
+      assertId(id)
+      assertId(tagId)
+      tags.tagMixtape(db, id, tagId)
+    },
+    untagMixtape: (id, tagId) => {
+      assertId(id)
+      assertId(tagId)
+      return tags.untagMixtape(db, id, tagId)
+    },
+    addTagToMixtapeByName: (id, name, categoryId) => {
+      assertId(id)
+      assertName(name)
+      const folder = categoryId ?? null
+      if (folder !== null) assertId(folder)
+      return tags.addTagToMixtapeByName(db, id, name.trim(), folder)
     },
     getUpdateInfo: () => updates.getInfo(),
     checkForUpdates: () => updates.check(),

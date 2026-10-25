@@ -8,6 +8,7 @@ type Props = {
   onSetKind?: (kind: TrackKind) => void
   onFinish?: () => void
   onDelete?: () => void
+  deleteLabel?: string
 }
 
 export default function TrackActions({
@@ -16,7 +17,8 @@ export default function TrackActions({
   kind,
   onSetKind,
   onFinish,
-  onDelete
+  onDelete,
+  deleteLabel = 'Delete track'
 }: Props) {
   const target: TrackKind = kind === 'music' ? 'sfx' : 'music'
   const kindLabel = target === 'sfx' ? 'Set as SFX' : 'Set as Music'
@@ -63,8 +65,8 @@ export default function TrackActions({
         <button
           type="button"
           className="track-action track-action-danger"
-          aria-label="Delete track"
-          title="Delete track"
+          aria-label={deleteLabel}
+          title={deleteLabel}
           onClick={onDelete}
         >
           <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
