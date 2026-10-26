@@ -6,6 +6,10 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.1
+
+- **Normalize volume now counts the effects in Mix**: a layer is measured with its Tone, Filter, Mono, Reverb, Echo and Wobble before it plays (see Loudness and effects).
+
 ## What's new in 1.2.0
 
 - **Mix page**: play several tracks at once, each layer with its own volume, pan, speed, fades, loop and pauses between loops, part played, tone, reverb, **filters**, **echo**, **wobble**, **mono**, **variation** and **start delay**.
@@ -274,7 +278,7 @@ npm run release # build and upload a release to GitHub (see below)
 
 Installed copies of Ambrosia update from the project's GitHub releases.
 
-1. Raise `version` in `package.json` (for example `1.2.0`).
+1. Raise `version` in `package.json` (for example `1.2.1`).
 2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
 3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
 4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.
