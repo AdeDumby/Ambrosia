@@ -53,6 +53,7 @@ export default function Mix() {
     updateMixtape,
     saveAsMixtape,
     limiter,
+    matching,
     fading,
     sleepEndsAt,
     setLimiter,
@@ -120,6 +121,12 @@ export default function Mix() {
           />
           <span>Limiter: stops a loud mix from clipping</span>
         </label>
+
+        {matching > 0 && (
+          <p className="settings-hint" role="status">
+            {`Matching the loudness of ${matching} ${matching === 1 ? 'layer' : 'layers'} with their effects...`}
+          </p>
+        )}
 
         <div className="settings-actions mix-actions">
           <SelectField

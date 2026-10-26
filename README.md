@@ -116,7 +116,7 @@ Mix lets you play several tracks at the same time, for example a music track wit
 - Silent means the layer's volume is 0. Raise it and press play to hear it on top of the main player. The main player and the mix are independent: pausing one does not pause the other.
 - The mix lives while the app is open and is empty at the next start. To keep a mix, save it as a mixtape (see Mixtapes below).
 - The list keeps up to 100 layers. Past that, the oldest layer that is not playing is dropped. If a track is deleted from the library, its layer disappears.
-- Layers follow **Normalize volume** (Settings > Playback) like the main player, so a quiet recording and a loud one start at a similar level.
+- Layers follow **Normalize volume** (Settings > Playback) and its target (Quiet, Normal or Loud) like the main player, so a quiet recording and a loud one start at a similar level. The effects are taken into account too: see "Loudness and effects" below.
 
 #### The layer list
 
@@ -200,6 +200,17 @@ In the header of the panel:
 - **Sleep timer**: choose 15, 30, 45, 60, 90 or 120 minutes, then **Start sleep timer**. The mix plays until the end of that time, with the last 20 seconds used as a fade out, then pauses. The page shows about how many minutes are left. **Cancel** stops the timer, and also a fade that has started. The timer keeps running when you go to another page.
 - Starting playback again during a fade (a layer's play button, **Play all**, or playing a mixtape) cancels the fade and brings the level back.
 - **Save as mixtape...** and **Update "name"**: see Mixtapes.
+
+#### Loudness and effects
+
+Tone, filters, mono, reverb, echo and wobble change how loud a layer is, and the loudness stored for the track does not know that. So when **Normalize volume** is on, a layer that has one of those effects is measured **with its effects** before it plays:
+
+- The first 30 seconds of the part played (from **Start at**, until **End at** or 30 seconds) are played through the same effects, silently, and measured with the same loudness method as the library. The layer is then brought to the target loudness, with the same limit as the main player (a boost never pushes the sound into distortion). Your volume slider, pan, speed, fades and loop are not part of the measurement, so moving them does not trigger it.
+- A layer with no such effect keeps the correction of the plain track, with no extra work.
+- The measurement runs about a third of a second after you stop changing a setting, and takes a moment. **A layer waits to start until it is done** (play, Play all, and a mixtape starting), and the Mixing box shows "Matching the loudness of N layers with their effects...". It never starts at the wrong level. When you change an effect on a layer that is playing, it keeps its level until the new measurement is ready, then moves to the new one smoothly.
+- If a track cannot be read or its part is shorter than half a second, the layer falls back to the plain correction.
+- **Several layers still add up.** Each layer reaches the same loudness on its own, so a mix of three has a higher total. Use the layers' volume sliders, the master volume and the **Limiter** to balance them.
+- With **Normalize volume** off, none of this happens and the layers play at the level of their files.
 
 #### Recipes
 
@@ -294,5 +305,6 @@ Everything the page can ask the main process to do is defined once in `src/share
 - **A loop is not perfectly seamless**: a plain loop (no part, no fade out, no pause, no random start, no variation) loops without a gap. Any of those settings makes the app start the layer again itself, which can leave a very short gap.
 - **The sleep timer or fade did nothing**: the buttons need at least one layer playing. If the mix was already paused, there is nothing to fade.
 - **The mix is empty after a restart**: the Mix page is not saved on its own. Save it as a mixtape first.
+- **A layer takes a moment to start**: it is measuring its loudness with its effects (see Loudness and effects). Longer, stereo or high-quality tracks take longer, mostly the first time. Turn off **Normalize volume** to skip it.
 - **The mix sounds harsh or crackles when many layers play**: lower the master volume or the layers' volumes, or turn on the **Limiter**.
 - **A mixtape does not start**: its tracks may have been deleted from the library. Open it from the Library to see how many it has left.

@@ -10,6 +10,8 @@ import {
   type ReactNode
 } from 'react'
 import { useLocation } from 'react-router-dom'
+import { affectsLoudness, loudnessKey } from '../lib/layerChain'
+import { loudnessCorrection } from '../lib/layerLoudness'
 import { mixReducer, toMixtapeLayer, type MixLayer } from '../lib/mix'
 import { MixEngine, type EngineTrack } from '../lib/mixEngine'
 import { gainForTarget } from '../shared/loudness'
@@ -30,6 +32,8 @@ type MixState = {
   /** The effects copied from a layer, ready to paste on another. */
   copied: LayerSettings | null
   limiter: boolean
+  /** How many layers are still having their loudness with the effects measured. */
+  matching: number
   /** True while the mix is fading out. */
   fading: boolean
   /** When the sleep timer will have paused everything, as a time in ms. */
@@ -63,6 +67,9 @@ type MixState = {
 const MixContext = createContext<MixState | null>(null)
 /** Review plays every unreviewed track by itself, so those are not meant for the mix. */
 const NO_AUTO_ADD = '/review'
+/** Wait for the effects to stop changing before the loudness is measured again. */
+const MATCH_DELAY_MS = 350
+const MAX_MATCHED = 300
 /** The sleep timer fades the mix out over this long, ending at the time that was set. */
 const SLEEP_FADE_SECONDS = 20
 
@@ -80,6 +87,10 @@ export function MixProvider({ children }: { children: ReactNode }) {
   const [fading, setFading] = useState(false)
   const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null)
   const sleepTimer = useRef<number | undefined>(undefined)
+  // The correction that brings a layer with its effects to the target loudness, by what it sounds like.
+  const [matched, setMatched] = useState<Map<string, number>>(new Map())
+  const measuring = useRef(new Set<string>())
+  const lastCorrection = useRef(new Map<number, number>())
   const engineRef = useRef<MixEngine | null>(null)
   const pathRef = useRef(pathname)
   const { normalize, targetLufs } = settings.playback
@@ -115,22 +126,84 @@ export function MixProvider({ children }: { children: ReactNode }) {
 
   const trackById = useMemo(() => new Map(tracks.map((track) => [track.id, track])), [tracks])
 
+  // A layer whose effects change its loudness is measured with them, so Normalize volume holds.
+  const needsMatch = useCallback(
+    (layer: MixLayer) => normalize && affectsLoudness(layer) && trackById.has(layer.trackId),
+    [normalize, trackById]
+  )
+  const matchKey = useCallback(
+    (layer: MixLayer) => `${layer.trackId}|${targetLufs}|${loudnessKey(layer)}`,
+    [targetLufs]
+  )
+
+  const matching = useMemo(
+    () => layers.filter((layer) => needsMatch(layer) && !matched.has(matchKey(layer))).length,
+    [layers, matched, needsMatch, matchKey]
+  )
+
+  useEffect(() => {
+    const missing = layers.filter(
+      (layer) =>
+        needsMatch(layer) &&
+        !matched.has(matchKey(layer)) &&
+        !measuring.current.has(matchKey(layer))
+    )
+    if (missing.length === 0) return
+    const timer = window.setTimeout(() => {
+      for (const layer of missing) {
+        const key = matchKey(layer)
+        if (measuring.current.has(key)) continue
+        measuring.current.add(key)
+        const track = trackById.get(layer.trackId)
+        const plain =
+          track && track.loudnessLufs !== null && track.loudnessPeak !== null
+            ? gainForTarget(track.loudnessLufs, track.loudnessPeak, targetLufs)
+            : 1
+        void loudnessCorrection(layer.trackId, layer, targetLufs)
+          .catch(() => null)
+          .then((correction) => {
+            measuring.current.delete(key)
+            // When the check cannot be done, the layer falls back to the plain track, not to silence.
+            setMatched((previous) => {
+              const next = new Map(previous).set(key, correction ?? plain)
+              while (next.size > MAX_MATCHED) next.delete(next.keys().next().value as string)
+              return next
+            })
+          })
+      }
+    }, MATCH_DELAY_MS)
+    return () => window.clearTimeout(timer)
+  }, [layers, matched, needsMatch, matchKey, trackById, targetLufs])
+
   // Keeps the sound in line with the layers.
   useEffect(() => {
     const info = new Map<number, EngineTrack>()
     for (const layer of layers) {
       const track = trackById.get(layer.trackId)
       const measured = track && track.loudnessLufs !== null && track.loudnessPeak !== null
-      info.set(layer.trackId, {
-        durationSec: track?.durationSec ?? 0,
-        correction:
-          normalize && measured
-            ? gainForTarget(track.loudnessLufs!, track.loudnessPeak!, targetLufs)
-            : 1
-      })
+      const plain =
+        normalize && measured
+          ? gainForTarget(track.loudnessLufs!, track.loudnessPeak!, targetLufs)
+          : 1
+      let correction = plain
+      let pending = false
+      if (needsMatch(layer)) {
+        const found = matched.get(matchKey(layer))
+        if (found !== undefined) {
+          correction = found
+          lastCorrection.current.set(layer.trackId, found)
+        } else {
+          // Keep the last level until the new check is done, so the sound does not jump.
+          correction = lastCorrection.current.get(layer.trackId) ?? plain
+          pending = true
+        }
+      } else {
+        lastCorrection.current.delete(layer.trackId)
+      }
+      info.set(layer.trackId, { durationSec: track?.durationSec ?? 0, correction, pending })
     }
     engineRef.current?.sync(layers, master, info)
-  }, [layers, master, trackById, normalize, targetLufs])
+  }, [layers, master, trackById, normalize, targetLufs, matched, needsMatch, matchKey])
 
   useEffect(() => {
     engineRef.current?.setLimiter(limiter)
@@ -266,6 +339,7 @@ export function MixProvider({ children }: { children: ReactNode }) {
       loadedMixtape,
       copied,
       limiter,
+      matching,
       fading,
       sleepEndsAt,
       select: setSelectedId,
@@ -299,6 +373,7 @@ export function MixProvider({ children }: { children: ReactNode }) {
       loadedMixtape,
       copied,
       limiter,
+      matching,
       fading,
       sleepEndsAt,
       setLimiter,

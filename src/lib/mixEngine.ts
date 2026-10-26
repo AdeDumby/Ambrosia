@@ -9,12 +9,23 @@ import {
   type MixLayer,
   type Variation
 } from './mix'
+import {
+  EQ_HIGH_HZ,
+  EQ_LOW_HZ,
+  EQ_MID_HZ,
+  LOW_CUT_OFF_HZ,
+  MAX_ECHO_SECONDS,
+  chainParams,
+  makeImpulse
+} from './layerChain'
 
 /** What the engine needs to know about a track, from the library. */
 export type EngineTrack = {
   durationSec: number
   /** Loudness correction (1 when Normalize volume is off or the track is not measured). */
   correction: number
+  /** The loudness with the effects is still being measured: the layer waits to start. */
+  pending?: boolean
 }
 
 type Nodes = {
@@ -66,33 +77,13 @@ type Graph = {
 }
 
 const NO_VARIATION: Variation = { volume: 1, pan: 0, speed: 1 }
-const MAX_ECHO_SECONDS = 2
 const OUT_RESTORE_MS = 300
-/** A cut this low does nothing, so "off" is a filter nobody can hear. */
-const LOW_CUT_OFF_HZ = 10
 
 const SMOOTHING = 0.015
 const TICK_MS = 100
 /** A part that ends this close to the position is over. */
 const END_MARGIN = 0.03
 const RESUME_FADE_IN = 0.05
-const REVERB_SECONDS = 2.5
-const EQ_LOW_HZ = 200
-const EQ_MID_HZ = 1000
-const EQ_HIGH_HZ = 4000
-
-function makeImpulse(context: AudioContext): AudioBuffer {
-  const length = Math.round(context.sampleRate * REVERB_SECONDS)
-  const buffer = context.createBuffer(2, length, context.sampleRate)
-  for (let channel = 0; channel < 2; channel += 1) {
-    const data = buffer.getChannelData(channel)
-    for (let index = 0; index < length; index += 1) {
-      data[index] = (Math.random() * 2 - 1) * (1 - index / length) ** 3
-    }
-  }
-  return buffer
-}
-
 /**
  * Plays the layers of the mix. Each layer that has been played has its own audio element and its
  * own chain: tone, pan, reverb, fades and level, all into one master volume.
@@ -389,37 +380,36 @@ export class MixEngine {
       now,
       SMOOTHING
     )
-    nodes.cutLow.frequency.setTargetAtTime(Math.max(LOW_CUT_OFF_HZ, layer.lowCut), now, SMOOTHING)
+    const chain = chainParams(layer)
+    nodes.cutLow.frequency.setTargetAtTime(chain.lowCut, now, SMOOTHING)
     nodes.cutHigh.frequency.setTargetAtTime(
-      Math.min(layer.highCut, this.graph.context.sampleRate / 2),
+      Math.min(chain.highCut, this.graph.context.sampleRate / 2),
       now,
       SMOOTHING
     )
     // One channel in, and the panner spreads it again, so mono ignores the original stereo width.
-    const channels = layer.mono ? 1 : 2
+    const channels = chain.mono ? 1 : 2
     if (nodes.mono.channelCount !== channels) {
-      nodes.mono.channelCountMode = layer.mono ? 'explicit' : 'max'
+      nodes.mono.channelCountMode = chain.mono ? 'explicit' : 'max'
       nodes.mono.channelCount = channels
     }
-    nodes.delay.delayTime.setTargetAtTime(
-      Math.min(MAX_ECHO_SECONDS, layer.echoTime),
-      now,
-      SMOOTHING
-    )
-    nodes.feedback.gain.setTargetAtTime(layer.echoFeedback, now, SMOOTHING)
-    nodes.echoWet.gain.setTargetAtTime(layer.echoMix, now, SMOOTHING)
-    nodes.lfo.frequency.setTargetAtTime(layer.tremoloRate, now, SMOOTHING)
-    nodes.lfoDepth.gain.setTargetAtTime(layer.tremoloDepth / 2, now, SMOOTHING)
-    nodes.tremolo.gain.setTargetAtTime(1 - layer.tremoloDepth / 2, now, SMOOTHING)
-    nodes.low.gain.setTargetAtTime(layer.eqLow, now, SMOOTHING)
-    nodes.mid.gain.setTargetAtTime(layer.eqMid, now, SMOOTHING)
-    nodes.high.gain.setTargetAtTime(layer.eqHigh, now, SMOOTHING)
-    nodes.wet.gain.setTargetAtTime(layer.reverb, now, SMOOTHING)
-    nodes.dry.gain.setTargetAtTime(1 - layer.reverb * 0.5, now, SMOOTHING)
+    nodes.delay.delayTime.setTargetAtTime(chain.echoTime, now, SMOOTHING)
+    nodes.feedback.gain.setTargetAtTime(chain.echoFeedback, now, SMOOTHING)
+    nodes.echoWet.gain.setTargetAtTime(chain.echoMix, now, SMOOTHING)
+    nodes.lfo.frequency.setTargetAtTime(chain.tremoloRate, now, SMOOTHING)
+    nodes.lfoDepth.gain.setTargetAtTime(chain.tremoloDepth / 2, now, SMOOTHING)
+    nodes.tremolo.gain.setTargetAtTime(1 - chain.tremoloDepth / 2, now, SMOOTHING)
+    nodes.low.gain.setTargetAtTime(chain.eqLow, now, SMOOTHING)
+    nodes.mid.gain.setTargetAtTime(chain.eqMid, now, SMOOTHING)
+    nodes.high.gain.setTargetAtTime(chain.eqHigh, now, SMOOTHING)
+    nodes.wet.gain.setTargetAtTime(chain.wet, now, SMOOTHING)
+    nodes.dry.gain.setTargetAtTime(chain.dry, now, SMOOTHING)
   }
 
   private start(voice: Voice, layer: MixLayer): void {
     if (voice.state === 'playing' || voice.state === 'gap') return
+    // The loudness with the effects is measured first, so the layer never starts at the wrong level.
+    if (this.tracks.get(layer.trackId)?.pending) return
     if (voice.state === 'paused') {
       this.resume(voice, layer)
       return

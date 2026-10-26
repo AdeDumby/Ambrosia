@@ -13,7 +13,7 @@ export type TrackAnalysis = {
 type WorkerReply =
   { ok: true; result: Loudness; measureMs: number } | { ok: false; message: string }
 
-function measureInWorker(
+export function measureInWorker(
   channels: Float32Array[],
   sampleRate: number
 ): Promise<{ result: Loudness; measureMs: number }> {
