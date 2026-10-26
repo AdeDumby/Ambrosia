@@ -3,7 +3,7 @@
   flex-direction: column;
   flex-shrink: 0;
   gap: 10px;
-  max-height: 42vh;
+  max-height: 48vh;
   padding: 12px 16px;
   overflow: auto;
   border-top: 1px solid var(--border);
@@ -60,6 +60,13 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 10px;
+}
+
+/* Wide enough: two rows of five boxes. Narrower windows fit as many as they can. */
+@media (min-width: 1150px) {
+  .mix-panel-groups {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 .mix-panel-group {

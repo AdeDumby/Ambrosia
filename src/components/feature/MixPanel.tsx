@@ -317,6 +317,19 @@ export default function MixPanel() {
           />
         </Group>
 
+        <Group title="Space">
+          <Slider
+            label="Reverb"
+            value={layer.reverb}
+            min={limits.reverb.min}
+            max={limits.reverb.max}
+            step={0.01}
+            format={percent}
+            reset={defaults.reverb}
+            onChange={(reverb) => set({ reverb })}
+          />
+        </Group>
+
         <Group title="Tone">
           <Slider
             label="Low"
@@ -461,19 +474,6 @@ export default function MixPanel() {
             onChange={(speedJitter) => set({ speedJitter })}
           />
           <span className="mix-panel-note">A little different each time it plays or loops</span>
-        </Group>
-
-        <Group title="Space">
-          <Slider
-            label="Reverb"
-            value={layer.reverb}
-            min={limits.reverb.min}
-            max={limits.reverb.max}
-            step={0.01}
-            format={percent}
-            reset={defaults.reverb}
-            onChange={(reverb) => set({ reverb })}
-          />
         </Group>
       </div>
     </footer>

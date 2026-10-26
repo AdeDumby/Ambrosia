@@ -6,6 +6,14 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.0
+
+- **Mix page**: play several tracks at once, each layer with its own volume, pan, speed, fades, loop and pauses between loops, part played, tone, reverb, **filters**, **echo**, **wobble**, **mono**, **variation** and **start delay**.
+- **Presets** and **Copy / Paste** of a layer's sound.
+- **Mix controls**: master volume, limiter, fade out and pause, sleep timer.
+- **Mixtapes**: save a mix, tag it, rename it, find it in the Library under **Mixtapes**, and play it to replace the current mix.
+- **Tag merging**, **automatic updates** and a safer window (minimum width, no overlapping title bar).
+
 ## Install
 
 1. Download the installer, `Ambrosia-Setup-<version>.exe`, from the project's releases.
@@ -100,38 +108,115 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 
 ### Mix
 
-Mix lets you play several tracks at the same time, for example a music track with rain and birds on top.
+Mix lets you play several tracks at the same time, for example a music track with rain and birds on top, and shape each one with its own settings. Each track in the mix is a **layer**. Open it with the **Mix** tab or the `5` key.
 
-- Every track the main player starts in the Library (play button, next, previous, shuffle, `Q`) is added to **Mix** as a layer that is **silent and paused**. Tracks played in Review are not added. Playing a track again does not add it twice.
-- Each layer row has **play/pause**, a **volume** slider, **M** (mute), **S** (solo: only the solo layers are heard), **Loop** and a button to remove it. A layer starts silent, so raise its volume and press play to hear it. A track that ends stops, unless Loop is on.
-- **Click a layer's name** and its settings open in the panel at the bottom of the page, which takes the place of the player bar on this page (the player's keyboard shortcuts still work). Double-click a slider to reset it.
-  - **Sound**: volume, pan (left to right), speed (0.25x to 2x), **Keep pitch** and **Mono** (both sides played as one, then placed with Pan).
-  - **Fades**: fade in and fade out, up to 30 seconds.
-  - **Part played**: **Start at** and **End at** (in seconds, 0 means until the end) to play only a part of the track, and **Random start** to begin somewhere inside that part each time.
-  - **Timing**: a **start delay** (the layer waits that long before it starts, up to an hour; it does not apply when you resume a paused layer), then loop on or off, and a **pause between loops** picked at random between a minimum and a maximum. Useful for rain that comes back every so often, or a bird that calls from time to time.
-  - **Tone**: low, mid and high, from -12 to +12 dB.
-  - **Filter**: **low cut** (removes the lows, up to 1 kHz) and **high cut** (removes the highs, from 20 kHz down to 200 Hz). Off at the ends.
-  - **Echo**: amount, time (0.05 to 2 seconds) and repeats.
-  - **Wobble**: the volume rises and falls, with a depth and a rate (0.1 to 20 Hz).
-  - **Variation**: volume, pan and speed change a little, at random, every time the layer starts or loops. Volume only goes down, so it never exceeds the level you set.
-  - **Space**: reverb.
-  - **Preset...** applies a ready-made sound (Cave, Distant, Underwater, Radio, Telephone, Lo-fi, Echo hall, Pulse, Natural ambience) on plain effects. It keeps the volume, loop, mute and solo. **Copy** and **Paste** move the sound of one layer to another (not the volume, the part played or the start delay).
-  - **Reset effects** puts everything back except the volume, loop, mute and solo.
-- **Limiter** stops a loud mix from clipping. **Fade out and pause** brings everything down over 5 to 60 seconds, then pauses it. The **sleep timer** does the same after 15 minutes to 2 hours, with a 20 second fade at the end, and can be cancelled.
-- **Master volume** sets the level of all layers together. **Play all** starts every layer that is not silent, **Pause all** pauses them, **Unsolo all** turns every solo off, **Remove silent** drops the layers that are silent and paused, and **Clear mix** empties the list. A dot on the **Mix** tab shows that layers are playing.
-- Layers follow **Normalize volume** like the main player, and play independently of it.
-- The layers stay while the app is open and are empty at the next start. The list keeps up to 100 layers: past that, the oldest layer that is not playing is dropped. Deleting a track removes its layer.
+#### How layers get there
+
+- Every track the main player starts in the Library (play button, next, previous, shuffle, `Q`, autoplay of the next track) is added to Mix as a layer that is **silent and paused**. Tracks played in Review are not added, because Review plays every unreviewed track by itself. Playing a track again does not add it twice.
+- Silent means the layer's volume is 0. Raise it and press play to hear it on top of the main player. The main player and the mix are independent: pausing one does not pause the other.
+- The mix lives while the app is open and is empty at the next start. To keep a mix, save it as a mixtape (see Mixtapes below).
+- The list keeps up to 100 layers. Past that, the oldest layer that is not playing is dropped. If a track is deleted from the library, its layer disappears.
+- Layers follow **Normalize volume** (Settings > Playback) like the main player, so a quiet recording and a loud one start at a similar level.
+
+#### The layer list
+
+Each row has:
+
+- a **play / pause** button,
+- the track name (click it to select the layer and edit it in the bottom panel; the selected row is highlighted),
+- a **volume** slider, which reads "Silent" at 0,
+- **M** (mute) and **S** (solo). When at least one layer is solo, only the solo layers are heard. Muted layers stay muted even when solo,
+- **Loop**, and a button to remove the layer.
+
+A layer that reaches the end of its track stops by itself, unless Loop is on. The **Mix** tab shows a dot while at least one layer is playing.
+
+#### The settings panel
+
+On the Mix page the panel replaces the player bar at the bottom (the player's keyboard shortcuts still work). It shows the selected layer in ten boxes: **two rows of five** when the window is wide enough (about 1150 pixels), and fewer per row in a narrower window. The panel scrolls when the window is short. **Double-click any slider to put it back to its default.**
+
+Top row:
+
+- **Sound**
+  - **Volume**: 0 to 100%.
+  - **Pan**: left 100% to right 100%. Center is the default.
+  - **Speed**: 0.25x to 2x.
+  - **Keep pitch**: on by default. When off, speed changes the pitch too (slower is lower), like a tape.
+  - **Mono**: plays both sides as one, then Pan places it. Useful to make a wide recording sound like one point in space.
+- **Fades**
+  - **Fade in** and **Fade out**: 0 to 30 seconds, in steps of half a second. The fade in happens each time the layer starts or loops, and the fade out ends when the part ends (it needs the length of the track, so it works on tracks the library knows the length of). Fades are counted in real time, so they keep their length when you change the speed, and a fade longer than the time that is left is shortened to fit. A layer you pause and resume gets only a very short fade in (50 ms) so that it does not click.
+- **Part played**
+  - **Start at** and **End at**: in seconds (up to 36000). Type a number and press Enter or leave the field. **End at 0 means "to the end of the track"**, and a value past the end is the same as the end. The field shows the length of the track.
+  - **Random start**: each time the layer starts or loops, it begins somewhere random inside the part (at least half a second is always left to play).
+- **Timing**
+  - **Start delay**: how long the layer waits after you press play before it makes a sound, up to one hour. It applies to a fresh start (play, Play all, a mixtape starting), not when you resume a layer you paused, and not between loops (use the pause for that). Press pause during the wait to cancel it.
+  - **Loop**: play the part again when it ends.
+  - **Pause min** and **Pause max**: the silence between two loops, in seconds, up to one hour. Each time, the length is picked at random between the two. Leave both at 0 for no pause. Example: Loop on, min 20, max 90 gives rain that comes back every 20 to 90 seconds, or a bird that calls from time to time.
+- **Space**
+  - **Reverb**: 0 to 100%. A room of about 2.5 seconds, mixed in with the dry sound.
+
+Bottom row:
+
+- **Tone**: **Low**, **Mid** and **High**, from -12 to +12 dB. Low is a shelf at 200 Hz, Mid a bell at 1 kHz, High a shelf at 4 kHz.
+- **Filter**
+  - **Low cut**: removes sound below the chosen pitch, up to 1000 Hz. **Off** at the left end. Makes a sound thinner.
+  - **High cut**: removes sound above the chosen pitch, from 20 kHz down to 200 Hz. **Off** at the right end. Makes a sound duller and farther away.
+- **Echo**
+  - **Amount**: how loud the echoes are (Off at 0). The sound itself is not changed.
+  - **Time**: gap between echoes, 0.05 to 2 seconds.
+  - **Repeats**: how many times the echo feeds back into itself, up to 90%. High values with a long time make long tails.
+- **Wobble**
+  - **Depth**: how far the volume goes down and up (Off at 0).
+  - **Rate**: how fast, from 0.1 to 20 times per second. Slow is waves, fast is a flutter.
+- **Variation**: a little random change **each time the layer starts or loops**, so a loop never sounds exactly the same.
+  - **Vary volume**: the volume is lowered by up to this much. It never goes above the volume you set.
+  - **Vary pan**: the pan moves left or right by up to this much.
+  - **Vary speed**: the speed changes by up to this much either way (up to 50%).
+
+In the header of the panel:
+
+- **Preset...** applies a ready-made sound. A preset first puts the effects back to plain, then sets what it lists, so presets do not pile up on each other. That includes the part played, the pauses between loops and the start delay, which go back to their defaults. It keeps the volume, loop, mute and solo. You can still adjust anything afterwards.
+
+  | Preset           | What it does                                                                         |
+  | ---------------- | ------------------------------------------------------------------------------------ |
+  | Cave             | Big, dark space: strong reverb, softer highs, a little more low.                     |
+  | Distant          | Far away and softened: high cut at 3 kHz, some reverb, quieter highs.                |
+  | Underwater       | Muffled and wobbly: high cut at 900 Hz, reverb, a slow gentle wobble.                |
+  | Radio            | Narrow and mono: 400 Hz to 3.5 kHz with a boost in the mids.                         |
+  | Telephone        | Very narrow and mono: 500 Hz to 3 kHz with a strong mid boost.                       |
+  | Lo-fi            | Warm and dull: 120 Hz to 5 kHz, slightly slow, pitch follows speed.                  |
+  | Echo hall        | Repeats that fade away, with a little reverb.                                        |
+  | Pulse            | Volume goes up and down five times a second.                                         |
+  | Natural ambience | Never quite the same twice: variation on volume, pan and speed, plus a random start. |
+
+- **Copy** and **Paste**: copy the sound of the selected layer, select another layer, and paste. Paste gives it the pan, speed, keep pitch, fades, pauses between loops, tone, filter, echo, wobble, variation, mono and reverb of the copied layer. It does **not** change the volume, loop, mute, solo, part played, random start or start delay. Paste stays disabled until you copy. The copy is kept until you quit the app.
+- **Reset effects** puts every setting above back to its default for the selected layer (this includes the part played, the pauses between loops and the start delay), except the volume, loop, mute and solo.
+
+#### Mixing the whole mix
+
+- **Master volume**: the level of all layers together, 0 to 100%.
+- **Play all** starts every layer that is not silent. **Pause all** pauses every layer. **Unsolo all** turns every solo off. **Remove silent** drops the layers that are silent and paused. **Clear mix** empties the list.
+- **Limiter**: a checkbox. When on, a safety limiter sits at the very end of the sound and presses down only the peaks (above about -3 dB), so stacking many layers does not clip or crackle. It is off by default, because it also slightly changes how a dense mix sounds.
+- **Fade out and pause**: choose 5, 10, 30 or 60 seconds, then click the button. Everything fades to silence, then every layer is paused, and the level comes back so the next play is normal. The button is disabled while a fade is going on.
+- **Sleep timer**: choose 15, 30, 45, 60, 90 or 120 minutes, then **Start sleep timer**. The mix plays until the end of that time, with the last 20 seconds used as a fade out, then pauses. The page shows about how many minutes are left. **Cancel** stops the timer, and also a fade that has started. The timer keeps running when you go to another page.
+- Starting playback again during a fade (a layer's play button, **Play all**, or playing a mixtape) cancels the fade and brings the level back.
+- **Save as mixtape...** and **Update "name"**: see Mixtapes.
+
+#### Recipes
+
+- **Rainy forest**: add a calm music track and a rain recording. Give the rain Loop, a 5 second fade in and fade out, **Natural ambience**, and volume 40%. Add a bird track with Loop, **Pause min** 20 and **Pause max** 90, **Vary pan** 60%, volume 25%.
+- **Memory in a tunnel**: use **Underwater** or **Distant** on a melody and add **Echo hall** to a second copy of the track with a start delay of 2 seconds.
+- **Falling asleep**: build a mix, turn on the **Limiter**, and start a 30 minute **sleep timer**.
 
 ### Mixtapes
 
 A mixtape is a mix that you saved. It is stored in the library like a track, and listed in the **Mixtapes** category of the Library (next to All, Music and SFX).
 
-- **Save as mixtape...** on the Mix page saves the current layers, with all their settings and the master volume, under a name. Two mixtapes cannot have the same name (case and accents are ignored).
-- **Play** on a mixtape replaces the current mix with its layers, with their saved settings, and starts every layer that is not silent. Play again to pause.
-- When a mixtape is loaded, **Update "name"** on the Mix page saves your changes into it.
-- In the list, a mixtape can be **tagged** like a track (the tag filters, Any / All and the counts work on mixtapes), **renamed** with a double-click, and **deleted**. Deleting a mixtape never deletes the tracks in it. Search and the sort menu work too (by name or by number of tags).
-- A mixtape only keeps the tracks that are in the library. If you delete a track, it leaves the mixtapes that used it.
-- Merging two tags also merges them on mixtapes, and mixtapes are part of the backups.
+- **Save as mixtape...** on the Mix page saves the current layers under a name: every layer with **all of its settings** (volume, mute, solo, loop, tone, filter, echo, wobble, variation, mono, fades, part played, timing and so on) and the master volume. A name has up to 60 characters, extra spaces are cleaned, and two mixtapes cannot have the same name (case and accents are ignored). A mixtape holds up to 200 layers.
+- **Play** on a mixtape in the Library **replaces the current mix** with its layers and settings, switches the master volume to the saved one, selects the first layer, and starts every layer that is not silent. Play again to pause. A mixtape whose tracks were all deleted has nothing to play: it does not touch your current mix.
+- When a mixtape is loaded, **Update "name"** on the Mix page replaces its content with your current layers. Use **Save as mixtape...** to keep the original and make a new one.
+- In the list, a mixtape can be **tagged** like a track (tag filters, Any / All and the counts all include mixtapes), **renamed** with a double-click, and **deleted**. Deleting a mixtape never deletes the tracks in it. Search and the sort menu work too (by name or by number of tags).
+- A mixtape only keeps tracks that are in the library: when you delete a track, it leaves the mixtapes that used it. Mixtapes created with an earlier version open with the new settings turned off, and sound as before.
+- Merging two tags also merges them on mixtapes, and mixtapes are part of the backups and restores.
 
 ### Settings
 
@@ -158,7 +243,7 @@ A mixtape is a mix that you saved. It is stored in the library like a track, and
 | Manual backups    | your Downloads folder                                              |
 | Music             | your library folder, and anywhere else your tracks were added from |
 
-Backups contain tracks, tags, folders and settings, not the music files.
+Backups contain tracks, tags, folders, mixtapes and settings, not the music files. The current mix (the layers on the Mix page) is not saved anywhere until you save it as a mixtape.
 
 - A backup is made automatically once a day, and before applying a scan, deleting a folder together with its tags, merging tags, permanent track deletion, and any restore. The newest 10 automatic backups are kept.
 - **Settings > Backups**: **Back up now**, **Open folder**, and **Restore** on any entry in the list or from a file. Restoring first saves a copy of your current library, so it can be undone.
@@ -204,3 +289,10 @@ Everything the page can ask the main process to do is defined once in `src/share
 - **A track plays at a different volume than others**: it may not be measured yet. Run **Apply changes**, or check that **Normalize volume** is on.
 - **Shortcuts do nothing**: check the `Keys` badge in the title bar, and press Ctrl + Alt to turn them on. They are also off while a text field has focus.
 - **Media keys do not control Ambrosia**: they only act while a track is loaded. Another media app may have taken them, so close it or press play in Ambrosia once.
+- **A layer in Mix makes no sound**: its volume starts at 0 ("Silent"). Raise it, check that M (mute) is off and that no other layer is solo, then press play. If the layer has a **start delay**, wait for it, or set it back to 0.
+- **A layer in Mix stopped by itself**: a track that reaches its end (or the **End at** time) stops unless **Loop** is on.
+- **A loop is not perfectly seamless**: a plain loop (no part, no fade out, no pause, no random start, no variation) loops without a gap. Any of those settings makes the app start the layer again itself, which can leave a very short gap.
+- **The sleep timer or fade did nothing**: the buttons need at least one layer playing. If the mix was already paused, there is nothing to fade.
+- **The mix is empty after a restart**: the Mix page is not saved on its own. Save it as a mixtape first.
+- **The mix sounds harsh or crackles when many layers play**: lower the master volume or the layers' volumes, or turn on the **Limiter**.
+- **A mixtape does not start**: its tracks may have been deleted from the library. Open it from the Library to see how many it has left.
