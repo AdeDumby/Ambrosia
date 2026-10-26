@@ -105,13 +105,19 @@ Mix lets you play several tracks at the same time, for example a music track wit
 - Every track the main player starts in the Library (play button, next, previous, shuffle, `Q`) is added to **Mix** as a layer that is **silent and paused**. Tracks played in Review are not added. Playing a track again does not add it twice.
 - Each layer row has **play/pause**, a **volume** slider, **M** (mute), **S** (solo: only the solo layers are heard), **Loop** and a button to remove it. A layer starts silent, so raise its volume and press play to hear it. A track that ends stops, unless Loop is on.
 - **Click a layer's name** and its settings open in the panel at the bottom of the page, which takes the place of the player bar on this page (the player's keyboard shortcuts still work). Double-click a slider to reset it.
-  - **Sound**: volume, pan (left to right), speed (0.25x to 2x) and **Keep pitch**.
+  - **Sound**: volume, pan (left to right), speed (0.25x to 2x), **Keep pitch** and **Mono** (both sides played as one, then placed with Pan).
   - **Fades**: fade in and fade out, up to 30 seconds.
   - **Part played**: **Start at** and **End at** (in seconds, 0 means until the end) to play only a part of the track, and **Random start** to begin somewhere inside that part each time.
-  - **Loop**: loop on or off, and a **pause between loops** picked at random between a minimum and a maximum. Useful for rain that comes back every so often, or a bird that calls from time to time.
+  - **Timing**: a **start delay** (the layer waits that long before it starts, up to an hour; it does not apply when you resume a paused layer), then loop on or off, and a **pause between loops** picked at random between a minimum and a maximum. Useful for rain that comes back every so often, or a bird that calls from time to time.
   - **Tone**: low, mid and high, from -12 to +12 dB.
+  - **Filter**: **low cut** (removes the lows, up to 1 kHz) and **high cut** (removes the highs, from 20 kHz down to 200 Hz). Off at the ends.
+  - **Echo**: amount, time (0.05 to 2 seconds) and repeats.
+  - **Wobble**: the volume rises and falls, with a depth and a rate (0.1 to 20 Hz).
+  - **Variation**: volume, pan and speed change a little, at random, every time the layer starts or loops. Volume only goes down, so it never exceeds the level you set.
   - **Space**: reverb.
+  - **Preset...** applies a ready-made sound (Cave, Distant, Underwater, Radio, Telephone, Lo-fi, Echo hall, Pulse, Natural ambience) on plain effects. It keeps the volume, loop, mute and solo. **Copy** and **Paste** move the sound of one layer to another (not the volume, the part played or the start delay).
   - **Reset effects** puts everything back except the volume, loop, mute and solo.
+- **Limiter** stops a loud mix from clipping. **Fade out and pause** brings everything down over 5 to 60 seconds, then pauses it. The **sleep timer** does the same after 15 minutes to 2 hours, with a 20 second fade at the end, and can be cancelled.
 - **Master volume** sets the level of all layers together. **Play all** starts every layer that is not silent, **Pause all** pauses them, **Unsolo all** turns every solo off, **Remove silent** drops the layers that are silent and paused, and **Clear mix** empties the list. A dot on the **Mix** tab shows that layers are playing.
 - Layers follow **Normalize volume** like the main player, and play independently of it.
 - The layers stay while the app is open and are empty at the next start. The list keeps up to 100 layers: past that, the oldest layer that is not playing is dropped. Deleting a track removes its layer.

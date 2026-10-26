@@ -88,3 +88,42 @@ describe('cleanMixtapeName', () => {
     expect(cleanMixtapeName('  Rainy   forest  night ')).toBe('Rainy forest night')
   })
 })
+
+describe('new layer settings', () => {
+  it('fills the new settings in for a mixtape saved before they existed', () => {
+    const old = sanitizeLayerSettings({ volume: 0.5, pan: 0.2, reverb: 0.3 })
+    expect(old).toMatchObject({ volume: 0.5, lowCut: 0, highCut: 20000, echoMix: 0, mono: false })
+    expect(old.startDelay).toBe(0)
+  })
+
+  it('keeps every new value inside its range', () => {
+    const result = sanitizeLayerSettings({
+      lowCut: 99999,
+      highCut: 5,
+      echoTime: 0,
+      echoFeedback: 5,
+      echoMix: -1,
+      tremoloRate: 500,
+      tremoloDepth: 9,
+      volumeJitter: 3,
+      panJitter: -3,
+      speedJitter: 3,
+      startDelay: 99999,
+      mono: 'yes'
+    })
+    expect(result).toMatchObject({
+      lowCut: 1000,
+      highCut: 200,
+      echoTime: 0.05,
+      echoFeedback: 0.9,
+      echoMix: 0,
+      tremoloRate: 20,
+      tremoloDepth: 1,
+      volumeJitter: 1,
+      panJitter: 0,
+      speedJitter: 0.5,
+      startDelay: 3600,
+      mono: false
+    })
+  })
+})

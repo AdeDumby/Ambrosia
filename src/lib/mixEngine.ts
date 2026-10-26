@@ -5,7 +5,9 @@ import {
   playWindow,
   startPosition,
   usesNativeLoop,
-  type MixLayer
+  variationFor,
+  type MixLayer,
+  type Variation
 } from './mix'
 
 /** What the engine needs to know about a track, from the library. */
@@ -16,6 +18,19 @@ export type EngineTrack = {
 }
 
 type Nodes = {
+  /** Cuts the lows. */
+  cutLow: BiquadFilterNode
+  /** Cuts the highs. */
+  cutHigh: BiquadFilterNode
+  /** Joins both channels into one when the layer is mono. */
+  mono: GainNode
+  delay: DelayNode
+  feedback: GainNode
+  echoWet: GainNode
+  /** Volume wobble. Its value moves with the LFO. */
+  tremolo: GainNode
+  lfo: OscillatorNode
+  lfoDepth: GainNode
   low: BiquadFilterNode
   mid: BiquadFilterNode
   high: BiquadFilterNode
@@ -37,9 +52,24 @@ type Voice = {
   nodes: Nodes | null
   state: VoiceState
   gapTimer: number | undefined
+  /** The random change picked when the layer last started. */
+  variation: Variation
 }
 
-type Graph = { context: AudioContext; master: GainNode; impulse: AudioBuffer }
+type Graph = {
+  context: AudioContext
+  master: GainNode
+  /** Only for fading everything out. */
+  out: GainNode
+  limiter: DynamicsCompressorNode
+  impulse: AudioBuffer
+}
+
+const NO_VARIATION: Variation = { volume: 1, pan: 0, speed: 1 }
+const MAX_ECHO_SECONDS = 2
+const OUT_RESTORE_MS = 300
+/** A cut this low does nothing, so "off" is a filter nobody can hear. */
+const LOW_CUT_OFF_HZ = 10
 
 const SMOOTHING = 0.015
 const TICK_MS = 100
@@ -76,6 +106,9 @@ export class MixEngine {
   private anySolo = false
   private master = 1
   private ticker: number | undefined
+  private limiter = false
+  private fadeTimer: number | undefined
+  private restoreTimer: number | undefined
 
   private readonly onStopped: (trackId: number) => void
 
@@ -110,7 +143,63 @@ export class MixEngine {
     this.updateTicker()
   }
 
+  /** Keeps a loud mix from clipping, by pressing down only the peaks. */
+  setLimiter(on: boolean): void {
+    this.limiter = on
+    this.route()
+  }
+
+  /** Brings everything down over `seconds`, then calls `done` (which should pause the layers). */
+  fadeOut(seconds: number, done: () => void): void {
+    this.cancelFade()
+    const graph = this.graph
+    if (graph) {
+      const now = graph.context.currentTime
+      graph.out.gain.cancelScheduledValues(now)
+      graph.out.gain.setValueAtTime(graph.out.gain.value, now)
+      graph.out.gain.linearRampToValueAtTime(0, now + seconds)
+    }
+    this.fadeTimer = window.setTimeout(() => {
+      this.fadeTimer = undefined
+      done()
+      // The layers pause on the next sync, so the level comes back a moment later.
+      this.restoreTimer = window.setTimeout(() => this.restoreOut(), OUT_RESTORE_MS)
+    }, seconds * 1000)
+  }
+
+  /** Stops a fade that is going on and brings the level back. */
+  cancelFade(): void {
+    window.clearTimeout(this.fadeTimer)
+    window.clearTimeout(this.restoreTimer)
+    this.fadeTimer = undefined
+    this.restoreTimer = undefined
+    this.restoreOut()
+  }
+
+  private restoreOut(): void {
+    const graph = this.graph
+    if (!graph) return
+    const now = graph.context.currentTime
+    graph.out.gain.cancelScheduledValues(now)
+    graph.out.gain.setTargetAtTime(1, now, SMOOTHING)
+  }
+
+  private route(): void {
+    const graph = this.graph
+    if (!graph) return
+    graph.out.disconnect()
+    graph.limiter.disconnect()
+    if (this.limiter) {
+      graph.out.connect(graph.limiter)
+      graph.limiter.connect(graph.context.destination)
+    } else {
+      graph.out.connect(graph.context.destination)
+    }
+  }
+
   dispose(): void {
+    window.clearTimeout(this.fadeTimer)
+    window.clearTimeout(this.restoreTimer)
     for (const voice of [...this.voices.values()]) this.destroy(voice)
     window.clearInterval(this.ticker)
     this.ticker = undefined
@@ -124,8 +213,16 @@ export class MixEngine {
       const context = new AudioContext()
       const master = context.createGain()
       master.gain.value = this.master
-      master.connect(context.destination)
-      this.graph = { context, master, impulse: makeImpulse(context) }
+      const out = context.createGain()
+      const limiter = context.createDynamicsCompressor()
+      limiter.threshold.value = -3
+      limiter.knee.value = 0
+      limiter.ratio.value = 20
+      limiter.attack.value = 0.003
+      limiter.release.value = 0.15
+      master.connect(out)
+      this.graph = { context, master, out, limiter, impulse: makeImpulse(context) }
+      this.route()
     } catch {
       return null
     }
@@ -143,7 +240,8 @@ export class MixEngine {
       audio,
       nodes: this.buildNodes(audio),
       state: 'idle',
-      gapTimer: undefined
+      gapTimer: undefined,
+      variation: NO_VARIATION
     }
     // A removed element still fires events (emptying its source raises an error). They must not
     // stop a newer layer of the same track, so only the voice that is current is listened to.
@@ -165,6 +263,24 @@ export class MixEngine {
     const { context } = graph
     try {
       const source = context.createMediaElementSource(audio)
+      const cutLow = context.createBiquadFilter()
+      cutLow.type = 'highpass'
+      cutLow.frequency.value = LOW_CUT_OFF_HZ
+      const cutHigh = context.createBiquadFilter()
+      cutHigh.type = 'lowpass'
+      cutHigh.frequency.value = Math.min(20000, context.sampleRate / 2)
+      const mono = context.createGain()
+      mono.channelInterpretation = 'speakers'
+      const delay = context.createDelay(MAX_ECHO_SECONDS)
+      const feedback = context.createGain()
+      feedback.gain.value = 0
+      const echoWet = context.createGain()
+      echoWet.gain.value = 0
+      const tremolo = context.createGain()
+      const lfo = context.createOscillator()
+      lfo.type = 'sine'
+      const lfoDepth = context.createGain()
+      lfoDepth.gain.value = 0
       const low = context.createBiquadFilter()
       low.type = 'lowshelf'
       low.frequency.value = EQ_LOW_HZ
@@ -185,18 +301,49 @@ export class MixEngine {
       const level = context.createGain()
       level.gain.value = 0
 
-      source.connect(low)
+      source.connect(cutLow)
+      cutLow.connect(cutHigh)
+      cutHigh.connect(low)
       low.connect(mid)
       mid.connect(high)
-      high.connect(pan)
+      high.connect(mono)
+      mono.connect(pan)
       pan.connect(dry)
       pan.connect(convolver)
+      pan.connect(delay)
+      delay.connect(feedback)
+      feedback.connect(delay)
+      delay.connect(echoWet)
       convolver.connect(wet)
       dry.connect(fade)
       wet.connect(fade)
-      fade.connect(level)
+      echoWet.connect(fade)
+      fade.connect(tremolo)
+      lfo.connect(lfoDepth)
+      lfoDepth.connect(tremolo.gain)
+      lfo.start()
+      tremolo.connect(level)
       level.connect(graph.master)
-      return { low, mid, high, pan, dry, convolver, wet, fade, level }
+      return {
+        cutLow,
+        cutHigh,
+        mono,
+        delay,
+        feedback,
+        echoWet,
+        tremolo,
+        lfo,
+        lfoDepth,
+        low,
+        mid,
+        high,
+        pan,
+        dry,
+        convolver,
+        wet,
+        fade,
+        level
+      }
     } catch {
       return null
     }
@@ -208,6 +355,11 @@ export class MixEngine {
     voice.audio.removeAttribute('src')
     voice.audio.load()
     if (voice.nodes) {
+      try {
+        voice.nodes.lfo.stop()
+      } catch {
+        // Already stopped.
+      }
       for (const node of Object.values(voice.nodes)) node.disconnect()
     }
     this.voices.delete(voice.trackId)
@@ -216,11 +368,13 @@ export class MixEngine {
   private apply(voice: Voice, layer: MixLayer): void {
     const { audio, nodes } = voice
     const track = this.tracks.get(layer.trackId)
-    const level = layerGain(layer, this.anySolo, track?.correction ?? 1)
+    const { variation } = voice
+    const level = layerGain(layer, this.anySolo, track?.correction ?? 1) * variation.volume
 
     const native = usesNativeLoop(layer)
     if (audio.loop !== native) audio.loop = native
-    if (audio.playbackRate !== layer.speed) audio.playbackRate = layer.speed
+    const rate = layer.speed * variation.speed
+    if (audio.playbackRate !== rate) audio.playbackRate = rate
     if (audio.preservesPitch !== layer.keepPitch) audio.preservesPitch = layer.keepPitch
 
     if (!nodes || !this.graph) {
@@ -230,7 +384,33 @@ export class MixEngine {
     }
     const now = this.graph.context.currentTime
     nodes.level.gain.setTargetAtTime(level, now, SMOOTHING)
-    nodes.pan.pan.setTargetAtTime(layer.pan, now, SMOOTHING)
+    nodes.pan.pan.setTargetAtTime(
+      Math.min(1, Math.max(-1, layer.pan + variation.pan)),
+      now,
+      SMOOTHING
+    )
+    nodes.cutLow.frequency.setTargetAtTime(Math.max(LOW_CUT_OFF_HZ, layer.lowCut), now, SMOOTHING)
+    nodes.cutHigh.frequency.setTargetAtTime(
+      Math.min(layer.highCut, this.graph.context.sampleRate / 2),
+      now,
+      SMOOTHING
+    )
+    // One channel in, and the panner spreads it again, so mono ignores the original stereo width.
+    const channels = layer.mono ? 1 : 2
+    if (nodes.mono.channelCount !== channels) {
+      nodes.mono.channelCountMode = layer.mono ? 'explicit' : 'max'
+      nodes.mono.channelCount = channels
+    }
+    nodes.delay.delayTime.setTargetAtTime(
+      Math.min(MAX_ECHO_SECONDS, layer.echoTime),
+      now,
+      SMOOTHING
+    )
+    nodes.feedback.gain.setTargetAtTime(layer.echoFeedback, now, SMOOTHING)
+    nodes.echoWet.gain.setTargetAtTime(layer.echoMix, now, SMOOTHING)
+    nodes.lfo.frequency.setTargetAtTime(layer.tremoloRate, now, SMOOTHING)
+    nodes.lfoDepth.gain.setTargetAtTime(layer.tremoloDepth / 2, now, SMOOTHING)
+    nodes.tremolo.gain.setTargetAtTime(1 - layer.tremoloDepth / 2, now, SMOOTHING)
     nodes.low.gain.setTargetAtTime(layer.eqLow, now, SMOOTHING)
     nodes.mid.gain.setTargetAtTime(layer.eqMid, now, SMOOTHING)
     nodes.high.gain.setTargetAtTime(layer.eqHigh, now, SMOOTHING)
@@ -244,7 +424,17 @@ export class MixEngine {
       this.resume(voice, layer)
       return
     }
+    if (layer.startDelay > 0) {
+      voice.state = 'gap'
+      voice.gapTimer = window.setTimeout(() => this.beginAfterWait(voice), layer.startDelay * 1000)
+      return
+    }
     this.begin(voice, layer)
+  }
+
+  private beginAfterWait(voice: Voice): void {
+    const current = this.layers.get(voice.trackId)
+    if (voice.state === 'gap' && current?.playing) this.begin(voice, current)
   }
 
   private pause(voice: Voice): void {
@@ -272,6 +462,12 @@ export class MixEngine {
     const track = this.tracks.get(layer.trackId)
     const window = playWindow(layer, track?.durationSec ?? 0)
     const position = startPosition(layer, window, Math.random())
+    voice.variation = variationFor(layer, {
+      volume: Math.random(),
+      pan: Math.random(),
+      speed: Math.random()
+    })
+    this.apply(voice, layer)
     voice.audio.currentTime = position
     this.planFade(voice, fadePlan(layer, window, position))
     this.play(voice)
@@ -321,10 +517,7 @@ export class MixEngine {
     if (gap > 0) {
       voice.audio.pause()
       voice.state = 'gap'
-      voice.gapTimer = window.setTimeout(() => {
-        const current = this.layers.get(voice.trackId)
-        if (voice.state === 'gap' && current?.playing) this.begin(voice, current)
-      }, gap * 1000)
+      voice.gapTimer = window.setTimeout(() => this.beginAfterWait(voice), gap * 1000)
       return
     }
     this.begin(voice, layer)

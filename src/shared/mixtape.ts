@@ -29,6 +29,28 @@ export type LayerSettings = {
   eqHigh: number
   /** 0 to 1. */
   reverb: number
+  /** Cut the lows below this many Hz. 0 is off. */
+  lowCut: number
+  /** Cut the highs above this many Hz. The maximum is off. */
+  highCut: number
+  /** Echo: delay in seconds, how much of it comes back, and how loud it is (0 is off). */
+  echoTime: number
+  echoFeedback: number
+  echoMix: number
+  /** Tremolo: the volume goes up and down. Rate in Hz, depth 0 (off) to 1. */
+  tremoloRate: number
+  tremoloDepth: number
+  /** Play in mono. */
+  mono: boolean
+  /**
+   * Variation, 0 to 1 (speed: 0 to 0.5). Each time the layer starts or loops, its volume, pan
+   * and speed are changed by a random amount up to this much.
+   */
+  volumeJitter: number
+  panJitter: number
+  speedJitter: number
+  /** Seconds to wait between pressing play and the first sound. */
+  startDelay: number
 }
 
 export const DEFAULT_LAYER_SETTINGS: LayerSettings = {
@@ -49,7 +71,19 @@ export const DEFAULT_LAYER_SETTINGS: LayerSettings = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
-  reverb: 0
+  reverb: 0,
+  lowCut: 0,
+  highCut: 20000,
+  echoTime: 0.4,
+  echoFeedback: 0.35,
+  echoMix: 0,
+  tremoloRate: 4,
+  tremoloDepth: 0,
+  mono: false,
+  volumeJitter: 0,
+  panJitter: 0,
+  speedJitter: 0,
+  startDelay: 0
 }
 
 export const LAYER_LIMITS = {
@@ -60,7 +94,17 @@ export const LAYER_LIMITS = {
   time: { min: 0, max: 36000 },
   gap: { min: 0, max: 3600 },
   eq: { min: -12, max: 12 },
-  reverb: { min: 0, max: 1 }
+  reverb: { min: 0, max: 1 },
+  lowCut: { min: 0, max: 1000 },
+  highCut: { min: 200, max: 20000 },
+  echoTime: { min: 0.05, max: 2 },
+  echoFeedback: { min: 0, max: 0.9 },
+  echoMix: { min: 0, max: 1 },
+  tremoloRate: { min: 0.1, max: 20 },
+  tremoloDepth: { min: 0, max: 1 },
+  jitter: { min: 0, max: 1 },
+  speedJitter: { min: 0, max: 0.5 },
+  startDelay: { min: 0, max: 3600 }
 } as const
 
 /** The settings that "Reset effects" puts back to their defaults. Level and loop stay as they are. */
@@ -78,7 +122,19 @@ export const EFFECT_KEYS = [
   'eqLow',
   'eqMid',
   'eqHigh',
-  'reverb'
+  'reverb',
+  'lowCut',
+  'highCut',
+  'echoTime',
+  'echoFeedback',
+  'echoMix',
+  'tremoloRate',
+  'tremoloDepth',
+  'mono',
+  'volumeJitter',
+  'panJitter',
+  'speedJitter',
+  'startDelay'
 ] as const satisfies readonly (keyof LayerSettings)[]
 
 export const MAX_MIXTAPE_NAME = 60
@@ -146,9 +202,80 @@ export function sanitizeLayerSettings(
     eqLow: number(source.eqLow, base.eqLow, limits.eq, 1),
     eqMid: number(source.eqMid, base.eqMid, limits.eq, 1),
     eqHigh: number(source.eqHigh, base.eqHigh, limits.eq, 1),
-    reverb: number(source.reverb, base.reverb, limits.reverb)
+    reverb: number(source.reverb, base.reverb, limits.reverb),
+    lowCut: number(source.lowCut, base.lowCut, limits.lowCut, 0),
+    highCut: number(source.highCut, base.highCut, limits.highCut, 0),
+    echoTime: number(source.echoTime, base.echoTime, limits.echoTime),
+    echoFeedback: number(source.echoFeedback, base.echoFeedback, limits.echoFeedback),
+    echoMix: number(source.echoMix, base.echoMix, limits.echoMix),
+    tremoloRate: number(source.tremoloRate, base.tremoloRate, limits.tremoloRate, 1),
+    tremoloDepth: number(source.tremoloDepth, base.tremoloDepth, limits.tremoloDepth),
+    mono: flag(source.mono, base.mono),
+    volumeJitter: number(source.volumeJitter, base.volumeJitter, limits.jitter),
+    panJitter: number(source.panJitter, base.panJitter, limits.jitter),
+    speedJitter: number(source.speedJitter, base.speedJitter, limits.speedJitter),
+    startDelay: number(source.startDelay, base.startDelay, limits.startDelay, 1)
   }
 }
+
+/**
+ * The settings that "Paste effects" copies from one layer to another. The part that is played and
+ * the start delay belong to a track, so they stay as they are.
+ */
+export const COPY_KEYS = EFFECT_KEYS.filter(
+  (key) => key !== 'startAt' && key !== 'endAt' && key !== 'randomStart' && key !== 'startDelay'
+)
+
+export type LayerPreset = { name: string; description: string; settings: Partial<LayerSettings> }
+
+/** Ready-made sounds. A preset resets the effects first, then sets what it lists. */
+export const LAYER_PRESETS: LayerPreset[] = [
+  {
+    name: 'Cave',
+    description: 'Big, dark space',
+    settings: { reverb: 0.7, highCut: 6000, eqHigh: -4, eqLow: 2 }
+  },
+  {
+    name: 'Distant',
+    description: 'Far away, softened',
+    settings: { highCut: 3000, reverb: 0.35, eqHigh: -6 }
+  },
+  {
+    name: 'Underwater',
+    description: 'Muffled and wobbly',
+    settings: { highCut: 900, reverb: 0.3, eqLow: 3, tremoloDepth: 0.2, tremoloRate: 0.7 }
+  },
+  {
+    name: 'Radio',
+    description: 'Narrow, mono',
+    settings: { lowCut: 400, highCut: 3500, eqMid: 4, mono: true }
+  },
+  {
+    name: 'Telephone',
+    description: 'Very narrow, mono',
+    settings: { lowCut: 500, highCut: 3000, mono: true, eqMid: 6 }
+  },
+  {
+    name: 'Lo-fi',
+    description: 'Warm and dull',
+    settings: { lowCut: 120, highCut: 5000, speed: 0.95, keepPitch: false }
+  },
+  {
+    name: 'Echo hall',
+    description: 'Repeats that fade away',
+    settings: { echoMix: 0.45, echoTime: 0.55, echoFeedback: 0.5, reverb: 0.25 }
+  },
+  {
+    name: 'Pulse',
+    description: 'Volume goes up and down',
+    settings: { tremoloDepth: 0.6, tremoloRate: 5 }
+  },
+  {
+    name: 'Natural ambience',
+    description: 'Never quite the same twice',
+    settings: { volumeJitter: 0.35, panJitter: 0.5, speedJitter: 0.05, randomStart: true }
+  }
+]
 
 export function cleanMixtapeName(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim()

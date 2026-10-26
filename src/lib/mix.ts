@@ -1,4 +1,5 @@
 import {
+  COPY_KEYS,
   DEFAULT_LAYER_SETTINGS,
   EFFECT_KEYS,
   sanitizeLayerSettings,
@@ -16,6 +17,8 @@ export type MixAction =
   | { type: 'load'; layers: MixtapeLayer[] }
   | { type: 'set'; trackId: number; patch: Partial<LayerSettings> }
   | { type: 'reset-effects'; trackId: number }
+  | { type: 'preset'; trackId: number; settings: Partial<LayerSettings> }
+  | { type: 'paste'; trackId: number; settings: LayerSettings }
   | { type: 'playing'; trackId: number; playing: boolean }
   | { type: 'remove'; trackId: number }
   | { type: 'remove-missing'; existingIds: ReadonlySet<number> }
@@ -95,6 +98,14 @@ function load(layers: MixLayer[], incoming: MixtapeLayer[]): MixLayer[] {
   return trim([...added, ...updated], new Set(byTrack.keys()))
 }
 
+function resetEffects(layer: MixLayer): MixLayer {
+  const next = { ...layer }
+  for (const key of EFFECT_KEYS) {
+    ;(next as Record<string, unknown>)[key] = DEFAULT_LAYER_SETTINGS[key]
+  }
+  return next
+}
+
 export function mixReducer(layers: MixLayer[], action: MixAction): MixLayer[] {
   switch (action.type) {
     case 'add':
@@ -109,10 +120,25 @@ export function mixReducer(layers: MixLayer[], action: MixAction): MixLayer[] {
         playing: layer.playing
       }))
     case 'reset-effects':
+      return patchLayer(layers, action.trackId, resetEffects)
+    case 'preset':
+      // A preset starts from plain effects, so presets do not pile up on each other.
+      return patchLayer(layers, action.trackId, (layer) => ({
+        ...layer,
+        ...sanitizeLayerSettings(
+          { ...resetEffects(layer), ...action.settings },
+          DEFAULT_LAYER_SETTINGS
+        ),
+        volume: layer.volume,
+        loop: layer.loop,
+        muted: layer.muted,
+        solo: layer.solo
+      }))
+    case 'paste':
       return patchLayer(layers, action.trackId, (layer) => {
         const next = { ...layer }
-        for (const key of EFFECT_KEYS) {
-          ;(next as Record<string, unknown>)[key] = DEFAULT_LAYER_SETTINGS[key]
+        for (const key of COPY_KEYS) {
+          ;(next as Record<string, unknown>)[key] = action.settings[key]
         }
         return next
       })
@@ -165,8 +191,36 @@ export function usesNativeLoop(layer: LayerSettings): boolean {
     layer.endAt === 0 &&
     layer.gapMax === 0 &&
     layer.fadeOut === 0 &&
-    !layer.randomStart
+    !layer.randomStart &&
+    !hasVariation(layer)
   )
+}
+
+/** True when the volume, pan or speed change a little each time the layer starts or loops. */
+export function hasVariation(layer: LayerSettings): boolean {
+  return layer.volumeJitter > 0 || layer.panJitter > 0 || layer.speedJitter > 0
+}
+
+export type Variation = {
+  /** Multiplies the volume. 1 or less. */
+  volume: number
+  /** Added to the pan. */
+  pan: number
+  /** Multiplies the speed. */
+  speed: number
+}
+
+/** The random change for one play. Each `random` is 0 to 1. The volume never goes above the set one. */
+export function variationFor(
+  layer: LayerSettings,
+  random: { volume: number; pan: number; speed: number }
+): Variation {
+  const signed = (value: number) => value * 2 - 1
+  return {
+    volume: 1 - layer.volumeJitter * random.volume,
+    pan: signed(random.pan) * layer.panJitter,
+    speed: 1 + signed(random.speed) * layer.speedJitter
+  }
 }
 
 export type PlayWindow = { start: number; end: number }

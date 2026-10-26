@@ -13,7 +13,7 @@ import { useLocation } from 'react-router-dom'
 import { mixReducer, toMixtapeLayer, type MixLayer } from '../lib/mix'
 import { MixEngine, type EngineTrack } from '../lib/mixEngine'
 import { gainForTarget } from '../shared/loudness'
-import type { LayerSettings, Mixtape } from '../shared/mixtape'
+import { LAYER_PRESETS, type LayerSettings, type Mixtape } from '../shared/mixtape'
 import { useLibrary } from './LibraryContext'
 import { usePlayer } from './PlayerContext'
 import { useSettings } from './SettingsContext'
@@ -27,7 +27,23 @@ type MixState = {
   selectedId: number | null
   /** The mixtape the current layers came from, or were saved as. */
   loadedMixtape: Mixtape | null
+  /** The effects copied from a layer, ready to paste on another. */
+  copied: LayerSettings | null
+  limiter: boolean
+  /** True while the mix is fading out. */
+  fading: boolean
+  /** When the sleep timer will have paused everything, as a time in ms. */
+  sleepEndsAt: number | null
   select: (trackId: number | null) => void
+  setLimiter: (on: boolean) => void
+  applyPreset: (trackId: number, name: string) => void
+  copyEffects: (trackId: number) => void
+  pasteEffects: (trackId: number) => void
+  /** Fades the whole mix out over a few seconds, then pauses it. */
+  fadeOutAndPause: (seconds: number) => void
+  startSleepTimer: (minutes: number) => void
+  /** Stops the sleep timer or the fade that is going on. */
+  cancelSleep: () => void
   setMaster: (value: number) => void
   update: (trackId: number, patch: Partial<LayerSettings>) => void
   resetEffects: (trackId: number) => void
@@ -47,6 +63,8 @@ type MixState = {
 const MixContext = createContext<MixState | null>(null)
 /** Review plays every unreviewed track by itself, so those are not meant for the mix. */
 const NO_AUTO_ADD = '/review'
+/** The sleep timer fades the mix out over this long, ending at the time that was set. */
+const SLEEP_FADE_SECONDS = 20
 
 export function MixProvider({ children }: { children: ReactNode }) {
   const { tracks, mixtapes, refreshMixtapes } = useLibrary()
@@ -57,6 +75,11 @@ export function MixProvider({ children }: { children: ReactNode }) {
   const [master, setMasterValue] = useState(1)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [loadedId, setLoadedId] = useState<number | null>(null)
+  const [copied, setCopied] = useState<LayerSettings | null>(null)
+  const [limiter, setLimiterValue] = useState(false)
+  const [fading, setFading] = useState(false)
+  const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null)
+  const sleepTimer = useRef<number | undefined>(undefined)
   const engineRef = useRef<MixEngine | null>(null)
   const pathRef = useRef(pathname)
   const { normalize, targetLufs } = settings.playback
@@ -84,6 +107,7 @@ export function MixProvider({ children }: { children: ReactNode }) {
     )
     engineRef.current = engine
     return () => {
+      window.clearTimeout(sleepTimer.current)
       engine.dispose()
       engineRef.current = null
     }
@@ -108,6 +132,10 @@ export function MixProvider({ children }: { children: ReactNode }) {
     engineRef.current?.sync(layers, master, info)
   }, [layers, master, trackById, normalize, targetLufs])
 
+  useEffect(() => {
+    engineRef.current?.setLimiter(limiter)
+  }, [limiter])
+
   const update = useCallback(
     (trackId: number, patch: Partial<LayerSettings>) => dispatch({ type: 'set', trackId, patch }),
     []
@@ -119,12 +147,68 @@ export function MixProvider({ children }: { children: ReactNode }) {
   const togglePlaying = useCallback(
     (trackId: number) => {
       const current = layers.find((layer) => layer.trackId === trackId)
-      if (current) dispatch({ type: 'playing', trackId, playing: !current.playing })
+      if (!current) return
+      if (!current.playing) engineRef.current?.cancelFade()
+      dispatch({ type: 'playing', trackId, playing: !current.playing })
     },
     [layers]
   )
+  const layersRef = useRef(layers)
+  useEffect(() => {
+    layersRef.current = layers
+  }, [layers])
+
+  const applyPreset = useCallback((trackId: number, name: string) => {
+    const preset = LAYER_PRESETS.find((candidate) => candidate.name === name)
+    if (preset) dispatch({ type: 'preset', trackId, settings: preset.settings })
+  }, [])
+  const copyEffects = useCallback((trackId: number) => {
+    const source = layersRef.current.find((layer) => layer.trackId === trackId)
+    if (source) setCopied({ ...source })
+  }, [])
+  const pasteEffects = useCallback(
+    (trackId: number) => {
+      if (copied) dispatch({ type: 'paste', trackId, settings: copied })
+    },
+    [copied]
+  )
+  const setLimiter = useCallback((on: boolean) => setLimiterValue(on), [])
+
+  const cancelSleep = useCallback(() => {
+    window.clearTimeout(sleepTimer.current)
+    sleepTimer.current = undefined
+    setSleepEndsAt(null)
+    setFading(false)
+    engineRef.current?.cancelFade()
+  }, [])
+  const fadeOutAndPause = useCallback((seconds: number) => {
+    setFading(true)
+    const engine = engineRef.current
+    const finish = () => {
+      dispatch({ type: 'pause-all' })
+      setFading(false)
+      setSleepEndsAt(null)
+    }
+    if (engine) engine.fadeOut(seconds, finish)
+    else finish()
+  }, [])
+  const startSleepTimer = useCallback(
+    (minutes: number) => {
+      cancelSleep()
+      const total = minutes * 60
+      setSleepEndsAt(Date.now() + total * 1000)
+      const wait = Math.max(0, total - SLEEP_FADE_SECONDS)
+      const fadeFor = Math.min(SLEEP_FADE_SECONDS, total)
+      sleepTimer.current = window.setTimeout(() => fadeOutAndPause(fadeFor), wait * 1000)
+    },
+    [cancelSleep, fadeOutAndPause]
+  )
+
   const remove = useCallback((trackId: number) => dispatch({ type: 'remove', trackId }), [])
-  const playAll = useCallback(() => dispatch({ type: 'play-all' }), [])
+  const playAll = useCallback(() => {
+    engineRef.current?.cancelFade()
+    dispatch({ type: 'play-all' })
+  }, [])
   const pauseAll = useCallback(() => dispatch({ type: 'pause-all' }), [])
   const unsoloAll = useCallback(() => dispatch({ type: 'unsolo-all' }), [])
   const removeSilent = useCallback(() => dispatch({ type: 'remove-silent' }), [])
@@ -141,6 +225,7 @@ export function MixProvider({ children }: { children: ReactNode }) {
     if (mixtape.layers.length === 0) return
     dispatch({ type: 'clear' })
     dispatch({ type: 'load', layers: mixtape.layers })
+    engineRef.current?.cancelFade()
     dispatch({ type: 'play-all' })
     setMasterValue(mixtape.master)
     setLoadedId(mixtape.id)
@@ -179,7 +264,18 @@ export function MixProvider({ children }: { children: ReactNode }) {
       anySolo,
       selectedId: selected,
       loadedMixtape,
+      copied,
+      limiter,
+      fading,
+      sleepEndsAt,
       select: setSelectedId,
+      setLimiter,
+      applyPreset,
+      copyEffects,
+      pasteEffects,
+      fadeOutAndPause,
+      startSleepTimer,
+      cancelSleep,
       setMaster,
       update,
       resetEffects,
@@ -201,6 +297,17 @@ export function MixProvider({ children }: { children: ReactNode }) {
       anySolo,
       selected,
       loadedMixtape,
+      copied,
+      limiter,
+      fading,
+      sleepEndsAt,
+      setLimiter,
+      applyPreset,
+      copyEffects,
+      pasteEffects,
+      fadeOutAndPause,
+      startSleepTimer,
+      cancelSleep,
       setMaster,
       update,
       resetEffects,

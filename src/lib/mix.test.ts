@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_LAYER_SETTINGS, type LayerSettings, type MixtapeLayer } from '../shared/mixtape'
+import {
+  DEFAULT_LAYER_SETTINGS,
+  LAYER_PRESETS,
+  sanitizeLayerSettings,
+  type LayerSettings,
+  type MixtapeLayer
+} from '../shared/mixtape'
 import {
   MAX_LAYERS,
   clampVolume,
   fadePlan,
+  hasVariation,
   isAudible,
   layerGain,
   loopGap,
@@ -12,6 +19,7 @@ import {
   startPosition,
   toMixtapeLayer,
   usesNativeLoop,
+  variationFor,
   type MixLayer
 } from './mix'
 
@@ -331,5 +339,86 @@ describe('toMixtapeLayer', () => {
     )
     expect(saved).not.toHaveProperty('playing')
     expect(saved).toMatchObject({ trackId: 7, volume: 0.4, loop: true, pan: -0.5, reverb: 0.3 })
+  })
+})
+
+describe('presets and pasting', () => {
+  it('applies a preset on plain effects and keeps level, loop, mute and solo', () => {
+    const start = [
+      layer(1, { volume: 0.4, loop: true, muted: true, reverb: 0.9, eqLow: 5, startAt: 3 })
+    ]
+    const result = mixReducer(start, {
+      type: 'preset',
+      trackId: 1,
+      settings: { highCut: 3000, mono: true }
+    })[0]
+    expect(result).toMatchObject({
+      volume: 0.4,
+      loop: true,
+      muted: true,
+      highCut: 3000,
+      mono: true
+    })
+    // The earlier reverb and tone are gone, and the part played is back to the whole track.
+    expect(result).toMatchObject({ reverb: 0, eqLow: 0, startAt: 0 })
+  })
+
+  it('pastes the sound but not the volume, the part played or the start delay', () => {
+    const source = {
+      ...DEFAULT_LAYER_SETTINGS,
+      volume: 0.9,
+      reverb: 0.5,
+      lowCut: 200,
+      mono: true,
+      startAt: 4,
+      startDelay: 10
+    }
+    const result = mixReducer([layer(1, { volume: 0.2, startAt: 1 })], {
+      type: 'paste',
+      trackId: 1,
+      settings: source
+    })[0]
+    expect(result).toMatchObject({ reverb: 0.5, lowCut: 200, mono: true })
+    expect(result).toMatchObject({ volume: 0.2, startAt: 1, startDelay: 0 })
+  })
+
+  it('has presets that only use settings that exist and stay inside their limits', () => {
+    for (const preset of LAYER_PRESETS) {
+      const clean = sanitizeLayerSettings(preset.settings)
+      for (const [key, value] of Object.entries(preset.settings)) {
+        expect(key in DEFAULT_LAYER_SETTINGS).toBe(true)
+        expect(clean[key as keyof typeof clean]).toBe(value)
+      }
+    }
+  })
+})
+
+describe('variation', () => {
+  it('does not use the native loop when something changes at every loop', () => {
+    expect(usesNativeLoop(layer(1, { loop: true }))).toBe(true)
+    expect(usesNativeLoop(layer(1, { loop: true, volumeJitter: 0.2 }))).toBe(false)
+    expect(usesNativeLoop(layer(1, { loop: true, panJitter: 0.2 }))).toBe(false)
+    expect(usesNativeLoop(layer(1, { loop: true, speedJitter: 0.05 }))).toBe(false)
+    expect(hasVariation(layer(1))).toBe(false)
+  })
+
+  it('changes nothing when there is no variation', () => {
+    expect(variationFor(layer(1), { volume: 0.7, pan: 0.2, speed: 0.9 })).toEqual({
+      volume: 1,
+      pan: -0,
+      speed: 1
+    })
+  })
+
+  it('stays inside the range that was set, and never gets louder than the volume', () => {
+    const set = layer(1, { volumeJitter: 0.4, panJitter: 0.5, speedJitter: 0.1 })
+    const low = variationFor(set, { volume: 1, pan: 0, speed: 0 })
+    const high = variationFor(set, { volume: 0, pan: 1, speed: 1 })
+    expect(low.volume).toBeCloseTo(0.6)
+    expect(low.pan).toBeCloseTo(-0.5)
+    expect(low.speed).toBeCloseTo(0.9)
+    expect(high.volume).toBe(1)
+    expect(high.pan).toBeCloseTo(0.5)
+    expect(high.speed).toBeCloseTo(1.1)
   })
 })

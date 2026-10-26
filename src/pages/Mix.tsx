@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import MixLayerRow from '../components/feature/MixLayerRow'
 import SaveMixtapeDialog from '../components/feature/SaveMixtapeDialog'
+import SelectField from '../components/item/SelectField'
 import SettingsSection from '../components/item/SettingsSection'
 import SliderField from '../components/item/SliderField'
 import { errorMessage } from '../lib/errors'
@@ -8,6 +9,26 @@ import { isSilent } from '../lib/mix'
 import { useLibrary } from '../store/LibraryContext'
 import { useMix } from '../store/MixContext'
 import './Mix.css'
+
+const FADE_OPTIONS = [5, 10, 30, 60].map((seconds) => ({
+  value: String(seconds),
+  label: `${seconds} seconds`
+}))
+const SLEEP_OPTIONS = [15, 30, 45, 60, 90, 120].map((minutes) => ({
+  value: String(minutes),
+  label: `${minutes} minutes`
+}))
+
+/** Shows how long is left on the sleep timer. It starts when the timer does. */
+function SleepCountdown({ endsAt }: { endsAt: number }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 5000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const minutes = Math.max(1, Math.ceil((endsAt - now) / 60000))
+  return <>{`Fading out and pausing in about ${minutes} min`}</>
+}
 
 const percent = (value: number) => `${Math.round(value * 100)}%`
 
@@ -30,8 +51,17 @@ export default function Mix() {
     removeSilent,
     clear,
     updateMixtape,
-    saveAsMixtape
+    saveAsMixtape,
+    limiter,
+    fading,
+    sleepEndsAt,
+    setLimiter,
+    fadeOutAndPause,
+    startSleepTimer,
+    cancelSleep
   } = useMix()
+  const [fadeSeconds, setFadeSeconds] = useState('10')
+  const [sleepMinutes, setSleepMinutes] = useState('30')
   const [saving, setSaving] = useState(false)
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -80,6 +110,60 @@ export default function Mix() {
           <button type="button" className="btn" disabled={layers.length === 0} onClick={clear}>
             Clear mix
           </button>
+        </div>
+
+        <label className="mix-limiter">
+          <input
+            type="checkbox"
+            checked={limiter}
+            onChange={(event) => setLimiter(event.target.checked)}
+          />
+          <span>Limiter: stops a loud mix from clipping</span>
+        </label>
+
+        <div className="settings-actions mix-actions">
+          <SelectField
+            label="Fade length"
+            value={fadeSeconds}
+            options={FADE_OPTIONS}
+            onChange={setFadeSeconds}
+          />
+          <button
+            type="button"
+            className="btn"
+            disabled={playingCount === 0 || fading}
+            onClick={() => fadeOutAndPause(Number(fadeSeconds))}
+          >
+            Fade out and pause
+          </button>
+        </div>
+
+        <div className="settings-actions mix-actions">
+          <SelectField
+            label="Sleep timer"
+            value={sleepMinutes}
+            options={SLEEP_OPTIONS}
+            onChange={setSleepMinutes}
+          />
+          {sleepEndsAt === null ? (
+            <button
+              type="button"
+              className="btn"
+              disabled={playingCount === 0}
+              onClick={() => startSleepTimer(Number(sleepMinutes))}
+            >
+              Start sleep timer
+            </button>
+          ) : (
+            <>
+              <span className="settings-hint">
+                <SleepCountdown endsAt={sleepEndsAt} />
+              </span>
+              <button type="button" className="btn" onClick={cancelSleep}>
+                Cancel
+              </button>
+            </>
+          )}
         </div>
 
         <div className="settings-actions mix-actions">
