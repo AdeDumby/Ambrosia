@@ -14,6 +14,7 @@ import {
   DEFAULT_SETTINGS,
   WITHERING_LAVENDER,
   type Appearance,
+  type DownloadSettings,
   type LibrarySettings,
   type ListSettings,
   type PlaybackSettings,
@@ -32,6 +33,7 @@ type SettingsState = {
   updateReview: (patch: Partial<ReviewSettings>) => void
   updateList: (patch: Partial<ListSettings>) => void
   updateUpdates: (patch: Partial<UpdateSettings>) => void
+  updateDownload: (patch: Partial<DownloadSettings>) => void
   applyPreset: (preset: Preset) => void
   savePreset: (name: string) => void
   deletePreset: (name: string) => void
@@ -136,6 +138,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [change]
   )
 
+  const updateDownload = useCallback(
+    (patch: Partial<DownloadSettings>) =>
+      change((previous) => ({ ...previous, download: { ...previous.download, ...patch } })),
+    [change]
+  )
+
   const applyPreset = useCallback(
     (preset: Preset) =>
       change((previous) => ({
@@ -211,6 +219,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
             updateReview,
             updateList,
             updateUpdates,
+            updateDownload,
             applyPreset,
             savePreset,
             deletePreset,
@@ -226,6 +235,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       updateReview,
       updateList,
       updateUpdates,
+      updateDownload,
       applyPreset,
       savePreset,
       deletePreset,

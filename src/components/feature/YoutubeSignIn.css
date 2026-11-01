@@ -1,0 +1,57 @@
+.yt-signin {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.yt-signin > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.yt-signin-badge {
+  padding: 1px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.yt-signin-badge.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.yt-signin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 14px 14px;
+  font-size: 0.85rem;
+}
+
+.yt-signin-body p {
+  margin: 0;
+}
+
+.yt-signin-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.yt-signin-tips {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.yt-signin-note {
+  color: var(--muted);
+  font-size: 0.8rem;
+}

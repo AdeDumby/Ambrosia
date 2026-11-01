@@ -6,6 +6,10 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.2
+
+- **YouTube sign-in for downloads**: fixes "Sign in to confirm you're not a bot". Use the cookies of a browser or a cookies.txt file, test it with one click, and get clear messages when it fails (see YouTube sign-in under Download).
+
 ## What's new in 1.2.1
 
 - **Normalize volume now counts the effects in Mix**: a layer is measured with its Tone, Filter, Mono, Reverb, Echo and Wobble before it plays (see Loudness and effects).
@@ -109,6 +113,21 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 1. Enter a folder name (the franchise) and the link, then **Start download**. Files go to `<library folder>\<franchise>`. The progress panel on the right follows the whole process, and you can leave the page while it runs. Windows shows a notification when the downloads finish.
 2. **Rename rules**: each rule is a regular expression and a replacement, applied in order to the file names. Leave the replacement empty to delete what matches, use `$1` to keep a captured group. The names on the left highlight what the selected rule captures, and the inputs on the right show the result. A name you type yourself is left alone by the rules. The buttons under the rules add common patterns (leading track number, text in brackets, and more). Example: `^\d+\. FTL soundtrack-` with an empty replacement turns `01. FTL soundtrack-Space Cruise` into `Space Cruise`.
 3. **Finish** renames the files, scans the library to add them, then measures their loudness. Nothing in your existing library is removed by this.
+
+#### YouTube sign-in
+
+YouTube sometimes refuses downloads with **"Sign in to confirm you're not a bot"**, and then every track of a playlist fails. The fix is to give yt-dlp the sign-in of a browser where you are logged in to YouTube. The **YouTube sign-in** box at the top of the Download page does that. It opens by itself when a download fails because of this.
+
+1. Choose where the sign-in comes from:
+   - **Off**: no sign-in (the default). Downloads use the android client, as before.
+   - **From a browser**: pick Firefox, Chrome, Edge, Brave, Opera, Vivaldi or Chromium. You must be signed in to YouTube in that browser. **Firefox works best.** Chrome, Edge and Brave often cannot share their cookies while they are open, or because they encrypt them: close the browser first, or use a file.
+   - **From a file**: choose a `cookies.txt` file (Netscape format). Export it with a browser extension such as "Get cookies.txt LOCALLY". For cookies that keep working, open a **private window**, sign in to YouTube, open `youtube.com/robots.txt`, export the cookies from that tab, then close the private window (otherwise YouTube replaces them and the file stops working). The file stays where it is, and yt-dlp may update it.
+2. Click **Test sign-in**. It looks at one short public video with your settings and tells you whether downloads will work, and which yt-dlp version you have.
+3. Start the download. With a sign-in, Ambrosia no longer forces the android client (it cannot use cookies), and passes your cookies to yt-dlp. They are only used for downloads and the test, and are never copied or uploaded by Ambrosia.
+
+If YouTube still asks to sign in, or the cookies cannot be read, the failed download says so in plain words (for example "the cookies expired"). When nothing has been downloaded and three tracks in a row fail because of the sign-in, Ambrosia stops the download instead of trying all the others.
+
+Cookies give access to your YouTube account, so keep the file private. YouTube can sometimes flag an account that is used for downloads, so a spare account is safer. YouTube also changes often: keep yt-dlp up to date with `winget upgrade yt-dlp.yt-dlp`. If yt-dlp warns that it wants a JavaScript runtime, install one with `winget install DenoLand.Deno`.
 
 ### Mix
 
@@ -278,7 +297,7 @@ npm run release # build and upload a release to GitHub (see below)
 
 Installed copies of Ambrosia update from the project's GitHub releases.
 
-1. Raise `version` in `package.json` (for example `1.2.1`).
+1. Raise `version` in `package.json` (for example `1.2.2`).
 2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
 3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
 4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.
@@ -299,6 +318,9 @@ Everything the page can ask the main process to do is defined once in `src/share
 ## Troubleshooting
 
 - **"yt-dlp was not found"**: install it (see above) and restart Ambrosia.
+- **"Sign in to confirm you're not a bot"**: set up the YouTube sign-in on the Download page (see YouTube sign-in). Update yt-dlp too.
+- **"Could not read the cookies"**: close the browser and try again, use Firefox, or use a cookies file. Chrome, Edge and Brave can lock or encrypt their cookies.
+- **"The cookies expired"**: YouTube replaced them, usually because the browser stayed signed in. Export a new file from a private window (see YouTube sign-in).
 - **No notification**: Windows needs the app to be installed, so notifications may not appear when running from `npm run dev`.
 - **Tracks flagged as missing**: their files were moved or deleted outside Ambrosia. Put them back, or let **Apply changes** remove them.
 - **A track plays at a different volume than others**: it may not be measured yet. Run **Apply changes**, or check that **Normalize volume** is on.

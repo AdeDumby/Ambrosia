@@ -5,6 +5,7 @@ import InlineError from '../components/item/InlineError'
 import { errorMessage } from '../lib/errors'
 import { compileRules, matchRanges, runStages, splitByRanges } from '../lib/renameRules'
 import DownloadProgress from '../components/feature/DownloadProgress'
+import YoutubeSignIn from '../components/feature/YoutubeSignIn'
 import {
   checkFranchise,
   checkUrl,
@@ -184,6 +185,16 @@ export default function Download() {
               Start download
             </button>
           </form>
+        )}
+
+        {(showForm || state.phase === 'failed') && (
+          <YoutubeSignIn defaultOpen={state.signInProblem} />
+        )}
+
+        {state.phase === 'failed' && state.error && (
+          <p className="download-problem" role="alert">
+            {state.error}
+          </p>
         )}
 
         {error && <InlineError message={error} onDismiss={() => setError(null)} />}

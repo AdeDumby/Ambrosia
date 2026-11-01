@@ -1,4 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process'
+import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { readdir } from 'node:fs/promises'
@@ -14,14 +15,27 @@ import {
   type FinishResult
 } from '../../src/shared/download.ts'
 import { renameAll } from './files.services.ts'
+import type { YoutubeCookies } from '../../src/shared/settings.ts'
+import {
+  buildDownloadArgs,
+  classifyYtDlpError,
+  explainYtDlpProblem,
+  isSignInProblem,
+  usesCookies
+} from './ytdlp-options.ts'
 import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 
 const MAX_LOG = 200
+/** Stop after this many sign-in failures in a row with nothing downloaded: the rest would fail too. */
+const SIGN_IN_ABORT_AFTER = 3
 
 let state: DownloadState = idleDownloadState()
 let child: ChildProcess | null = null
 let cancelled = false
 let lastError: string | null = null
+let signedIn = false
+let signInStreak = 0
+let abortedForSignIn = false
 
 export function getDownloadState(): DownloadState {
   return state
@@ -79,6 +93,7 @@ function apply(event: YtDlpEvent): void {
       break
     }
     case 'audio': {
+      signInStreak = 0
       const item = currentItem() ?? newItem(1)
       item.path = event.path
       item.title = stemOf(event.path)
@@ -87,10 +102,20 @@ function apply(event: YtDlpEvent): void {
       break
     }
     case 'error': {
-      lastError = event.message
+      const problem = classifyYtDlpError(event.message)
+      const explained = explainYtDlpProblem(problem, signedIn)
+      lastError = explained?.full ?? event.message
       const item = currentItem() ?? newItem(1)
       if (item.status === 'downloading') item.status = 'failed'
-      if (item.status !== 'done') item.error = event.message
+      if (item.status !== 'done') item.error = explained?.short ?? event.message
+      if (isSignInProblem(problem)) {
+        state.signInProblem = true
+        signInStreak += 1
+        const nothingYet = !state.items.some((candidate) => candidate.status === 'done')
+        if (signInStreak >= SIGN_IN_ABORT_AFTER && nothingYet) abortForSignIn()
+      } else {
+        signInStreak = 0
+      }
       break
     }
   }
@@ -162,14 +187,34 @@ function settle(code: number | null, failure?: string): void {
   notifyDownloadFinished(done, state.franchise)
 }
 
+function abortForSignIn(): void {
+  if (abortedForSignIn || !child) return
+  abortedForSignIn = true
+  killChild()
+}
+
+function killChild(): void {
+  const pid = child?.pid
+  if (process.platform === 'win32' && pid) {
+    spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true })
+  } else {
+    child?.kill('SIGTERM')
+  }
+}
+
 export async function startDownload(
   libraryFolder: string,
   franchiseRaw: string,
-  urlRaw: string
+  urlRaw: string,
+  cookies: YoutubeCookies
 ): Promise<void> {
   if (state.phase === 'downloading') throw new Error('A download is already running.')
   const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw)
   if (problem) throw new Error(problem)
+
+  if (cookies.source === 'file' && !(path.isAbsolute(cookies.file) && existsSync(cookies.file))) {
+    throw new Error('The cookies file was not found. Choose it again in YouTube sign-in.')
+  }
 
   const franchise = franchiseRaw.trim()
   const url = new URL(urlRaw.trim()).toString()
@@ -177,26 +222,14 @@ export async function startDownload(
   await mkdir(folder, { recursive: true })
 
   const template = path.join(folder.replace(/%/g, '%%'), '%(title).150s.%(ext)s')
-  const args = [
-    '--newline',
-    '--extractor-args',
-    'youtube:player_client=android',
-    '-x',
-    '--audio-format',
-    'mp3',
-    '--audio-quality',
-    '192K',
-    '--embed-thumbnail',
-    '--add-metadata',
-    '-o',
-    template,
-    '--',
-    url
-  ]
+  const args = buildDownloadArgs(template, url, cookies)
 
   state = { ...idleDownloadState(), phase: 'downloading', franchise, url, folder }
   cancelled = false
   lastError = null
+  signedIn = usesCookies(cookies)
+  signInStreak = 0
+  abortedForSignIn = false
 
   const proc = spawn('yt-dlp', args, {
     windowsHide: true,
@@ -225,7 +258,9 @@ export async function startDownload(
         : error.message
     )
   )
-  proc.on('close', (code) => once(code))
+  proc.on('close', (code) =>
+    once(code, abortedForSignIn ? (lastError ?? 'YouTube asked to sign in.') : undefined)
+  )
 }
 
 function fold(text: string): string {
@@ -262,12 +297,7 @@ async function reconcilePaths(): Promise<void> {
 export function cancelDownload(): void {
   if (!child || state.phase !== 'downloading') return
   cancelled = true
-  const pid = child.pid
-  if (process.platform === 'win32' && pid) {
-    spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true })
-  } else {
-    child.kill('SIGTERM')
-  }
+  killChild()
 }
 
 export function resetDownload(): void {

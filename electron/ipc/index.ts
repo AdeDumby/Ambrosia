@@ -13,6 +13,7 @@ import * as library from '../services/library.services.ts'
 import * as restore from '../services/restore.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
 import * as downloads from '../services/download.service.ts'
+import { checkYoutubeSignIn } from '../services/ytdlp-check.ts'
 import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
 import * as categories from '../services/category.services.ts'
@@ -239,9 +240,23 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
       return downloads.startDownload(
         library.getLibraryPaths(db, documentsFolder).folder,
         franchise,
-        url
+        url,
+        settings.getSettings(db).download.cookies
       )
     },
+    chooseCookiesFile: async () => {
+      const options: OpenDialogOptions = {
+        title: 'Choose your YouTube cookies file',
+        filters: [{ name: 'Cookies file', extensions: ['txt'] }],
+        properties: ['openFile']
+      }
+      const parent = BrowserWindow.getFocusedWindow()
+      const result = parent
+        ? await dialog.showOpenDialog(parent, options)
+        : await dialog.showOpenDialog(options)
+      return result.canceled || result.filePaths.length === 0 ? null : result.filePaths[0]
+    },
+    checkYoutubeSignIn: (cookies) => checkYoutubeSignIn(settings.parseYoutubeCookies(cookies)),
     cancelDownload: () => {
       downloads.cancelDownload()
     },

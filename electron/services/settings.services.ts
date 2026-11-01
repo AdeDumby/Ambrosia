@@ -4,14 +4,18 @@ import {
   BATCH_SIZE_MAX,
   BATCH_SIZE_MIN,
   BUILT_IN_PRESETS,
+  COOKIE_SOURCES,
   DEFAULT_SETTINGS,
   DELETE_MODES,
   DENSITIES,
+  MAX_COOKIE_PATH,
   MAX_PRESETS,
   MAX_PRESET_NAME,
   type Appearance,
   type AppearanceMode,
+  type CookieSource,
   type DeleteMode,
+  type DownloadSettings,
   type Density,
   type LibrarySettings,
   type ListSettings,
@@ -21,6 +25,9 @@ import {
   type ReviewSettings,
   type Settings,
   type UpdateSettings,
+  type YoutubeBrowser,
+  type YoutubeCookies,
+  YOUTUBE_BROWSERS,
   LOUDNESS_MAX,
   LOUDNESS_MIN
 } from '../../src/shared/settings.ts'
@@ -137,6 +144,25 @@ function parseUpdates(raw: unknown): UpdateSettings {
   }
 }
 
+export function parseYoutubeCookies(raw: unknown): YoutubeCookies {
+  const source = asObject(raw)
+  const defaults = DEFAULT_SETTINGS.download.cookies
+  const file = typeof source.file === 'string' ? source.file.trim() : ''
+  return {
+    source: COOKIE_SOURCES.includes(source.source as CookieSource)
+      ? (source.source as CookieSource)
+      : defaults.source,
+    browser: YOUTUBE_BROWSERS.some((browser) => browser.value === source.browser)
+      ? (source.browser as YoutubeBrowser)
+      : defaults.browser,
+    file: file.length <= MAX_COOKIE_PATH && !file.includes('\0') ? file : defaults.file
+  }
+}
+
+function parseDownload(raw: unknown): DownloadSettings {
+  return { cookies: parseYoutubeCookies(asObject(raw).cookies) }
+}
+
 function parsePresets(raw: unknown): Preset[] {
   if (!Array.isArray(raw)) return []
 
@@ -179,6 +205,7 @@ export function parseSettings(raw: unknown): Settings {
     review: parseReview(source.review),
     list: parseList(source.list),
     updates: parseUpdates(source.updates),
+    download: parseDownload(source.download),
     presets: parsePresets(source.presets),
     activePreset: parseActivePreset(source.activePreset)
   }

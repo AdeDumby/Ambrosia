@@ -1,5 +1,5 @@
-import type { Settings } from './settings.js'
-import type { DownloadState, FinishResult } from './download.js'
+import type { Settings, YoutubeCookies } from './settings.js'
+import type { DownloadState, FinishResult, SignInCheck } from './download.js'
 import type { UpdateInfo } from './update.js'
 import type { Mixtape, MixtapeLayer } from './mixtape.js'
 import type {
@@ -83,6 +83,10 @@ export type Api = {
 
   getDownloadState(): Promise<DownloadState>
   startDownload(franchise: string, url: string): Promise<void>
+  /** Opens a file picker for a cookies.txt file. Returns its path, or null when cancelled. */
+  chooseCookiesFile(): Promise<string | null>
+  /** Looks at one YouTube video with the given sign-in, to tell whether downloads will work. */
+  checkYoutubeSignIn(cookies: YoutubeCookies): Promise<SignInCheck>
   cancelDownload(): Promise<void>
   resetDownload(): Promise<void>
   getDownloadFolderNames(): Promise<string[]>

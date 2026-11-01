@@ -34,7 +34,12 @@ export type DownloadState = {
   error: string | null
   log: string[]
   renameActive: boolean
+  /** The failure is about signing in to YouTube, which the sign-in settings can fix. */
+  signInProblem: boolean
 }
+
+/** What a check of the YouTube sign-in found. */
+export type SignInCheck = { ok: boolean; message: string; version: string | null }
 
 export function idleDownloadState(): DownloadState {
   return {
@@ -46,7 +51,8 @@ export function idleDownloadState(): DownloadState {
     items: [],
     error: null,
     log: [],
-    renameActive: false
+    renameActive: false,
+    signInProblem: false
   }
 }
 

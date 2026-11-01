@@ -69,6 +69,37 @@ export type UpdateSettings = {
   autoCheck: boolean
 }
 
+export type YoutubeBrowser =
+  'firefox' | 'chrome' | 'edge' | 'brave' | 'opera' | 'vivaldi' | 'chromium'
+
+export const YOUTUBE_BROWSERS: { value: YoutubeBrowser; label: string }[] = [
+  { value: 'firefox', label: 'Firefox' },
+  { value: 'chrome', label: 'Chrome' },
+  { value: 'edge', label: 'Edge' },
+  { value: 'brave', label: 'Brave' },
+  { value: 'opera', label: 'Opera' },
+  { value: 'vivaldi', label: 'Vivaldi' },
+  { value: 'chromium', label: 'Chromium' }
+]
+
+export type CookieSource = 'off' | 'browser' | 'file'
+
+export const COOKIE_SOURCES: CookieSource[] = ['off', 'browser', 'file']
+
+export const MAX_COOKIE_PATH = 500
+
+/** Where yt-dlp gets the YouTube sign-in from, to get past "Sign in to confirm you're not a bot". */
+export type YoutubeCookies = {
+  source: CookieSource
+  browser: YoutubeBrowser
+  /** Full path of a cookies.txt file (Netscape format). */
+  file: string
+}
+
+export type DownloadSettings = {
+  cookies: YoutubeCookies
+}
+
 export type Settings = {
   appearance: Appearance
   library: LibrarySettings
@@ -76,6 +107,7 @@ export type Settings = {
   review: ReviewSettings
   list: ListSettings
   updates: UpdateSettings
+  download: DownloadSettings
   presets: Preset[]
   activePreset: string | null
 }
@@ -167,6 +199,10 @@ export const DEFAULT_UPDATES: UpdateSettings = {
   autoCheck: true
 }
 
+export const DEFAULT_DOWNLOAD: DownloadSettings = {
+  cookies: { source: 'off', browser: 'firefox', file: '' }
+}
+
 export const DEFAULT_SETTINGS: Settings = {
   appearance: DEFAULT_APPEARANCE,
   library: DEFAULT_LIBRARY,
@@ -174,6 +210,7 @@ export const DEFAULT_SETTINGS: Settings = {
   review: DEFAULT_REVIEW,
   list: DEFAULT_LIST,
   updates: DEFAULT_UPDATES,
+  download: DEFAULT_DOWNLOAD,
   presets: [],
   activePreset: WITHERING_LAVENDER.name
 }
