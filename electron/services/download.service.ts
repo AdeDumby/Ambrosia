@@ -52,6 +52,10 @@ type Run = {
   pace: DownloadPace
   /** The number of the first track to download. */
   startAt: number
+  /** Only these playlist numbers are wanted (the missing tracks), and the size of the playlist. */
+  only: { items: number[]; total: number } | null
+  /** The numbers that the current launch of yt-dlp was asked for. */
+  launched: number[] | null
   /** Added to the numbers yt-dlp prints, when it counts from the chosen start. */
   offset: number | undefined
   /** Remembers the downloaded videos, so that a new launch of yt-dlp skips them. */
@@ -134,7 +138,12 @@ function apply(event: YtDlpEvent): void {
       finalizeCurrent()
       let { index, total } = event
       const current = run
-      if (current && current.startAt > 1) {
+      if (current?.launched && current.only) {
+        // With a list of numbers yt-dlp counts the tracks it was asked for, or keeps the real
+        // numbers. When its total is the size of the list it is counting them: map back.
+        if (total === current.launched.length) index = current.launched[index - 1] ?? index
+        total = current.only.total
+      } else if (current && current.startAt > 1) {
         // With a start number yt-dlp may count from 1 again, or keep the real numbers. The first
         // number of a launch tells which, so the list always shows the real track numbers.
         current.offset ??= index < current.startAt ? current.startAt - 1 : 0
@@ -374,11 +383,14 @@ function launch(gentle: boolean): void {
   rateLimitedAt = null
   current.fineAtLaunch = succeeded()
   current.offset = undefined
+  const wanted = current.only?.items.filter((number) => number >= current.startAt) ?? []
+  current.launched = current.only ? (wanted.length > 0 ? wanted : current.only.items) : null
 
   const args = buildDownloadArgs(current.template, current.url, current.cookies, {
     pace: gentle ? 'gentle' : current.pace,
     archive: current.archive,
-    startAt: current.startAt
+    startAt: current.startAt,
+    items: current.launched ?? undefined
   })
   const proc = spawn('yt-dlp', args, {
     windowsHide: true,
@@ -419,7 +431,8 @@ export async function startDownload(
   franchiseRaw: string,
   urlRaw: string,
   options: DownloadSettings,
-  startAt = 1
+  startAt = 1,
+  only: { items: number[]; total: number } | null = null
 ): Promise<void> {
   if (state.phase === 'downloading') throw new Error('A download is already running.')
   const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw) ?? checkStartAt(String(startAt))
@@ -456,9 +469,11 @@ export async function startDownload(
     folder,
     notice: earlier
       ? 'Continuing an earlier download of this link. The tracks that were done are skipped.'
-      : startAt > 1
-        ? `Starting at track ${startAt}.`
-        : null
+      : only
+        ? `Downloading the ${only.items.length} missing ${only.items.length === 1 ? 'track' : 'tracks'}.`
+        : startAt > 1
+          ? `Starting at track ${startAt}.`
+          : null
   }
   cursor = null
   cancelled = false
@@ -473,6 +488,8 @@ export async function startDownload(
     cookies,
     pace,
     startAt,
+    only,
+    launched: null,
     offset: undefined,
     archive: earlier?.archive ?? path.join(tmpdir(), `ambrosia-archive-${Date.now()}.txt`),
     stalls: 0,

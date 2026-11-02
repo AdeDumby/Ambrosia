@@ -22,3 +22,29 @@ export async function probeDuration(file: string): Promise<number> {
     throw new Error(firstLine || (error instanceof Error ? error.message : String(error)))
   }
 }
+
+export type FileInfo = { durationSec: number | null; videoId: string | null }
+
+/** The length of a file and the video ID that Ambrosia wrote in it when it downloaded it. */
+export async function probeFileInfo(file: string): Promise<FileInfo> {
+  try {
+    const { stdout } = await run(
+      ffprobePath,
+      ['-v', 'error', '-show_entries', 'format=duration:format_tags', '-of', 'json', file],
+      { timeout: 30_000 }
+    )
+    const parsed = JSON.parse(stdout) as {
+      format?: { duration?: string; tags?: Record<string, string> }
+    }
+    const duration = Number(parsed.format?.duration)
+    const tags = parsed.format?.tags ?? {}
+    const key = Object.keys(tags).find((name) => name.toLowerCase().endsWith('ambrosia_id'))
+    const id = key ? tags[key].trim() : ''
+    return {
+      durationSec: Number.isFinite(duration) ? duration : null,
+      videoId: id === '' ? null : id
+    }
+  } catch {
+    return { durationSec: null, videoId: null }
+  }
+}

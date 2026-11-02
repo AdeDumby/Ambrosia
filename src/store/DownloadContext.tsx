@@ -39,6 +39,7 @@ type DownloadContextState = {
   manual: Record<number, string>
   setManual: Dispatch<SetStateAction<Record<number, string>>>
   start: (franchise: string, url: string, startAt?: number) => Promise<void>
+  startMissing: (franchise: string, url: string, items: number[], total: number) => Promise<void>
   cancel: () => Promise<void>
   reset: () => Promise<void>
   finish: (entries: { index: number; name: string }[]) => Promise<void>
@@ -94,6 +95,16 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       clearRenaming()
       setChain(null)
       await window.api.startDownload(franchise, url, startAt)
+      await refresh()
+    },
+    [clearRenaming, refresh]
+  )
+
+  const startMissing = useCallback(
+    async (franchise: string, url: string, items: number[], total: number) => {
+      clearRenaming()
+      setChain(null)
+      await window.api.downloadMissingTracks(franchise, url, items, total)
       await refresh()
     },
     [clearRenaming, refresh]
@@ -203,13 +214,27 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
       manual,
       setManual,
       start,
+      startMissing,
       cancel,
       reset,
       finish,
       stopChain,
       dismissChain
     }),
-    [state, chain, chainBusy, rules, manual, start, cancel, reset, finish, stopChain, dismissChain]
+    [
+      state,
+      chain,
+      chainBusy,
+      rules,
+      manual,
+      start,
+      startMissing,
+      cancel,
+      reset,
+      finish,
+      stopChain,
+      dismissChain
+    ]
   )
 
   return <DownloadContext.Provider value={value}>{children}</DownloadContext.Provider>

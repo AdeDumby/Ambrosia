@@ -16,6 +16,7 @@ import {
   MAX_FRANCHISE_NAME,
   splitName
 } from '../shared/download'
+import MissingTracks from '../components/feature/MissingTracks'
 import { useDownload } from '../store/DownloadContext'
 import './Download.css'
 
@@ -30,8 +31,18 @@ const STATUS_TEXT = {
 const basename = (file: string) => file.split(/[\\/]/).pop() ?? file
 
 export default function Download() {
-  const { state, chainBusy, chain, start, finish, rules, setRules, manual, setManual } =
-    useDownload()
+  const {
+    state,
+    chainBusy,
+    chain,
+    start,
+    startMissing,
+    finish,
+    rules,
+    setRules,
+    manual,
+    setManual
+  } = useDownload()
   const [franchise, setFranchise] = useState('')
   const [url, setUrl] = useState('')
   const [startAt, setStartAt] = useState('')
@@ -217,6 +228,15 @@ export default function Download() {
               Start download
             </button>
           </form>
+        )}
+
+        {showForm && (
+          <MissingTracks
+            franchise={franchise}
+            url={url}
+            ready={franchise.trim() !== '' && url.trim() !== '' && !franchiseProblem && !urlProblem}
+            onDownload={(items, total) => startMissing(franchise, url, items, total)}
+          />
         )}
 
         {(showForm || state.phase === 'failed') && (

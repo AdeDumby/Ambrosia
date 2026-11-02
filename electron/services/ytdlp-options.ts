@@ -39,6 +39,21 @@ export type DownloadExtras = {
   archive?: string
   /** The number of the track to start from (1 = the first). */
   startAt?: number
+  /** Only these playlist numbers are downloaded (instead of everything from startAt). */
+  items?: number[]
+}
+
+/** 1,2,3,7,9,10 becomes "1-3,7,9-10", which keeps the command short for a long list. */
+export function itemsArg(items: number[]): string {
+  const sorted = [...new Set(items)].sort((a, b) => a - b)
+  const parts: string[] = []
+  for (let i = 0; i < sorted.length;) {
+    let j = i
+    while (j + 1 < sorted.length && sorted[j + 1] === sorted[j] + 1) j += 1
+    parts.push(j > i ? `${sorted[i]}-${sorted[j]}` : String(sorted[i]))
+    i = j + 1
+  }
+  return parts.join(',')
 }
 
 export function buildDownloadArgs(
@@ -56,7 +71,11 @@ export function buildDownloadArgs(
     ...clientArgs(cookies),
     ...cookieArgs(cookies),
     ...paceArgs(extras.pace ?? 'fast'),
-    ...(extras.startAt && extras.startAt > 1 ? ['--playlist-start', String(extras.startAt)] : []),
+    ...(extras.items && extras.items.length > 0
+      ? ['--playlist-items', itemsArg(extras.items)]
+      : extras.startAt && extras.startAt > 1
+        ? ['--playlist-start', String(extras.startAt)]
+        : []),
     ...(extras.archive ? ['--download-archive', extras.archive] : []),
     '-x',
     '--audio-format',
@@ -65,6 +84,9 @@ export function buildDownloadArgs(
     '192K',
     '--embed-thumbnail',
     '--add-metadata',
+    // The video ID goes into the file, so a later check can tell exactly which video it is.
+    '--parse-metadata',
+    '%(id)s:%(meta_ambrosia_id)s',
     '-o',
     template,
     '--',

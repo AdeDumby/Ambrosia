@@ -8,6 +8,8 @@ Built with Electron, React and Vite. Your library is stored in a local SQLite da
 
 ## What's new in 1.2.5
 
+- **Check for missing tracks, and download only those**: on the Download page, **Check for missing tracks** compares a playlist with a franchise folder and lists what is missing (with its playlist number and length). **Download the N missing tracks** then fetches only those. Tracks that were deleted or made private are listed apart. New downloads also carry the YouTube video ID inside the file, so later checks are exact.
+
 - **"HTTP Error 429: Too Many Requests" is handled**: it used to fail every track one after the other. Now the first 429 pauses the download for a short wait, then Ambrosia continues by itself starting again at the track that was refused. **Gentle** is also slower (10 to 25 seconds between tracks).
 
 - **Choose the track to start from**: the Download form has a new **Start at track number** field (empty means the first track). Tracks before that number are skipped, and the list shows the real track numbers of the playlist. Useful for edge cases the app does not handle, for example to go on after a track that keeps failing.
@@ -141,6 +143,18 @@ YouTube sometimes refuses downloads with **"Sign in to confirm you're not a bot"
    - **From a file**: choose a `cookies.txt` file (Netscape format). Export it with a browser extension such as "Get cookies.txt LOCALLY". For cookies that keep working, open a **private window**, sign in to YouTube, open `youtube.com/robots.txt`, export the cookies from that tab, then close the private window (otherwise YouTube replaces them and the file stops working). The file stays where it is, and yt-dlp may update it.
 2. Click **Test sign-in**. It looks at one short public video with your settings and tells you whether downloads will work, and which yt-dlp version you have.
 3. Start the download. With a sign-in, Ambrosia no longer forces the android client (it cannot use cookies), and passes your cookies to yt-dlp. They are only used for downloads and the test, and are never copied or uploaded by Ambrosia.
+
+##### Check for missing tracks
+
+Fill in the **Franchise folder** and the **YouTube link**, then press **Check for missing tracks**. Ambrosia reads the playlist list (only the list, nothing is downloaded) and compares it with the audio files in that folder, in three steps, from the most to the least sure. A file is used once.
+
+1. **Video ID**: new downloads have the YouTube video ID written inside the file (a custom tag called `ambrosia_id`), so they are found even after you rename them.
+2. **Title**: the same letters and digits, ignoring case, accents and symbols. When several tracks share a title, the closest lengths are paired first.
+3. **Length**: for files with no ID that are still unmatched, a track is accepted when exactly one file and one track have the same length (within 2 seconds). This finds files that were renamed or whose name had a symbol that could not be saved. If two tracks have almost the same length, Ambrosia does not guess.
+
+The result says how many tracks were found and by which step, lists the missing ones, and lists the files in the folder that are not in the playlist. **Download the N missing tracks** downloads only those playlist numbers (the track list keeps the real numbers), with the same speed and sign-in settings and the same wait and retry when YouTube refuses. Videos that were deleted or made private are listed apart and are not downloaded.
+
+Notes: tracks downloaded before 1.2.5 have no ID, so they are found by title or length. A file whose title was changed by hand _and_ whose length is not unique can show up as missing, and its track as an extra file. The check needs the YouTube link to work with your current sign-in settings.
 
 ##### Start at a track number
 

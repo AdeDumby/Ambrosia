@@ -1,3 +1,4 @@
+import type { MissingReport } from './missing.ts'
 import type { Settings, YoutubeCookies } from './settings.js'
 import type { DownloadState, FinishResult, SignInCheck } from './download.js'
 import type { UpdateInfo } from './update.js'
@@ -83,6 +84,15 @@ export type Api = {
 
   getDownloadState(): Promise<DownloadState>
   startDownload(franchise: string, url: string, startAt?: number): Promise<void>
+  /** Compares a playlist with the files of a franchise folder. Nothing is downloaded. */
+  checkMissingTracks(franchise: string, url: string): Promise<MissingReport>
+  /** Downloads only the given playlist numbers (the missing ones) into the franchise folder. */
+  downloadMissingTracks(
+    franchise: string,
+    url: string,
+    items: number[],
+    playlistTotal: number
+  ): Promise<void>
   /** Opens a file picker for a cookies.txt file. Returns its path, or null when cancelled. */
   chooseCookiesFile(): Promise<string | null>
   /** Looks at one YouTube video with the given sign-in, to tell whether downloads will work. */

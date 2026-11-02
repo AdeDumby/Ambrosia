@@ -86,6 +86,26 @@ if [ "$MODE" = "start" ]; then
   done
   exit 0
 fi
+if [ "$MODE" = "items" ]; then
+  # Only the numbers of --playlist-items. Relative numbers, or real ones when REAL=1.
+  LIST=""; prev=""
+  for a in "$@"; do if [ "$prev" = "--playlist-items" ]; then LIST="$a"; fi; prev="$a"; done
+  NUMS=""
+  for part in $(echo "$LIST" | tr ',' ' '); do
+    case "$part" in *-*) NUMS="$NUMS $(seq \${part%-*} \${part#*-})" ;; *) NUMS="$NUMS $part" ;; esac
+  done
+  COUNT=$(echo $NUMS | wc -w | tr -d ' ')
+  n=1
+  for i in $NUMS; do
+    if [ "$REAL" = "1" ]; then echo "[download] Downloading item $i of 8"
+    else echo "[download] Downloading item $n of $COUNT"; fi
+    echo "[ExtractAudio] Destination: $OUT_DIR/Track $i.mp3"
+    printf x > "$OUT_DIR/Track $i.mp3"
+    n=$((n+1))
+    sleep 0.03
+  done
+  exit 0
+fi
 if [ "$MODE" = "symbols" ]; then
   # Pretend the console could not show some characters: they come out as "?".
   n=1
@@ -456,6 +476,27 @@ describe.skipIf(!posix)('starting at a chosen track number', () => {
       setCooldownsForTests(null)
     }
   })
+
+  it.each([false, true])(
+    'downloads only the missing numbers and shows their real numbers (real=%s)',
+    async (real) => {
+      process.env.MODE = 'items'
+      process.env.REAL = real ? '1' : '0'
+      process.env.OUT_DIR = path.join(folder, `Missing${real}`)
+      resetDownload()
+      await startDownload(folder, `Missing${real}`, url, settings, 1, {
+        items: [2, 3, 7],
+        total: 8
+      })
+      await until(() => getDownloadState().phase !== 'downloading')
+      const state = getDownloadState()
+      expect(readFileSync(argsFile, 'utf8')).toContain('--playlist-items\n2-3,7\n')
+      expect(state.items.map((item) => item.index)).toEqual([2, 3, 7])
+      expect(state.total).toBe(8)
+      expect(state.items.every((item) => item.status === 'done')).toBe(true)
+      expect(state.notice).toBe('Downloading the 3 missing tracks.')
+    }
+  )
 
   it('refuses a start number that is not valid', async () => {
     resetDownload()

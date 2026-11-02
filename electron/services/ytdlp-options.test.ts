@@ -7,7 +7,8 @@ import {
   clientArgs,
   cookieArgs,
   explainYtDlpProblem,
-  isSignInProblem
+  isSignInProblem,
+  itemsArg
 } from './ytdlp-options.ts'
 
 const off: YoutubeCookies = { source: 'off', browser: 'firefox', file: '' }
@@ -129,5 +130,18 @@ describe('rate limit', () => {
     expect(classifyYtDlpError(message)).toBe('rate-limit')
     expect(isSignInProblem('rate-limit')).toBe(false)
     expect(explainYtDlpProblem('rate-limit', true)?.short).toMatch(/too many/i)
+  })
+})
+
+describe('missing tracks arguments', () => {
+  it('shortens the list of numbers into ranges', () => {
+    expect(itemsArg([10, 1, 2, 3, 7, 9, 3])).toBe('1-3,7,9-10')
+    expect(itemsArg([5])).toBe('5')
+  })
+  it('asks for the listed numbers only, and writes the video ID in the file', () => {
+    const list = buildDownloadArgs('t', 'https://youtu.be/x', off, { items: [2, 3, 8], startAt: 5 })
+    expect(list[list.indexOf('--playlist-items') + 1]).toBe('2-3,8')
+    expect(list).not.toContain('--playlist-start')
+    expect(list[list.indexOf('--parse-metadata') + 1]).toBe('%(id)s:%(meta_ambrosia_id)s')
   })
 })

@@ -14,6 +14,7 @@ import * as restore from '../services/restore.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
 import * as downloads from '../services/download.service.ts'
 import { MAX_START_AT } from '../../src/shared/download.ts'
+import * as missing from '../services/missing.service.ts'
 import { checkYoutubeSignIn } from '../services/ytdlp-check.ts'
 import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
@@ -249,6 +250,37 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
         url,
         settings.getSettings(db).download,
         startAt
+      )
+    },
+    checkMissingTracks: (franchise, url) => {
+      if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')
+      return missing.checkMissingTracks(
+        library.getLibraryPaths(db, documentsFolder).folder,
+        franchise,
+        url,
+        settings.getSettings(db).download.cookies
+      )
+    },
+    downloadMissingTracks: (franchise, url, items, playlistTotal) => {
+      if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')
+      const valid = (n: unknown): n is number =>
+        typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= MAX_START_AT
+      if (
+        !Array.isArray(items) ||
+        items.length === 0 ||
+        items.length > MAX_START_AT ||
+        !items.every(valid)
+      ) {
+        throw new Error('Invalid track numbers')
+      }
+      if (!valid(playlistTotal)) throw new Error('Invalid playlist size')
+      return downloads.startDownload(
+        library.getLibraryPaths(db, documentsFolder).folder,
+        franchise,
+        url,
+        settings.getSettings(db).download,
+        1,
+        { items: [...new Set(items)].sort((a, b) => a - b), total: playlistTotal }
       )
     },
     continueDownload: () => {
