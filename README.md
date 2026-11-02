@@ -6,6 +6,12 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.3
+
+- **Downloads with symbols and other alphabets**: titles with a symbol (a music note, an emoji) or letters of another alphabet (Japanese, Cyrillic...) no longer end in "A file is missing". yt-dlp now writes names as UTF-8, the files are matched by the order they were made when a name cannot be read, and a track whose file is really gone is listed under **Skipped** instead of blocking the others.
+- **Names are checked the way Windows does**: two names that differ only by case in a way Windows treats as the same file (for example a final and a normal sigma) are flagged before anything is renamed. Invisible or broken characters (zero-width spaces, text reversers, half an emoji) are removed from names made by the rename rules and refused in names you type.
+- **Rename rules see whole symbols**: an emoji or a rare character counts as one character in a pattern, and `\p{L}` (any letter) works.
+
 ## What's new in 1.2.2
 
 - **YouTube sign-in for downloads**: fixes "Sign in to confirm you're not a bot". Use the cookies of a browser or a cookies.txt file, test it with one click, and get clear messages when it fails (see YouTube sign-in under Download).
@@ -112,7 +118,8 @@ Downloads a YouTube playlist or video as MP3 with yt-dlp (see the install sectio
 
 1. Enter a folder name (the franchise) and the link, then **Start download**. Files go to `<library folder>\<franchise>`. The progress panel on the right follows the whole process, and you can leave the page while it runs. Windows shows a notification when the downloads finish.
 2. **Rename rules**: each rule is a regular expression and a replacement, applied in order to the file names. Leave the replacement empty to delete what matches, use `$1` to keep a captured group. The names on the left highlight what the selected rule captures, and the inputs on the right show the result. A name you type yourself is left alone by the rules. The buttons under the rules add common patterns (leading track number, text in brackets, and more). Example: `^\d+\. FTL soundtrack-` with an empty replacement turns `01. FTL soundtrack-Space Cruise` into `Space Cruise`.
-3. **Finish** renames the files, scans the library to add them, then measures their loudness. Nothing in your existing library is removed by this.
+3. If a title has a symbol or letters of another alphabet that yt-dlp could not show, the file is still found: Ambrosia matches the names, and when that is not possible it pairs the new files with the tracks in the order they were made. A track whose file really cannot be found is listed under **Skipped** on the rename screen, and the others carry on.
+4. **Finish** renames the files, scans the library to add them, then measures their loudness. Nothing in your existing library is removed by this.
 
 #### YouTube sign-in
 
@@ -297,7 +304,7 @@ npm run release # build and upload a release to GitHub (see below)
 
 Installed copies of Ambrosia update from the project's GitHub releases.
 
-1. Raise `version` in `package.json` (for example `1.2.2`).
+1. Raise `version` in `package.json` (for example `1.2.3`).
 2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
 3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
 4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.
@@ -317,6 +324,8 @@ Everything the page can ask the main process to do is defined once in `src/share
 
 ## Troubleshooting
 
+- **A track is listed under Skipped, "The file could not be found in the folder"**: yt-dlp reported a file that is not in the folder. Check the franchise folder, then download that track again.
+- **"A name has invisible or broken characters"**: the name has a zero-width space, a text reverser or half an emoji. Retype it, or use a rename rule: names made by the rules have those characters removed.
 - **"yt-dlp was not found"**: install it (see above) and restart Ambrosia.
 - **"Sign in to confirm you're not a bot"**: set up the YouTube sign-in on the Download page (see YouTube sign-in). Update yt-dlp too.
 - **"Could not read the cookies"**: close the browser and try again, use Firefox, or use a cookies file. Chrome, Edge and Brave can lock or encrypt their cookies.

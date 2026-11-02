@@ -101,3 +101,30 @@ describe('highlighting', () => {
     expect(tidy('  a   b ')).toBe('a b')
   })
 })
+
+describe('names with unusual symbols', () => {
+  it('lets a pattern see a whole emoji or rare letter, not half of it', () => {
+    const compiled = compileRules([{ id: 1, find: '^.', replace: '', ignoreCase: false }])
+    expect(finalName('😀Boss Theme', compiled)).toBe('Boss Theme')
+    expect(finalName('𠮷野家 Theme', compiled)).toBe('野家 Theme')
+  })
+
+  it('still accepts patterns that only work without the u flag', () => {
+    const compiled = compileRules([{ id: 1, find: '\\_', replace: ' ', ignoreCase: false }])
+    expect(compiled[0].error).toBeNull()
+    expect(finalName('a_b', compiled)).toBe('a b')
+  })
+
+  it('removes broken and invisible characters from the result', () => {
+    expect(finalName('Boss​ Theme﻿', [])).toBe('Boss Theme')
+    expect(finalName('Half \ud83d', []).trim()).toBe('Half')
+    expect(finalName('‮emehT', [])).toBe('emehT')
+  })
+
+  it('can use letters of any alphabet in a pattern', () => {
+    const compiled = compileRules([
+      { id: 1, find: '[^\\p{L}\\p{N} ]', replace: '', ignoreCase: false }
+    ])
+    expect(finalName('ゲーム♪ Theme!', compiled)).toBe('ゲーム Theme')
+  })
+})

@@ -1,3 +1,5 @@
+import { removeUnsavableChars } from '../shared/download'
+
 export type RenameRule = { id: number; find: string; replace: string; ignoreCase: boolean }
 export type CompiledRule = { rule: RenameRule; regex: RegExp | null; error: string | null }
 export type Segment = { text: string; hit: boolean }
@@ -24,7 +26,7 @@ export const RULE_PRESETS = [
 ]
 
 export function tidy(text: string): string {
-  return text.replace(/\s+/g, ' ').trim()
+  return removeUnsavableChars(text).replace(/\s+/g, ' ').trim()
 }
 
 export function compileRules(rules: RenameRule[]): CompiledRule[] {
@@ -34,7 +36,14 @@ export function compileRules(rules: RenameRule[]): CompiledRule[] {
       return { rule, regex: null, error: `Use at most ${MAX_PATTERN} characters.` }
     }
     try {
-      return { rule, regex: new RegExp(rule.find, rule.ignoreCase ? 'gi' : 'g'), error: null }
+      // With the u flag a pattern sees whole symbols (an emoji or a rare letter is one character,
+      // not two halves), and can use \\p{L}. A pattern the flag does not accept still works without it.
+      const flags = rule.ignoreCase ? 'gi' : 'g'
+      try {
+        return { rule, regex: new RegExp(rule.find, flags + 'u'), error: null }
+      } catch {
+        return { rule, regex: new RegExp(rule.find, flags), error: null }
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -46,7 +55,7 @@ export function compileRules(rules: RenameRule[]): CompiledRule[] {
 }
 
 export function runStages(stem: string, compiled: CompiledRule[]): string[] {
-  const stages = [stem]
+  const stages = [removeUnsavableChars(stem)]
   for (const { rule, regex } of compiled) {
     const previous = stages[stages.length - 1]
     stages.push(regex ? tidy(previous.replace(regex, rule.replace)) : previous)

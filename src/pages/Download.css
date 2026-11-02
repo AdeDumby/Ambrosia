@@ -134,3 +134,19 @@
   color: var(--muted);
   font-size: 0.8rem;
 }
+
+.download-skipped {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.85rem;
+}
+
+.download-skipped li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}

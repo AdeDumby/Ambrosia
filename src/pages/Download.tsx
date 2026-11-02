@@ -10,6 +10,7 @@ import {
   checkFranchise,
   checkUrl,
   findNameProblems,
+  fsKey,
   MAX_FRANCHISE_NAME,
   splitName
 } from '../shared/download'
@@ -44,11 +45,15 @@ export default function Download() {
     if (!state.renameActive) return
     window.api
       .getDownloadFolderNames()
-      .then((names) => setFolderNames(new Set(names.map((name) => name.toLowerCase()))))
+      .then((names) => setFolderNames(new Set(names.map(fsKey))))
       .catch(() => setFolderNames(new Set()))
   }, [state.renameActive])
 
   const compiled = useMemo(() => compileRules(rules), [rules])
+  const skipped = useMemo(
+    () => state.items.filter((item) => item.status === 'failed'),
+    [state.items]
+  )
 
   const staged = useMemo(
     () =>
@@ -77,7 +82,7 @@ export default function Download() {
   const activeRegex = activeIndex >= 0 ? compiled[activeIndex].regex : null
 
   const rows: RenameRow[] = useMemo(() => {
-    const own = new Set(staged.map((row) => row.file.toLowerCase()))
+    const own = new Set(staged.map((row) => fsKey(row.file)))
     const others = new Set([...folderNames].filter((name) => !own.has(name)))
     const named = staged.map((row) => ({
       row,
@@ -237,6 +242,24 @@ export default function Download() {
                 onChange={setRules}
               />
             </section>
+
+            {skipped.length > 0 && (
+              <section className="download-section">
+                <h2>Skipped</h2>
+                <p className="download-hint">
+                  These tracks are not renamed and not added to the library.
+                </p>
+                <ul className="download-skipped">
+                  {skipped.map((item) => (
+                    <li key={item.index}>
+                      <span className="download-index">{item.index}</span>
+                      <span>{item.title || `Track ${item.index}`}</span>
+                      <small className="download-problem">{item.error ?? 'Failed'}</small>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <section className="download-section">
               <h2>Names</h2>

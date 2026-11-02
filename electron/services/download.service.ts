@@ -1,8 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { readdir } from 'node:fs/promises'
 import { StringDecoder } from 'node:string_decoder'
 import { notifyDownloadFinished } from './notify.ts'
 import {
@@ -12,6 +11,7 @@ import {
   type DownloadItem,
   type DownloadState,
   findNameProblems,
+  fsKey,
   type FinishResult
 } from '../../src/shared/download.ts'
 import { renameAll } from './files.services.ts'
@@ -36,6 +36,8 @@ let lastError: string | null = null
 let signedIn = false
 let signInStreak = 0
 let abortedForSignIn = false
+/** The files that were already in the folder when the download started (lower case). */
+let folderBefore = new Set<string>()
 
 export function getDownloadState(): DownloadState {
   return state
@@ -153,7 +155,7 @@ function settle(code: number | null, failure?: string): void {
   const claimed = new Set<string>()
   for (const item of state.items) {
     if (item.status !== 'done' || !item.path) continue
-    const key = item.path.toLowerCase()
+    const key = fsKey(item.path)
     if (claimed.has(key)) {
       item.status = 'failed'
       item.error = 'Same title as an earlier track, so it replaced that file.'
@@ -220,6 +222,7 @@ export async function startDownload(
   const url = new URL(urlRaw.trim()).toString()
   const folder = path.join(libraryFolder, franchise)
   await mkdir(folder, { recursive: true })
+  const before = await readdir(folder).catch(() => [] as string[])
 
   const template = path.join(folder.replace(/%/g, '%%'), '%(title).150s.%(ext)s')
   const args = buildDownloadArgs(template, url, cookies)
@@ -230,6 +233,7 @@ export async function startDownload(
   signedIn = usesCookies(cookies)
   signInStreak = 0
   abortedForSignIn = false
+  folderBefore = new Set(before.map(fsKey))
 
   const proc = spawn('yt-dlp', args, {
     windowsHide: true,
@@ -271,26 +275,88 @@ function fold(text: string): string {
     .replace(/[^\p{L}\p{N}]/gu, '')
 }
 
-async function reconcilePaths(): Promise<void> {
-  try {
-    const names = await listFolderNames()
-    const present = new Set(names.map((name) => name.toLowerCase()))
-    const byKey = new Map<string, string>()
-    for (const name of names) byKey.set(fold(name), name)
+const AUDIO_EXTENSION = /\.mp3$/i
+const NOT_FOUND = 'The file could not be found in the folder.'
 
-    for (const item of state.items) {
-      if (!item.path) continue
-      const printed = path.basename(item.path)
-      if (present.has(printed.toLowerCase())) continue
-      const key = fold(printed)
-      const real = key === '' ? undefined : byKey.get(key)
-      if (real) {
-        item.path = path.join(state.folder, real)
-        item.title = stemOf(real)
+/**
+ * yt-dlp prints the name of each file, but it may not be able to print every character: a
+ * symbol or a letter of another alphabet can come out as "?". So the printed names are matched
+ * with the files that are really in the folder:
+ *   1. the same name,
+ *   2. the same letters and digits (accents, case and symbols ignored), when only one file fits,
+ *   3. the files that appeared during this download, in the order they were made.
+ * An item whose file is still not found is marked as failed, so one odd name cannot stop the
+ * others from being renamed.
+ */
+export async function reconcilePaths(): Promise<void> {
+  const candidates = state.items.filter(
+    (item) => item.path && (item.status === 'converting' || item.status === 'done')
+  )
+  if (candidates.length === 0) return
+
+  let names: string[]
+  try {
+    names = (await listFolderNames()).filter((name) => AUDIO_EXTENSION.test(name))
+  } catch {
+    return
+  }
+
+  const claimed = new Set<string>()
+  const take = (item: DownloadItem, real: string): void => {
+    claimed.add(fsKey(real))
+    item.path = path.join(state.folder, real)
+    item.title = stemOf(real)
+  }
+
+  // 1. The printed name is a real file.
+  const present = new Map(names.map((name) => [fsKey(name), name]))
+  let open = candidates.filter((item) => {
+    const real = present.get(fsKey(path.basename(item.path as string)))
+    if (!real || claimed.has(fsKey(real))) return true
+    take(item, real)
+    return false
+  })
+
+  // 2. The same letters and digits. A name that fits several files is left for step 3.
+  const free = () => names.filter((name) => !claimed.has(fsKey(name)))
+  const byKey = new Map<string, string[]>()
+  for (const name of free()) {
+    const key = fold(name)
+    if (key !== '') byKey.set(key, [...(byKey.get(key) ?? []), name])
+  }
+  const sharedKey = (key: string) =>
+    candidates.filter((item) => fold(path.basename(item.path as string)) === key).length
+  open = open.filter((item) => {
+    const key = fold(path.basename(item.path as string))
+    const fits = (byKey.get(key) ?? []).filter((name) => !claimed.has(fsKey(name)))
+    if (key === '' || fits.length !== 1 || sharedKey(key) !== 1) return true
+    take(item, fits[0])
+    return false
+  })
+
+  // 3. What is left, in the order the files were made.
+  if (open.length > 0) {
+    const created: { name: string; time: number }[] = []
+    for (const name of free()) {
+      if (folderBefore.has(fsKey(name))) continue
+      try {
+        created.push({ name, time: (await stat(path.join(state.folder, name))).mtimeMs })
+      } catch {
+        // The file went away: it cannot be matched.
       }
     }
-  } catch {
-    // keep the printed names if the folder cannot be read
+    created.sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
+    // Only when every new file has an item, so a stray file cannot be given to the wrong track.
+    if (created.length === open.length) {
+      open.forEach((item, position) => take(item, created[position].name))
+      open = []
+    }
+  }
+
+  for (const item of open) {
+    item.status = 'failed'
+    item.error = NOT_FOUND
+    item.path = null
   }
 }
 
@@ -327,10 +393,10 @@ export async function finishDownload(
       throw new Error('The list of names does not match the downloaded tracks.')
     }
 
-    const folderKey = path.resolve(state.folder).toLowerCase()
+    const folderKey = fsKey(path.resolve(state.folder))
     const planned = done.map((item) => {
       const from = item.path as string
-      if (path.resolve(path.dirname(from)).toLowerCase() !== folderKey) {
+      if (fsKey(path.resolve(path.dirname(from))) !== folderKey) {
         throw new Error('A downloaded file is outside the download folder.')
       }
       const ext = path.extname(from)
@@ -339,10 +405,8 @@ export async function finishDownload(
     })
     if (planned.some((plan) => plan.to.length > 259)) throw new Error('A path would be too long.')
 
-    const own = new Set(planned.map((plan) => path.basename(plan.from).toLowerCase()))
-    const existing = new Set(
-      (await listFolderNames()).map((name) => name.toLowerCase()).filter((name) => !own.has(name))
-    )
+    const own = new Set(planned.map((plan) => fsKey(path.basename(plan.from))))
+    const existing = new Set((await listFolderNames()).map(fsKey).filter((name) => !own.has(name)))
     const problems = findNameProblems(
       planned.map((plan) => ({
         index: plan.item.index,

@@ -9,6 +9,36 @@ const HOSTS = new Set([
 ])
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f]/
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
+/**
+ * Characters that cannot be saved as they are, or that make a name look different from what it
+ * is: half of an emoji (a lone surrogate, which the disk turns into a replacement symbol),
+ * control characters, zero-width and line-break characters, and the ones that reverse the text.
+ */
+const UNSAVABLE =
+  /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\u007f-\u009f\u200b\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff\ufffe\uffff]/g
+
+export function hasUnsavableChars(text: string): boolean {
+  return new RegExp(UNSAVABLE.source).test(text)
+}
+
+/** Removes the characters that cannot be saved (see hasUnsavableChars). */
+export function removeUnsavableChars(text: string): string {
+  return text.replace(UNSAVABLE, '')
+}
+
+/**
+ * What Windows compares to tell whether two names are the same file: it ignores case with a
+ * table of capital letters, one letter at a time. Lower casing misses some pairs (a final and a
+ * normal sigma, for example), and a rename onto such a name would replace the other file.
+ */
+export function fsKey(name: string): string {
+  let key = ''
+  for (const letter of name) {
+    const upper = letter.toUpperCase()
+    key += [...upper].length === 1 ? upper : letter
+  }
+  return key
+}
 
 export type DownloadPhase = 'idle' | 'downloading' | 'downloaded' | 'failed' | 'cancelled'
 export type ItemStatus = 'downloading' | 'converting' | 'done' | 'failed'
@@ -63,6 +93,7 @@ export function checkFranchise(raw: string): string | null {
   if (FORBIDDEN.test(name)) {
     return 'A folder name cannot contain slashes, colons, quotes, asterisks, question marks, angle brackets or pipes.'
   }
+  if (hasUnsavableChars(name)) return 'That name has invisible or broken characters.'
   if (name.endsWith('.') || RESERVED.test(name.split('.')[0])) {
     return 'Windows does not allow that folder name.'
   }
@@ -98,6 +129,7 @@ export function checkNewName(raw: string): string | null {
   if (name === '') return 'The name cannot be empty.'
   if (name.length > MAX_NEW_NAME) return `Use at most ${MAX_NEW_NAME} characters.`
   if (FORBIDDEN.test(name)) return 'That name has characters Windows does not allow.'
+  if (hasUnsavableChars(name)) return 'That name has invisible or broken characters. Retype it.'
   if (name.endsWith('.') || RESERVED.test(name.split('.')[0]))
     return 'Windows does not allow that name.'
   return null
@@ -122,7 +154,7 @@ export function findNameProblems(
       problems.set(item.index, 'invalid')
       continue
     }
-    const key = name.toLowerCase()
+    const key = fsKey(name)
     seen.set(key, [...(seen.get(key) ?? []), item.index])
   }
 

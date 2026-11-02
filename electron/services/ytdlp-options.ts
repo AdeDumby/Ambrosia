@@ -26,6 +26,10 @@ export function buildDownloadArgs(
 ): string[] {
   return [
     '--newline',
+    // Write names as UTF-8 whatever the console would use, so a symbol or a letter of another
+    // alphabet is not turned into "?".
+    '--encoding',
+    'utf-8',
     ...clientArgs(cookies),
     ...cookieArgs(cookies),
     '-x',

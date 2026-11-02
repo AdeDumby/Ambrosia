@@ -1,9 +1,10 @@
 import { copyFile, open, rename, stat, unlink } from 'node:fs/promises'
 import path from 'node:path'
+import { fsKey } from '../../src/shared/download.ts'
 
 type Move = { from: string; to: string }
 
-const lower = (file: string) => path.resolve(file).toLowerCase()
+const lower = (file: string) => fsKey(path.resolve(file))
 
 async function exists(file: string): Promise<boolean> {
   try {
