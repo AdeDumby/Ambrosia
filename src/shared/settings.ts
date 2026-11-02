@@ -96,8 +96,14 @@ export type YoutubeCookies = {
   file: string
 }
 
+/** How much time is left between requests to YouTube. Slower is less likely to be refused. */
+export type DownloadPace = 'fast' | 'balanced' | 'gentle'
+
+export const DOWNLOAD_PACES: DownloadPace[] = ['fast', 'balanced', 'gentle']
+
 export type DownloadSettings = {
   cookies: YoutubeCookies
+  pace: DownloadPace
 }
 
 export type Settings = {
@@ -200,7 +206,8 @@ export const DEFAULT_UPDATES: UpdateSettings = {
 }
 
 export const DEFAULT_DOWNLOAD: DownloadSettings = {
-  cookies: { source: 'off', browser: 'firefox', file: '' }
+  cookies: { source: 'off', browser: 'firefox', file: '' },
+  pace: 'balanced'
 }
 
 export const DEFAULT_SETTINGS: Settings = {

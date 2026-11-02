@@ -241,8 +241,11 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
         library.getLibraryPaths(db, documentsFolder).folder,
         franchise,
         url,
-        settings.getSettings(db).download.cookies
+        settings.getSettings(db).download
       )
+    },
+    continueDownload: () => {
+      downloads.continueDownloadNow()
     },
     chooseCookiesFile: async () => {
       const options: OpenDialogOptions = {

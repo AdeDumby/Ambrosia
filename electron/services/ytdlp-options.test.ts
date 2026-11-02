@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { YoutubeCookies } from '../../src/shared/settings.ts'
 import {
+  paceArgs,
   buildDownloadArgs,
   classifyYtDlpError,
   clientArgs,
@@ -42,6 +43,22 @@ describe('buildDownloadArgs', () => {
     expect(args).not.toContain('--extractor-args')
     expect(args).toEqual(expect.arrayContaining(['--cookies-from-browser', 'edge']))
     expect(clientArgs(file)).toEqual([])
+  })
+})
+
+describe('pace and archive', () => {
+  it('adds no waiting at the fast pace, and more waiting when gentler', () => {
+    expect(paceArgs('fast')).toEqual([])
+    expect(paceArgs('balanced')).toContain('--sleep-interval')
+    expect(paceArgs('gentle')).toEqual(expect.arrayContaining(['--max-sleep-interval', '10']))
+  })
+
+  it('asks yt-dlp to remember what it downloaded only when told to', () => {
+    expect(buildDownloadArgs('out', 'u', off)).not.toContain('--download-archive')
+    const args = buildDownloadArgs('out', 'u', off, { pace: 'gentle', archive: 'C:\\a b.txt' })
+    expect(args).toEqual(expect.arrayContaining(['--download-archive', 'C:\\a b.txt']))
+    expect(args).toContain('--sleep-requests')
+    expect(args.slice(-2)).toEqual(['--', 'u'])
   })
 })
 

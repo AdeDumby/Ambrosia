@@ -21,7 +21,8 @@ const STATUS_TEXT = {
   downloading: 'Downloading',
   converting: 'Converting',
   done: 'Done',
-  failed: 'Failed'
+  failed: 'Failed',
+  skipped: 'Already downloaded'
 }
 
 const basename = (file: string) => file.split(/[\\/]/).pop() ?? file
@@ -194,6 +195,25 @@ export default function Download() {
 
         {(showForm || state.phase === 'failed') && (
           <YoutubeSignIn defaultOpen={state.signInProblem} />
+        )}
+
+        {state.phase === 'downloading' && state.notice && (
+          <p className="download-hint">{state.notice}</p>
+        )}
+
+        {state.phase === 'downloading' && state.waiting && (
+          <div className="download-waiting" role="status">
+            <p>
+              {`${state.waiting.reason} Ambrosia waits, then continues by itself at ${new Date(state.waiting.until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. The tracks that are done are kept.`}
+            </p>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => void window.api.continueDownload()}
+            >
+              Continue now
+            </button>
+          </div>
         )}
 
         {state.phase === 'failed' && state.error && (

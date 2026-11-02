@@ -50,6 +50,7 @@ export const CHANNELS = {
   startDownload: 'download:start',
   chooseCookiesFile: 'download:choose-cookies',
   checkYoutubeSignIn: 'download:check-sign-in',
+  continueDownload: 'download:continue',
   cancelDownload: 'download:cancel',
   resetDownload: 'download:reset',
   getDownloadFolderNames: 'download:folder-names',

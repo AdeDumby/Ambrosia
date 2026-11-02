@@ -1,4 +1,4 @@
-import type { YoutubeCookies } from '../../src/shared/settings.ts'
+import type { DownloadPace, YoutubeCookies } from '../../src/shared/settings.ts'
 
 /** The yt-dlp arguments that sign in to YouTube. Nothing when sign-in is off. */
 export function cookieArgs(cookies: YoutubeCookies): string[] {
@@ -19,10 +19,31 @@ export function clientArgs(cookies: YoutubeCookies): string[] {
   return usesCookies(cookies) ? [] : ['--extractor-args', 'youtube:player_client=android']
 }
 
+/**
+ * Time left between requests, so that YouTube does not take a long playlist for a robot. The
+ * gentle values are the ones the yt-dlp wiki gives for avoiding the rate limit.
+ */
+export function paceArgs(pace: DownloadPace): string[] {
+  if (pace === 'balanced') {
+    return ['--sleep-requests', '1', '--sleep-interval', '2', '--max-sleep-interval', '5']
+  }
+  if (pace === 'gentle') {
+    return ['--sleep-requests', '1.5', '--sleep-interval', '5', '--max-sleep-interval', '10']
+  }
+  return []
+}
+
+export type DownloadExtras = {
+  pace?: DownloadPace
+  /** A file that remembers the videos that were downloaded, so a new launch skips them. */
+  archive?: string
+}
+
 export function buildDownloadArgs(
   template: string,
   url: string,
-  cookies: YoutubeCookies
+  cookies: YoutubeCookies,
+  extras: DownloadExtras = {}
 ): string[] {
   return [
     '--newline',
@@ -32,6 +53,8 @@ export function buildDownloadArgs(
     'utf-8',
     ...clientArgs(cookies),
     ...cookieArgs(cookies),
+    ...paceArgs(extras.pace ?? 'fast'),
+    ...(extras.archive ? ['--download-archive', extras.archive] : []),
     '-x',
     '--audio-format',
     'mp3',

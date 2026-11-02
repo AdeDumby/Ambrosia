@@ -6,6 +6,10 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.4
+
+- **Long playlists no longer stop for good when YouTube asks to sign in again**: downloads are paced (**Speed**: Fast, Balanced or Gentle, in the YouTube sign-in box), and when YouTube still refuses in the middle of a playlist, Ambrosia waits, then goes on from where it stopped with fresh cookies and the gentle speed. It keeps the tracks that are done, and running the same link again later continues the playlist.
+
 ## What's new in 1.2.3
 
 - **Downloads with symbols and other alphabets**: titles with a symbol (a music note, an emoji) or letters of another alphabet (Japanese, Cyrillic...) no longer end in "A file is missing". yt-dlp now writes names as UTF-8, the files are matched by the order they were made when a name cannot be read, and a track whose file is really gone is listed under **Skipped** instead of blocking the others.
@@ -131,6 +135,23 @@ YouTube sometimes refuses downloads with **"Sign in to confirm you're not a bot"
    - **From a file**: choose a `cookies.txt` file (Netscape format). Export it with a browser extension such as "Get cookies.txt LOCALLY". For cookies that keep working, open a **private window**, sign in to YouTube, open `youtube.com/robots.txt`, export the cookies from that tab, then close the private window (otherwise YouTube replaces them and the file stops working). The file stays where it is, and yt-dlp may update it.
 2. Click **Test sign-in**. It looks at one short public video with your settings and tells you whether downloads will work, and which yt-dlp version you have.
 3. Start the download. With a sign-in, Ambrosia no longer forces the android client (it cannot use cookies), and passes your cookies to yt-dlp. They are only used for downloads and the test, and are never copied or uploaded by Ambrosia.
+
+##### Long playlists
+
+YouTube limits how fast one session may ask for videos, and a few hundred tracks in a row can trip it, even with cookies. The box has a **Speed** setting for this:
+
+- **Fast**: no waiting between tracks. It may stop after about a hundred.
+- **Balanced** (the default): 2 to 5 seconds between tracks, and a second between requests.
+- **Gentle**: 5 to 10 seconds between tracks. Best for playlists of several hundred tracks.
+
+If YouTube refuses in the middle of a playlist anyway, Ambrosia does not fail the rest of the tracks:
+
+1. When three tracks in a row are refused (and some were already downloaded), it stops yt-dlp.
+2. It waits, and the Download page says until when: 2 minutes, then 5, 10, 15 and 20 minutes each time the wait does not help. **Continue now** skips the wait, and **Cancel** ends the download.
+3. It starts yt-dlp again at the gentle speed, with the cookies read again from your browser or file. Tracks that are done are skipped, so it goes on from where it stopped. Tracks that were refused are tried again.
+4. If it still does not work after the last wait, it stops with the tracks that were downloaded, and **Finish** works on those. Run the same link (and franchise) again within 24 hours and it continues from there: the finished tracks show as "Already downloaded".
+
+If nothing at all could be downloaded, it does not wait: the sign-in itself is wrong (see above).
 
 If YouTube still asks to sign in, or the cookies cannot be read, the failed download says so in plain words (for example "the cookies expired"). When nothing has been downloaded and three tracks in a row fail because of the sign-in, Ambrosia stops the download instead of trying all the others.
 
@@ -304,7 +325,7 @@ npm run release # build and upload a release to GitHub (see below)
 
 Installed copies of Ambrosia update from the project's GitHub releases.
 
-1. Raise `version` in `package.json` (for example `1.2.3`).
+1. Raise `version` in `package.json` (for example `1.2.4`).
 2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
 3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
 4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.
@@ -328,6 +349,7 @@ Everything the page can ask the main process to do is defined once in `src/share
 - **"A name has invisible or broken characters"**: the name has a zero-width space, a text reverser or half an emoji. Retype it, or use a rename rule: names made by the rules have those characters removed.
 - **"yt-dlp was not found"**: install it (see above) and restart Ambrosia.
 - **"Sign in to confirm you're not a bot"**: set up the YouTube sign-in on the Download page (see YouTube sign-in). Update yt-dlp too.
+- **A long playlist pauses with "Paused until..."**: YouTube refused for a while. Ambrosia continues by itself, or press **Continue now**. Use the **Gentle** speed for very long playlists.
 - **"Could not read the cookies"**: close the browser and try again, use Firefox, or use a cookies file. Chrome, Edge and Brave can lock or encrypt their cookies.
 - **"The cookies expired"**: YouTube replaced them, usually because the browser stayed signed in. Export a new file from a private window (see YouTube sign-in).
 - **No notification**: Windows needs the app to be installed, so notifications may not appear when running from `npm run dev`.

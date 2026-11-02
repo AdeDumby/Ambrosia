@@ -87,6 +87,8 @@ export type Api = {
   chooseCookiesFile(): Promise<string | null>
   /** Looks at one YouTube video with the given sign-in, to tell whether downloads will work. */
   checkYoutubeSignIn(cookies: YoutubeCookies): Promise<SignInCheck>
+  /** Ends the wait of a download that is waiting to try again after YouTube refused. */
+  continueDownload(): Promise<void>
   cancelDownload(): Promise<void>
   resetDownload(): Promise<void>
   getDownloadFolderNames(): Promise<string[]>

@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdir, readdir, stat } from 'node:fs/promises'
+import { mkdir, readdir, rm, stat } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 import { notifyDownloadFinished } from './notify.ts'
@@ -15,7 +16,7 @@ import {
   type FinishResult
 } from '../../src/shared/download.ts'
 import { renameAll } from './files.services.ts'
-import type { YoutubeCookies } from '../../src/shared/settings.ts'
+import type { DownloadPace, DownloadSettings, YoutubeCookies } from '../../src/shared/settings.ts'
 import {
   buildDownloadArgs,
   classifyYtDlpError,
@@ -26,18 +27,49 @@ import {
 import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 
 const MAX_LOG = 200
-/** Stop after this many sign-in failures in a row with nothing downloaded: the rest would fail too. */
-const SIGN_IN_ABORT_AFTER = 3
+/** This many sign-in failures in a row mean YouTube has stopped answering: the rest would fail too. */
+const SIGN_IN_STALL_AFTER = 3
+/** Seconds to wait before trying again, longer each time nothing new could be downloaded. */
+const DEFAULT_COOLDOWNS = [120, 300, 600, 900, 1200]
+/** A stopped download can be continued by running the same link again for this long. */
+const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000
+
+let cooldowns = DEFAULT_COOLDOWNS
+
+/** Only for tests: waits that do not take minutes. */
+export function setCooldownsForTests(seconds: number[] | null): void {
+  cooldowns = seconds ?? DEFAULT_COOLDOWNS
+}
+
+type Run = {
+  template: string
+  url: string
+  franchise: string
+  cookies: YoutubeCookies
+  pace: DownloadPace
+  /** Remembers the downloaded videos, so that a new launch of yt-dlp skips them. */
+  archive: string
+  /** Waits in a row in which nothing new could be downloaded. */
+  stalls: number
+  /** Tracks that were fine when the current launch started. */
+  fineAtLaunch: number
+  timer: NodeJS.Timeout | undefined
+  /** Gave up while YouTube was refusing, so the same link can be continued later. */
+  stalledOut: boolean
+}
 
 let state: DownloadState = idleDownloadState()
 let child: ChildProcess | null = null
+let run: Run | null = null
+let cursor: DownloadItem | null = null
 let cancelled = false
 let lastError: string | null = null
 let signedIn = false
 let signInStreak = 0
-let abortedForSignIn = false
-/** The files that were already in the folder when the download started (lower case). */
+let stallRequested = false
+/** The files that were already in the folder when the download started. */
 let folderBefore = new Set<string>()
+let stopped: { url: string; franchise: string; archive: string; at: number } | null = null
 
 export function getDownloadState(): DownloadState {
   return state
@@ -50,7 +82,7 @@ function stemOf(file: string): string {
 }
 
 function currentItem(): DownloadItem | undefined {
-  return state.items[state.items.length - 1]
+  return cursor ?? undefined
 }
 
 function newItem(index: number): DownloadItem {
@@ -63,7 +95,15 @@ function newItem(index: number): DownloadItem {
     error: null
   }
   state.items.push(item)
+  cursor = item
   return item
+}
+
+/** Tracks that are downloaded: finished, or finished and being converted. */
+function succeeded(): number {
+  return state.items.filter(
+    (item) => (item.status === 'done' || item.status === 'converting') && item.path
+  ).length
 }
 
 function finalizeCurrent(): void {
@@ -79,11 +119,31 @@ function finalizeCurrent(): void {
 
 function apply(event: YtDlpEvent): void {
   switch (event.kind) {
-    case 'item':
+    case 'item': {
       finalizeCurrent()
       state.total = event.total
-      newItem(event.index)
+      // A new launch of yt-dlp counts from the start again. Tracks that are done keep their
+      // place, and the ones that failed before are tried again.
+      const known = state.items.find((item) => item.index === event.index)
+      if (known && (known.status === 'done' || known.status === 'skipped')) {
+        cursor = known
+      } else if (known) {
+        Object.assign(known, { status: 'downloading', percent: 0, path: null, error: null })
+        cursor = known
+      } else {
+        newItem(event.index)
+      }
       break
+    }
+    case 'archived': {
+      const item = currentItem()
+      if (item && item.status === 'downloading') {
+        item.status = 'skipped'
+        item.percent = 100
+        item.error = null
+      }
+      break
+    }
     case 'destination': {
       const item = currentItem() ?? newItem(1)
       if (item.title === '') item.title = stemOf(event.path)
@@ -113,8 +173,7 @@ function apply(event: YtDlpEvent): void {
       if (isSignInProblem(problem)) {
         state.signInProblem = true
         signInStreak += 1
-        const nothingYet = !state.items.some((candidate) => candidate.status === 'done')
-        if (signInStreak >= SIGN_IN_ABORT_AFTER && nothingYet) abortForSignIn()
+        if (signInStreak >= SIGN_IN_STALL_AFTER) requestStall()
       } else {
         signInStreak = 0
       }
@@ -126,6 +185,8 @@ function apply(event: YtDlpEvent): void {
 function handleLine(line: string): void {
   state.log.push(line)
   if (state.log.length > MAX_LOG) state.log.shift()
+  // After a stall is called, what is still arriving is not worth following.
+  if (stallRequested) return
   const event = parseYtDlpLine(line)
   if (event) apply(event)
 }
@@ -166,6 +227,8 @@ function settle(code: number | null, failure?: string): void {
 
   const done = state.items.filter((item) => item.status === 'done').length
   const failed = state.items.filter((item) => item.status === 'failed').length
+  state.waiting = null
+  endRun(done > 0)
 
   if (cancelled) {
     state.phase = 'cancelled'
@@ -184,15 +247,84 @@ function settle(code: number | null, failure?: string): void {
   }
 
   state.phase = 'downloaded'
-  state.error = failed > 0 ? `${failed} could not be downloaded.` : null
+  state.error =
+    failed > 0
+      ? stopped
+        ? `${failed} could not be downloaded, because YouTube kept asking to sign in. Run the same link again later: the tracks that are done are skipped.`
+        : `${failed} could not be downloaded.`
+      : null
   state.renameActive = true
   notifyDownloadFinished(done, state.franchise)
 }
 
-function abortForSignIn(): void {
-  if (abortedForSignIn || !child) return
-  abortedForSignIn = true
+/** Forgets the run. The list of downloaded videos is kept only when the same link can be continued. */
+function endRun(keepArchive: boolean): void {
+  const finished = run
+  run = null
+  if (!finished) return
+  clearTimeout(finished.timer)
+  if (finished.stalledOut && keepArchive) {
+    stopped = {
+      url: finished.url,
+      franchise: finished.franchise,
+      archive: finished.archive,
+      at: Date.now()
+    }
+    return
+  }
+  stopped = null
+  void rm(finished.archive, { force: true }).catch(() => {})
+}
+
+function requestStall(): void {
+  if (stallRequested || !child) return
+  stallRequested = true
   killChild()
+}
+
+/** YouTube stopped answering. Wait and go on from where it stopped, or give up. */
+function onStall(): void {
+  child = null
+  const current = run
+  const fine = succeeded()
+  finalizeCurrent()
+  const give = (failure?: string) => {
+    if (current && fine > 0) current.stalledOut = true
+    void reconcilePaths().then(() => settle(null, failure))
+  }
+
+  // Nothing was ever downloaded: the sign-in itself is wrong, and waiting will not help.
+  if (!current || cancelled || fine === 0) {
+    give(cancelled ? undefined : (lastError ?? 'YouTube asked to sign in.'))
+    return
+  }
+
+  current.stalls = fine > current.fineAtLaunch ? 1 : current.stalls + 1
+  if (current.stalls > cooldowns.length) {
+    give()
+    return
+  }
+  const seconds = cooldowns[current.stalls - 1]
+  state.waiting = {
+    until: Date.now() + seconds * 1000,
+    reason: lastError ?? 'YouTube asked to sign in again.'
+  }
+  current.timer = setTimeout(resume, seconds * 1000)
+}
+
+/** Starts yt-dlp again after the wait. It skips what is done and reads the cookies again. */
+function resume(): void {
+  const current = run
+  if (!current || cancelled || state.phase !== 'downloading' || !state.waiting) return
+  clearTimeout(current.timer)
+  current.timer = undefined
+  state.waiting = null
+  launch(true)
+}
+
+/** Ends the wait of a download that is waiting to try again. */
+export function continueDownloadNow(): void {
+  resume()
 }
 
 function killChild(): void {
@@ -204,37 +336,17 @@ function killChild(): void {
   }
 }
 
-export async function startDownload(
-  libraryFolder: string,
-  franchiseRaw: string,
-  urlRaw: string,
-  cookies: YoutubeCookies
-): Promise<void> {
-  if (state.phase === 'downloading') throw new Error('A download is already running.')
-  const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw)
-  if (problem) throw new Error(problem)
-
-  if (cookies.source === 'file' && !(path.isAbsolute(cookies.file) && existsSync(cookies.file))) {
-    throw new Error('The cookies file was not found. Choose it again in YouTube sign-in.')
-  }
-
-  const franchise = franchiseRaw.trim()
-  const url = new URL(urlRaw.trim()).toString()
-  const folder = path.join(libraryFolder, franchise)
-  await mkdir(folder, { recursive: true })
-  const before = await readdir(folder).catch(() => [] as string[])
-
-  const template = path.join(folder.replace(/%/g, '%%'), '%(title).150s.%(ext)s')
-  const args = buildDownloadArgs(template, url, cookies)
-
-  state = { ...idleDownloadState(), phase: 'downloading', franchise, url, folder }
-  cancelled = false
-  lastError = null
-  signedIn = usesCookies(cookies)
+function launch(gentle: boolean): void {
+  const current = run as Run
+  stallRequested = false
   signInStreak = 0
-  abortedForSignIn = false
-  folderBefore = new Set(before.map(fsKey))
+  lastError = null
+  current.fineAtLaunch = succeeded()
 
+  const args = buildDownloadArgs(current.template, current.url, current.cookies, {
+    pace: gentle ? 'gentle' : current.pace,
+    archive: current.archive
+  })
   const proc = spawn('yt-dlp', args, {
     windowsHide: true,
     env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }
@@ -252,6 +364,10 @@ export async function startDownload(
     settled = true
     out.end()
     err.end()
+    if (stallRequested && !failure) {
+      onStall()
+      return
+    }
     void reconcilePaths().then(() => settle(code, failure))
   }
   proc.on('error', (error: NodeJS.ErrnoException) =>
@@ -262,9 +378,70 @@ export async function startDownload(
         : error.message
     )
   )
-  proc.on('close', (code) =>
-    once(code, abortedForSignIn ? (lastError ?? 'YouTube asked to sign in.') : undefined)
-  )
+  proc.on('close', (code) => once(code))
+}
+
+export async function startDownload(
+  libraryFolder: string,
+  franchiseRaw: string,
+  urlRaw: string,
+  options: DownloadSettings
+): Promise<void> {
+  if (state.phase === 'downloading') throw new Error('A download is already running.')
+  const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw)
+  if (problem) throw new Error(problem)
+
+  const { cookies, pace } = options
+  if (cookies.source === 'file' && !(path.isAbsolute(cookies.file) && existsSync(cookies.file))) {
+    throw new Error('The cookies file was not found. Choose it again in YouTube sign-in.')
+  }
+
+  const franchise = franchiseRaw.trim()
+  const url = new URL(urlRaw.trim()).toString()
+  const folder = path.join(libraryFolder, franchise)
+  await mkdir(folder, { recursive: true })
+  const before = await readdir(folder).catch(() => [] as string[])
+
+  // The same link, soon after a download that was stopped by YouTube: go on from there.
+  const earlier =
+    stopped &&
+    stopped.url === url &&
+    stopped.franchise === franchise &&
+    Date.now() - stopped.at < RESUME_WINDOW_MS &&
+    existsSync(stopped.archive)
+      ? stopped
+      : null
+  if (stopped && !earlier) void rm(stopped.archive, { force: true }).catch(() => {})
+  stopped = null
+
+  state = {
+    ...idleDownloadState(),
+    phase: 'downloading',
+    franchise,
+    url,
+    folder,
+    notice: earlier
+      ? 'Continuing an earlier download of this link. The tracks that were done are skipped.'
+      : null
+  }
+  cursor = null
+  cancelled = false
+  lastError = null
+  signedIn = usesCookies(cookies)
+  folderBefore = new Set(before.map(fsKey))
+  run = {
+    template: path.join(folder.replace(/%/g, '%%'), '%(title).150s.%(ext)s'),
+    url,
+    franchise,
+    cookies,
+    pace,
+    archive: earlier?.archive ?? path.join(tmpdir(), `ambrosia-archive-${Date.now()}.txt`),
+    stalls: 0,
+    fineAtLaunch: 0,
+    timer: undefined,
+    stalledOut: false
+  }
+  launch(false)
 }
 
 function fold(text: string): string {
@@ -361,8 +538,13 @@ export async function reconcilePaths(): Promise<void> {
 }
 
 export function cancelDownload(): void {
-  if (!child || state.phase !== 'downloading') return
+  if (state.phase !== 'downloading') return
   cancelled = true
+  if (!child) {
+    // Waiting to try again: there is no process to stop.
+    void reconcilePaths().then(() => settle(null))
+    return
+  }
   killChild()
 }
 

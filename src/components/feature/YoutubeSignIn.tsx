@@ -4,6 +4,7 @@ import type { SignInCheck } from '../../shared/download'
 import {
   YOUTUBE_BROWSERS,
   type CookieSource,
+  type DownloadPace,
   type YoutubeBrowser,
   type YoutubeCookies
 } from '../../shared/settings'
@@ -18,6 +19,18 @@ const SOURCE_OPTIONS: { value: CookieSource; label: string }[] = [
   { value: 'browser', label: 'From a browser' },
   { value: 'file', label: 'From a file' }
 ]
+
+const PACE_OPTIONS: { value: DownloadPace; label: string }[] = [
+  { value: 'fast', label: 'Fast' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'gentle', label: 'Gentle' }
+]
+
+const PACE_HINTS: Record<DownloadPace, string> = {
+  fast: 'No waiting between tracks. YouTube may refuse after about a hundred tracks.',
+  balanced: 'A few seconds between tracks. A good choice for most playlists.',
+  gentle: 'About 5 to 10 seconds between tracks. Best for very long playlists.'
+}
 
 function summary(cookies: YoutubeCookies): string {
   if (cookies.source === 'browser') {
@@ -71,7 +84,7 @@ export default function YoutubeSignIn({ defaultOpen }: { defaultOpen: boolean })
     // A new key opens the box again when a download fails because of the sign-in.
     <details className="yt-signin" key={String(defaultOpen)} open={defaultOpen}>
       <summary>
-        YouTube sign-in
+        YouTube sign-in and speed
         <span className={`yt-signin-badge ${cookies.source === 'off' ? '' : 'on'}`}>
           {summary(cookies)}
         </span>
@@ -154,6 +167,21 @@ export default function YoutubeSignIn({ defaultOpen }: { defaultOpen: boolean })
               {failure}
             </span>
           )}
+        </div>
+
+        <div className="yt-signin-pace">
+          <span>Speed of long downloads</span>
+          <SegmentedControl
+            label="Speed of long downloads"
+            options={PACE_OPTIONS}
+            value={settings.download.pace}
+            onChange={(pace) => updateDownload({ pace })}
+          />
+          <p className="yt-signin-tips">{PACE_HINTS[settings.download.pace]}</p>
+          <p className="yt-signin-tips">
+            If YouTube still stops a long playlist, Ambrosia waits a few minutes, then goes on from
+            where it stopped, at the gentle speed. It keeps the tracks that are done.
+          </p>
         </div>
 
         <p className="yt-signin-note">

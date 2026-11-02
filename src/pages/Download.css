@@ -150,3 +150,19 @@
   align-items: baseline;
   gap: 10px;
 }
+
+.download-waiting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.download-waiting p {
+  flex: 1 1 320px;
+  margin: 0;
+}

@@ -3,6 +3,7 @@ export type YtDlpEvent =
   | { kind: 'destination'; path: string }
   | { kind: 'progress'; percent: number }
   | { kind: 'audio'; path: string }
+  | { kind: 'archived' }
   | { kind: 'error'; message: string }
 
 export function parseYtDlpLine(line: string): YtDlpEvent | null {
@@ -28,6 +29,10 @@ export function parseYtDlpLine(line: string): YtDlpEvent | null {
 
   match = /^\[download\] (.+\.mp3) has already been downloaded$/.exec(text)
   if (match) return { kind: 'audio', path: match[1] }
+
+  if (/^\[download\] .+: has already been recorded in the archive$/.test(text)) {
+    return { kind: 'archived' }
+  }
 
   match = /^ERROR: (.+)$/.exec(text)
   if (match) return { kind: 'error', message: match[1] }

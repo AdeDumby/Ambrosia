@@ -3,17 +3,25 @@ import {
   existsSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   utimesSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { YoutubeCookies } from '../../src/shared/settings.ts'
 
 vi.mock('./notify.ts', () => ({ notifyDownloadFinished: () => {} }))
 
-import { getDownloadState, resetDownload, startDownload } from './download.service.ts'
+import {
+  cancelDownload,
+  continueDownloadNow,
+  getDownloadState,
+  resetDownload,
+  setCooldownsForTests,
+  startDownload
+} from './download.service.ts'
 import { fsKey } from '../../src/shared/download.ts'
 
 // The tests put a pretend yt-dlp in front of the real one. It needs a shell, so not on Windows.
@@ -35,6 +43,29 @@ beforeAll(() => {
     script,
     `#!/bin/sh
 printf '%s\\n' "$@" > "$ARGS_FILE"
+if [ "$MODE" = "lenient" ]; then
+  # Eight tracks. From FAIL_FROM on, YouTube refuses, for the first FAIL_LAUNCHES launches.
+  ARCH=""; prev=""
+  for a in "$@"; do if [ "$prev" = "--download-archive" ]; then ARCH="$a"; fi; prev="$a"; done
+  echo "$@" >> "$LOG_FILE"
+  launch=$(wc -l < "$LOG_FILE" | tr -d ' ')
+  i=1
+  while [ $i -le 8 ]; do
+    echo "[download] Downloading item $i of 8"
+    if [ -f "$ARCH" ] && grep -qx "id$i" "$ARCH"; then
+      echo "[download] id$i: has already been recorded in the archive"
+    elif [ "$FAIL_FROM" -gt 0 ] && [ $i -ge "$FAIL_FROM" ] && [ "$launch" -le "$FAIL_LAUNCHES" ]; then
+      echo "${bot}"
+    else
+      echo "[ExtractAudio] Destination: $OUT_DIR/Track $i.mp3"
+      printf x > "$OUT_DIR/Track $i.mp3"
+      echo "id$i" >> "$ARCH"
+    fi
+    i=$((i+1))
+    sleep 0.03
+  done
+  exit 0
+fi
 if [ "$MODE" = "symbols" ]; then
   # Pretend the console could not show some characters: they come out as "?".
   n=1
@@ -67,9 +98,22 @@ afterAll(() => {
   else process.env.ARGS_FILE = oldArgs
 })
 
+afterEach(async () => {
+  // A test that failed must not leave a download behind for the next one.
+  if (getDownloadState().phase === 'downloading') {
+    cancelDownload()
+    for (let w = 0; getDownloadState().phase === 'downloading' && w < 3000; w += 20) {
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    }
+  }
+})
+
 async function download(cookies: YoutubeCookies) {
   resetDownload()
-  await startDownload(folder, 'Test', 'https://www.youtube.com/watch?v=abc', cookies)
+  await startDownload(folder, 'Test', 'https://www.youtube.com/watch?v=abc', {
+    cookies,
+    pace: 'fast'
+  })
   for (
     let waited = 0;
     getDownloadState().phase === 'downloading' && waited < 10_000;
@@ -112,9 +156,8 @@ describe.skipIf(!posix)('download with the YouTube bot check', () => {
     resetDownload()
     await expect(
       startDownload(folder, 'Test', 'https://www.youtube.com/watch?v=abc', {
-        ...off,
-        source: 'file',
-        file: path.join(folder, 'missing.txt')
+        pace: 'fast',
+        cookies: { ...off, source: 'file', file: path.join(folder, 'missing.txt') }
       })
     ).rejects.toThrow(/cookies file was not found/)
   })
@@ -139,7 +182,10 @@ async function downloadNamed(rows: string[], count = rows.length) {
   process.env.OUT_DIR = path.join(folder, 'Symbols')
   try {
     resetDownload()
-    await startDownload(folder, 'Symbols', 'https://www.youtube.com/watch?v=abc', off)
+    await startDownload(folder, 'Symbols', 'https://www.youtube.com/watch?v=abc', {
+      cookies: off,
+      pace: 'fast'
+    })
     for (let w = 0; getDownloadState().phase === 'downloading' && w < 10_000; w += 25) {
       await new Promise((resolve) => setTimeout(resolve, 25))
     }
@@ -208,5 +254,139 @@ describe.skipIf(!posix)('files whose names yt-dlp could not print', () => {
     const state = await downloadNamed(['???.mp3|\u65b0.mp3'])
     expect(path.basename(state.items[0].path ?? '')).toBe('\u65b0.mp3')
     expect(fsKey('Old.mp3')).not.toBe(fsKey(path.basename(state.items[0].path ?? '')))
+  })
+})
+
+async function until(done: () => boolean, ms = 10_000) {
+  for (let waited = 0; !done() && waited < ms; waited += 20) {
+    await new Promise((resolve) => setTimeout(resolve, 20))
+  }
+}
+
+function lenient(failFrom: number, failLaunches: number, name = 'Long') {
+  const log = path.join(folder, 'launches.txt')
+  rmSync(log, { force: true })
+  process.env.MODE = 'lenient'
+  process.env.LOG_FILE = log
+  process.env.FAIL_FROM = String(failFrom)
+  process.env.FAIL_LAUNCHES = String(failLaunches)
+  process.env.OUT_DIR = path.join(folder, name)
+  return () => readFileSync(log, 'utf8').trim().split('\n')
+}
+
+const url = 'https://www.youtube.com/playlist?list=PLabc'
+const settings = { cookies: off, pace: 'balanced' as const }
+
+describe.skipIf(!posix)('a long playlist that YouTube stops in the middle', () => {
+  it('waits, goes on from where it stopped, and ends with every track', async () => {
+    setCooldownsForTests([0.1])
+    const launches = lenient(5, 1)
+    try {
+      resetDownload()
+      await startDownload(folder, 'Long', url, settings)
+      await until(() => getDownloadState().phase !== 'downloading')
+      const state = getDownloadState()
+      expect(state.phase).toBe('downloaded')
+      expect(state.error).toBeNull()
+      expect(state.items).toHaveLength(8)
+      expect(state.items.every((item) => item.status === 'done')).toBe(true)
+      expect(state.waiting).toBeNull()
+
+      const [first, second] = launches()
+      expect(first).toContain('--sleep-interval 2')
+      expect(first).toContain('--download-archive')
+      // The second launch is gentler, and uses the same list of what was done.
+      expect(second).toContain('--max-sleep-interval 10')
+      const archive = (line: string) =>
+        line.split(' ').at(line.split(' ').indexOf('--download-archive') + 1)
+      expect(archive(second)).toBe(archive(first))
+    } finally {
+      delete process.env.MODE
+      setCooldownsForTests(null)
+    }
+  })
+
+  it('shows that it is waiting, and can be told to go on now', async () => {
+    setCooldownsForTests([600])
+    lenient(5, 1)
+    try {
+      resetDownload()
+      await startDownload(folder, 'Long', url, settings)
+      await until(() => getDownloadState().waiting !== null)
+      const waiting = getDownloadState().waiting
+      expect(waiting?.reason).toMatch(/YouTube/)
+      expect(waiting && waiting.until - Date.now()).toBeGreaterThan(500_000)
+      expect(getDownloadState().phase).toBe('downloading')
+
+      continueDownloadNow()
+      await until(() => getDownloadState().phase !== 'downloading')
+      expect(getDownloadState().phase).toBe('downloaded')
+      expect(getDownloadState().items.filter((item) => item.status === 'done')).toHaveLength(8)
+    } finally {
+      delete process.env.MODE
+      setCooldownsForTests(null)
+    }
+  })
+
+  it('can be cancelled while it waits', async () => {
+    setCooldownsForTests([600])
+    lenient(5, 99)
+    try {
+      resetDownload()
+      await startDownload(folder, 'Long', url, settings)
+      await until(() => getDownloadState().waiting !== null)
+      cancelDownload()
+      await until(() => getDownloadState().phase !== 'downloading')
+      expect(getDownloadState().phase).toBe('cancelled')
+      expect(getDownloadState().waiting).toBeNull()
+    } finally {
+      delete process.env.MODE
+      setCooldownsForTests(null)
+    }
+  })
+
+  it('gives up when waiting does not help, and the same link can be continued later', async () => {
+    setCooldownsForTests([0.05, 0.05])
+    const launches = lenient(5, 99, 'Long2')
+    try {
+      resetDownload()
+      await startDownload(folder, 'Long2', url, settings)
+      await until(() => getDownloadState().phase !== 'downloading')
+      let state = getDownloadState()
+      // Four tracks were fine, and the rest could not be downloaded.
+      expect(state.phase).toBe('downloaded')
+      expect(state.items.filter((item) => item.status === 'done')).toHaveLength(4)
+      expect(state.error).toMatch(/kept asking to sign in/)
+      expect(launches().length).toBe(3)
+
+      // Later, YouTube lets it through: the same link goes on from track 5.
+      lenient(0, 0, 'Long2')
+      resetDownload()
+      await startDownload(folder, 'Long2', url, settings)
+      await until(() => getDownloadState().phase !== 'downloading')
+      state = getDownloadState()
+      expect(state.notice).toMatch(/Continuing an earlier download/)
+      expect(state.phase).toBe('downloaded')
+      expect(state.items.filter((item) => item.status === 'skipped')).toHaveLength(4)
+      expect(state.items.filter((item) => item.status === 'done')).toHaveLength(4)
+    } finally {
+      delete process.env.MODE
+      setCooldownsForTests(null)
+    }
+  })
+
+  it('does not wait when nothing was ever downloaded', async () => {
+    setCooldownsForTests([600])
+    lenient(1, 99, 'Long3')
+    try {
+      resetDownload()
+      await startDownload(folder, 'Long3', url, settings)
+      await until(() => getDownloadState().phase !== 'downloading', 5000)
+      expect(getDownloadState().phase).toBe('failed')
+      expect(getDownloadState().waiting).toBeNull()
+    } finally {
+      delete process.env.MODE
+      setCooldownsForTests(null)
+    }
   })
 })

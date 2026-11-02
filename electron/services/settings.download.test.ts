@@ -28,6 +28,12 @@ describe('YouTube sign-in settings', () => {
     expect(parseYoutubeCookies({ source: 'file', file: 'a\0b' }).file).toBe('')
   })
 
+  it('has a balanced speed unless another one was chosen', () => {
+    expect(parseSettings({}).download.pace).toBe('balanced')
+    expect(parseSettings({ download: { pace: 'gentle' } }).download.pace).toBe('gentle')
+    expect(parseSettings({ download: { pace: 'warp' } }).download.pace).toBe('balanced')
+  })
+
   it('round trips through parseSettings', () => {
     const saved = parseSettings({ download: { cookies: { source: 'file', file: 'C:\\c.txt' } } })
     expect(parseSettings(JSON.parse(JSON.stringify(saved))).download.cookies).toEqual({

@@ -20,6 +20,7 @@ function plural(count: number, word: string): string {
 
 function downloadStep(state: DownloadState): { status: StepStatus; view: View } {
   const done = state.items.filter((item) => item.status === 'done').length
+  const already = state.items.filter((item) => item.status === 'skipped').length
   const active = state.items.find(
     (item) => item.status === 'downloading' || item.status === 'converting'
   )
@@ -30,9 +31,13 @@ function downloadStep(state: DownloadState): { status: StepStatus; view: View } 
       status: 'running',
       view: {
         current: active?.title ?? '',
-        value: state.total ? done : undefined,
+        value: state.total ? done + already : undefined,
         max: Math.max(total, 1),
-        output: state.total ? `${done} of ${plural(total, 'track')} downloaded` : 'Starting...'
+        output: state.waiting
+          ? `Paused until ${new Date(state.waiting.until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. ${done} downloaded so far.`
+          : state.total
+            ? `${done + already} of ${plural(total, 'track')} downloaded${already > 0 ? ` (${already} already done)` : ''}`
+            : 'Starting...'
       }
     }
   }

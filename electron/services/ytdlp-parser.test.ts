@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { parseYtDlpLine } from './ytdlp-parser.ts'
 
+describe('parseYtDlpLine, archive lines', () => {
+  it('recognises a video that an earlier launch already downloaded', () => {
+    expect(
+      parseYtDlpLine('[download] 0AQMAth2gio: has already been recorded in the archive')
+    ).toEqual({
+      kind: 'archived'
+    })
+    expect(
+      parseYtDlpLine('[download] Some title: has already been recorded in the archive')
+    ).toEqual({
+      kind: 'archived'
+    })
+  })
+})
+
 describe('parseYtDlpLine', () => {
   it('reads the playlist item counter', () => {
     expect(parseYtDlpLine('[download] Downloading item 3 of 40')).toEqual({

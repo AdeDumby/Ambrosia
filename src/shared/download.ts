@@ -41,7 +41,8 @@ export function fsKey(name: string): string {
 }
 
 export type DownloadPhase = 'idle' | 'downloading' | 'downloaded' | 'failed' | 'cancelled'
-export type ItemStatus = 'downloading' | 'converting' | 'done' | 'failed'
+/** Skipped: yt-dlp had already downloaded it in an earlier run of the same link. */
+export type ItemStatus = 'downloading' | 'converting' | 'done' | 'failed' | 'skipped'
 
 export type DownloadItem = {
   index: number
@@ -66,6 +67,10 @@ export type DownloadState = {
   renameActive: boolean
   /** The failure is about signing in to YouTube, which the sign-in settings can fix. */
   signInProblem: boolean
+  /** Set while the download waits before trying again, after YouTube asked to sign in again. */
+  waiting: { until: number; reason: string } | null
+  /** Something the person should know about the run, such as that it continues an earlier one. */
+  notice: string | null
 }
 
 /** What a check of the YouTube sign-in found. */
@@ -82,7 +87,9 @@ export function idleDownloadState(): DownloadState {
     error: null,
     log: [],
     renameActive: false,
-    signInProblem: false
+    signInProblem: false,
+    waiting: null,
+    notice: null
   }
 }
 

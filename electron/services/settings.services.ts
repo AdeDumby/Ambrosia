@@ -7,6 +7,7 @@ import {
   COOKIE_SOURCES,
   DEFAULT_SETTINGS,
   DELETE_MODES,
+  DOWNLOAD_PACES,
   DENSITIES,
   MAX_COOKIE_PATH,
   MAX_PRESETS,
@@ -15,6 +16,7 @@ import {
   type AppearanceMode,
   type CookieSource,
   type DeleteMode,
+  type DownloadPace,
   type DownloadSettings,
   type Density,
   type LibrarySettings,
@@ -160,7 +162,13 @@ export function parseYoutubeCookies(raw: unknown): YoutubeCookies {
 }
 
 function parseDownload(raw: unknown): DownloadSettings {
-  return { cookies: parseYoutubeCookies(asObject(raw).cookies) }
+  const source = asObject(raw)
+  return {
+    cookies: parseYoutubeCookies(source.cookies),
+    pace: DOWNLOAD_PACES.includes(source.pace as DownloadPace)
+      ? (source.pace as DownloadPace)
+      : DEFAULT_SETTINGS.download.pace
+  }
 }
 
 function parsePresets(raw: unknown): Preset[] {
