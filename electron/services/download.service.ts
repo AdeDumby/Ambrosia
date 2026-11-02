@@ -30,8 +30,8 @@ import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 const MAX_LOG = 200
 /** This many sign-in failures in a row mean YouTube has stopped answering: the rest would fail too. */
 const SIGN_IN_STALL_AFTER = 3
-/** YouTube's "too many requests" is the same for every track, so two in a row are enough. */
-const RATE_LIMIT_STALL_AFTER = 2
+/** YouTube's "too many requests" pauses the download at once, and the track is tried again. */
+const RATE_LIMIT_STALL_AFTER = 1
 /** Seconds to wait before trying again, longer each time nothing new could be downloaded. */
 const DEFAULT_COOLDOWNS = [120, 300, 600, 900, 1200]
 /** A stopped download can be continued by running the same link again for this long. */
@@ -73,6 +73,8 @@ let cancelled = false
 let lastError: string | null = null
 /** The last error was YouTube's rate limit, which lasts longer than a sign-in check. */
 let rateLimited = false
+/** The number of the track that YouTube refused with a 429. */
+let rateLimitedAt: number | null = null
 let signedIn = false
 let signInStreak = 0
 let stallRequested = false
@@ -186,6 +188,7 @@ function apply(event: YtDlpEvent): void {
       const explained = explainYtDlpProblem(problem, signedIn)
       lastError = explained?.full ?? event.message
       rateLimited = problem === 'rate-limit'
+      if (rateLimited) rateLimitedAt = currentItem()?.index ?? null
       const item = currentItem() ?? newItem(1)
       if (item.status === 'downloading') item.status = 'failed'
       if (item.status !== 'done') item.error = explained?.short ?? event.message
@@ -316,7 +319,7 @@ function onStall(): void {
   }
 
   // Nothing was ever downloaded: the sign-in itself is wrong, and waiting will not help.
-  if (!current || cancelled || fine === 0) {
+  if (!current || cancelled || (fine === 0 && !rateLimited)) {
     give(cancelled ? undefined : (lastError ?? 'YouTube asked to sign in.'))
     return
   }
@@ -326,8 +329,11 @@ function onStall(): void {
     give()
     return
   }
-  // A 429 is about the connection, and lasts longer than a sign-in check: wait three times more.
-  const seconds = cooldowns[current.stalls - 1] * (rateLimited ? 3 : 1)
+  // A 429 is about the connection and often hits only some tracks: a shorter first wait, and the
+  // same track is tried again by starting the next launch at its number.
+  const seconds = cooldowns[current.stalls - 1] * (rateLimited ? 0.5 : 1)
+  if (rateLimited && rateLimitedAt !== null)
+    current.startAt = Math.max(current.startAt, rateLimitedAt)
   state.waiting = {
     until: Date.now() + seconds * 1000,
     reason: lastError ?? 'YouTube asked to sign in again.'
@@ -365,6 +371,7 @@ function launch(gentle: boolean): void {
   signInStreak = 0
   lastError = null
   rateLimited = false
+  rateLimitedAt = null
   current.fineAtLaunch = succeeded()
   current.offset = undefined
 

@@ -74,6 +74,11 @@ if [ "$MODE" = "start" ]; then
   while [ $i -le 8 ]; do
     if [ "$REAL" = "1" ]; then echo "[download] Downloading item $i of 8"
     else echo "[download] Downloading item $((i-S+1)) of $((8-S+1))"; fi
+    if [ "$RL" = "1" ] && [ $i -eq 3 ] && [ "$S" = "1" ]; then
+      echo "WARNING: [youtube] x: Unable to download webpage: HTTP Error 429: Too Many Requests"
+      echo "ERROR: [youtube] x: Unable to download webpage: HTTP Error 429: Too Many Requests"
+      sleep 1
+    fi
     echo "[ExtractAudio] Destination: $OUT_DIR/Track $i.mp3"
     printf x > "$OUT_DIR/Track $i.mp3"
     i=$((i+1))
@@ -435,6 +440,21 @@ describe.skipIf(!posix)('starting at a chosen track number', () => {
     const state = await runFrom(undefined, false, 'StartC')
     expect(readFileSync(argsFile, 'utf8')).not.toContain('--playlist-start')
     expect(state.items.map((item) => item.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
+  it('pauses on a 429 and tries the same track again, starting at its number', async () => {
+    setCooldownsForTests([0.2])
+    process.env.RL = '1'
+    try {
+      const state = await runFrom(undefined, false, 'StartE')
+      expect(state.phase).toBe('downloaded')
+      expect(state.items.map((item) => item.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+      expect(state.items.every((item) => item.status === 'done')).toBe(true)
+      expect(readFileSync(argsFile, 'utf8')).toContain('--playlist-start\n3\n')
+    } finally {
+      delete process.env.RL
+      setCooldownsForTests(null)
+    }
   })
 
   it('refuses a start number that is not valid', async () => {

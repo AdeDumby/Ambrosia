@@ -8,7 +8,7 @@ Built with Electron, React and Vite. Your library is stored in a local SQLite da
 
 ## What's new in 1.2.5
 
-- **"HTTP Error 429: Too Many Requests" is handled**: it used to fail every track one after the other. Now two in a row make Ambrosia stop, wait (three times longer than for a sign-in check) and continue by itself. **Gentle** is also slower (10 to 25 seconds between tracks).
+- **"HTTP Error 429: Too Many Requests" is handled**: it used to fail every track one after the other. Now the first 429 pauses the download for a short wait, then Ambrosia continues by itself starting again at the track that was refused. **Gentle** is also slower (10 to 25 seconds between tracks).
 
 - **Choose the track to start from**: the Download form has a new **Start at track number** field (empty means the first track). Tracks before that number are skipped, and the list shows the real track numbers of the playlist. Useful for edge cases the app does not handle, for example to go on after a track that keeps failing.
 
@@ -359,7 +359,7 @@ Everything the page can ask the main process to do is defined once in `src/share
 - **"A name has invisible or broken characters"**: the name has a zero-width space, a text reverser or half an emoji. Retype it, or use a rename rule: names made by the rules have those characters removed.
 - **"yt-dlp was not found"**: install it (see above) and restart Ambrosia.
 - **"Sign in to confirm you're not a bot"**: set up the YouTube sign-in on the Download page (see YouTube sign-in). Update yt-dlp too.
-- **"YouTube says too many requests" (error 429)**: YouTube is limiting your connection, which cookies do not fix. Ambrosia waits and retries. If it gives up, wait an hour or two or change connection (VPN, phone hotspot), then use **Start at track number** to go on.
+- **"YouTube says too many requests" (error 429)**: YouTube is limiting your connection, which cookies do not fix. Ambrosia pauses, then retries that same track. If it gives up, wait an hour or two or change connection (VPN, phone hotspot), then use **Start at track number** to go on.
 - **A long playlist pauses with "Paused until..."**: YouTube refused for a while. Ambrosia continues by itself, or press **Continue now**. Use the **Gentle** speed for very long playlists.
 - **"Could not read the cookies"**: close the browser and try again, use Firefox, or use a cookies file. Chrome, Edge and Brave can lock or encrypt their cookies.
 - **"The cookies expired"**: YouTube replaced them, usually because the browser stayed signed in. Export a new file from a private window (see YouTube sign-in).
