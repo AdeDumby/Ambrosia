@@ -82,7 +82,7 @@ export type Api = {
   cancelScan(): Promise<void>
 
   getDownloadState(): Promise<DownloadState>
-  startDownload(franchise: string, url: string): Promise<void>
+  startDownload(franchise: string, url: string, startAt?: number): Promise<void>
   /** Opens a file picker for a cookies.txt file. Returns its path, or null when cancelled. */
   chooseCookiesFile(): Promise<string | null>
   /** Looks at one YouTube video with the given sign-in, to tell whether downloads will work. */

@@ -38,7 +38,7 @@ type DownloadContextState = {
   setRules: Dispatch<SetStateAction<RenameRule[]>>
   manual: Record<number, string>
   setManual: Dispatch<SetStateAction<Record<number, string>>>
-  start: (franchise: string, url: string) => Promise<void>
+  start: (franchise: string, url: string, startAt?: number) => Promise<void>
   cancel: () => Promise<void>
   reset: () => Promise<void>
   finish: (entries: { index: number; name: string }[]) => Promise<void>
@@ -90,10 +90,10 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
   }, [state.phase, refresh])
 
   const start = useCallback(
-    async (franchise: string, url: string) => {
+    async (franchise: string, url: string, startAt?: number) => {
       clearRenaming()
       setChain(null)
-      await window.api.startDownload(franchise, url)
+      await window.api.startDownload(franchise, url, startAt)
       await refresh()
     },
     [clearRenaming, refresh]

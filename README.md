@@ -6,6 +6,10 @@ Ambrosia is a Windows desktop app for organizing a music library with tags. You 
 
 Built with Electron, React and Vite. Your library is stored in a local SQLite database, and your music files stay as normal files on disk.
 
+## What's new in 1.2.5
+
+- **Choose the track to start from**: the Download form has a new **Start at track number** field (empty means the first track). Tracks before that number are skipped, and the list shows the real track numbers of the playlist. Useful for edge cases the app does not handle, for example to go on after a track that keeps failing.
+
 ## What's new in 1.2.4
 
 - **Long playlists no longer stop for good when YouTube asks to sign in again**: downloads are paced (**Speed**: Fast, Balanced or Gentle, in the YouTube sign-in box), and when YouTube still refuses in the middle of a playlist, Ambrosia waits, then goes on from where it stopped with fresh cookies and the gentle speed. It keeps the tracks that are done, and running the same link again later continues the playlist.
@@ -135,6 +139,10 @@ YouTube sometimes refuses downloads with **"Sign in to confirm you're not a bot"
    - **From a file**: choose a `cookies.txt` file (Netscape format). Export it with a browser extension such as "Get cookies.txt LOCALLY". For cookies that keep working, open a **private window**, sign in to YouTube, open `youtube.com/robots.txt`, export the cookies from that tab, then close the private window (otherwise YouTube replaces them and the file stops working). The file stays where it is, and yt-dlp may update it.
 2. Click **Test sign-in**. It looks at one short public video with your settings and tells you whether downloads will work, and which yt-dlp version you have.
 3. Start the download. With a sign-in, Ambrosia no longer forces the android client (it cannot use cookies), and passes your cookies to yt-dlp. They are only used for downloads and the test, and are never copied or uploaded by Ambrosia.
+
+##### Start at a track number
+
+Type a number in **Start at track number** to skip the tracks before it. `25` starts at the 25th track of the playlist. Leave it empty to start from the first. The number must be a whole number from 1 to 100000. Ambrosia passes it to yt-dlp as `--playlist-start`, and the list keeps the real numbers (track 25 is shown as 25, not 1).
 
 ##### Long playlists
 
@@ -325,7 +333,7 @@ npm run release # build and upload a release to GitHub (see below)
 
 Installed copies of Ambrosia update from the project's GitHub releases.
 
-1. Raise `version` in `package.json` (for example `1.2.4`).
+1. Raise `version` in `package.json` (for example `1.2.5`).
 2. Create a GitHub token that can write to the repository, and set it in PowerShell: `$env:GH_TOKEN = "<token>"`.
 3. Run `npm run release`. It builds the installer and uploads `Ambrosia-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to a **draft** release.
 4. Open the draft on GitHub and click **Publish release**. Installed copies only see published releases.

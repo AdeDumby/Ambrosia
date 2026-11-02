@@ -108,6 +108,23 @@ export function checkFranchise(raw: string): string | null {
   return null
 }
 
+export const MAX_START_AT = 100000
+
+/** The track number to start from. Empty means the first track. */
+export function checkStartAt(raw: string): string | null {
+  const text = raw.trim()
+  if (text === '') return null
+  if (!/^\d+$/.test(text)) return 'The start number must be a whole number, like 25.'
+  const value = Number(text)
+  if (value < 1) return 'The start number must be 1 or more.'
+  if (value > MAX_START_AT) return `The start number can not be more than ${MAX_START_AT}.`
+  return null
+}
+
+export function parseStartAt(raw: string): number {
+  return checkStartAt(raw) === null && raw.trim() !== '' ? Number(raw.trim()) : 1
+}
+
 export function checkUrl(raw: string): string | null {
   let url: URL
   try {

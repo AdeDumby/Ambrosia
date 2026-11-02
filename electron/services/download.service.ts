@@ -7,6 +7,7 @@ import { StringDecoder } from 'node:string_decoder'
 import { notifyDownloadFinished } from './notify.ts'
 import {
   checkFranchise,
+  checkStartAt,
   checkUrl,
   idleDownloadState,
   type DownloadItem,
@@ -47,6 +48,10 @@ type Run = {
   franchise: string
   cookies: YoutubeCookies
   pace: DownloadPace
+  /** The number of the first track to download. */
+  startAt: number
+  /** Added to the numbers yt-dlp prints, when it counts from the chosen start. */
+  offset: number | undefined
   /** Remembers the downloaded videos, so that a new launch of yt-dlp skips them. */
   archive: string
   /** Waits in a row in which nothing new could be downloaded. */
@@ -121,17 +126,26 @@ function apply(event: YtDlpEvent): void {
   switch (event.kind) {
     case 'item': {
       finalizeCurrent()
-      state.total = event.total
+      let { index, total } = event
+      const current = run
+      if (current && current.startAt > 1) {
+        // With a start number yt-dlp may count from 1 again, or keep the real numbers. The first
+        // number of a launch tells which, so the list always shows the real track numbers.
+        current.offset ??= index < current.startAt ? current.startAt - 1 : 0
+        index += current.offset
+        total += current.offset
+      }
+      state.total = total
       // A new launch of yt-dlp counts from the start again. Tracks that are done keep their
       // place, and the ones that failed before are tried again.
-      const known = state.items.find((item) => item.index === event.index)
+      const known = state.items.find((item) => item.index === index)
       if (known && (known.status === 'done' || known.status === 'skipped')) {
         cursor = known
       } else if (known) {
         Object.assign(known, { status: 'downloading', percent: 0, path: null, error: null })
         cursor = known
       } else {
-        newItem(event.index)
+        newItem(index)
       }
       break
     }
@@ -342,10 +356,12 @@ function launch(gentle: boolean): void {
   signInStreak = 0
   lastError = null
   current.fineAtLaunch = succeeded()
+  current.offset = undefined
 
   const args = buildDownloadArgs(current.template, current.url, current.cookies, {
     pace: gentle ? 'gentle' : current.pace,
-    archive: current.archive
+    archive: current.archive,
+    startAt: current.startAt
   })
   const proc = spawn('yt-dlp', args, {
     windowsHide: true,
@@ -385,10 +401,11 @@ export async function startDownload(
   libraryFolder: string,
   franchiseRaw: string,
   urlRaw: string,
-  options: DownloadSettings
+  options: DownloadSettings,
+  startAt = 1
 ): Promise<void> {
   if (state.phase === 'downloading') throw new Error('A download is already running.')
-  const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw)
+  const problem = checkFranchise(franchiseRaw) ?? checkUrl(urlRaw) ?? checkStartAt(String(startAt))
   if (problem) throw new Error(problem)
 
   const { cookies, pace } = options
@@ -422,7 +439,9 @@ export async function startDownload(
     folder,
     notice: earlier
       ? 'Continuing an earlier download of this link. The tracks that were done are skipped.'
-      : null
+      : startAt > 1
+        ? `Starting at track ${startAt}.`
+        : null
   }
   cursor = null
   cancelled = false
@@ -435,6 +454,8 @@ export async function startDownload(
     franchise,
     cookies,
     pace,
+    startAt,
+    offset: undefined,
     archive: earlier?.archive ?? path.join(tmpdir(), `ambrosia-archive-${Date.now()}.txt`),
     stalls: 0,
     fineAtLaunch: 0,

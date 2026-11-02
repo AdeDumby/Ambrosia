@@ -105,3 +105,19 @@ describe('explainYtDlpProblem', () => {
     expect(explainYtDlpProblem('sign-in', true)?.full).toMatch(/even with your cookies/)
   })
 })
+
+describe('start number', () => {
+  const args = (startAt?: number) =>
+    buildDownloadArgs(
+      't',
+      'https://youtu.be/x',
+      { source: 'off', browser: 'firefox', file: '' },
+      { startAt }
+    )
+  it('adds --playlist-start only after the first track', () => {
+    expect(args(undefined)).not.toContain('--playlist-start')
+    expect(args(1)).not.toContain('--playlist-start')
+    const list = args(42)
+    expect(list[list.indexOf('--playlist-start') + 1]).toBe('42')
+  })
+})

@@ -13,6 +13,7 @@ import * as library from '../services/library.services.ts'
 import * as restore from '../services/restore.services.ts'
 import * as apply from '../services/apply-scan.services.ts'
 import * as downloads from '../services/download.service.ts'
+import { MAX_START_AT } from '../../src/shared/download.ts'
 import { checkYoutubeSignIn } from '../services/ytdlp-check.ts'
 import * as settings from '../services/settings.services.ts'
 import * as analysis from '../services/analysis.services.ts'
@@ -235,13 +236,19 @@ export function registerIpc(db: DatabaseSync, documentsFolder: string, dbPath: s
     checkForUpdates: () => updates.check(),
     installUpdate: () => updates.install(),
     getDownloadState: () => downloads.getDownloadState(),
-    startDownload: (franchise, url) => {
+    startDownload: (franchise, url, startAt) => {
       if (typeof franchise !== 'string' || typeof url !== 'string') throw new Error('Invalid input')
+      if (
+        startAt !== undefined &&
+        !(Number.isInteger(startAt) && startAt >= 1 && startAt <= MAX_START_AT)
+      )
+        throw new Error('Invalid start number')
       return downloads.startDownload(
         library.getLibraryPaths(db, documentsFolder).folder,
         franchise,
         url,
-        settings.getSettings(db).download
+        settings.getSettings(db).download,
+        startAt
       )
     },
     continueDownload: () => {

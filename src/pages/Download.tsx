@@ -8,7 +8,9 @@ import DownloadProgress from '../components/feature/DownloadProgress'
 import YoutubeSignIn from '../components/feature/YoutubeSignIn'
 import {
   checkFranchise,
+  checkStartAt,
   checkUrl,
+  parseStartAt,
   findNameProblems,
   fsKey,
   MAX_FRANCHISE_NAME,
@@ -32,6 +34,7 @@ export default function Download() {
     useDownload()
   const [franchise, setFranchise] = useState('')
   const [url, setUrl] = useState('')
+  const [startAt, setStartAt] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [folderNames, setFolderNames] = useState<Set<string>>(new Set())
   const [activeRuleId, setActiveRuleId] = useState<number | null>(null)
@@ -39,8 +42,14 @@ export default function Download() {
   const idle = state.phase === 'idle'
   const franchiseProblem = franchise.trim() === '' ? null : checkFranchise(franchise)
   const urlProblem = url.trim() === '' ? null : checkUrl(url)
+  const startProblem = checkStartAt(startAt)
   const canStart =
-    idle && franchise.trim() !== '' && url.trim() !== '' && !franchiseProblem && !urlProblem
+    idle &&
+    franchise.trim() !== '' &&
+    url.trim() !== '' &&
+    !franchiseProblem &&
+    !urlProblem &&
+    !startProblem
 
   useEffect(() => {
     if (!state.renameActive) return
@@ -139,7 +148,7 @@ export default function Download() {
   async function begin() {
     setError(null)
     try {
-      await start(franchise, url)
+      await start(franchise, url, parseStartAt(startAt))
     } catch (failure) {
       setError(errorMessage(failure))
     }
@@ -186,6 +195,23 @@ export default function Download() {
                 onChange={(event) => setUrl(event.target.value)}
               />
               {urlProblem && <small className="download-problem">{urlProblem}</small>}
+            </label>
+            <label>
+              <span>Start at track number (optional)</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={startAt}
+                placeholder="1"
+                onChange={(event) => setStartAt(event.target.value)}
+              />
+              {startProblem ? (
+                <small className="download-problem">{startProblem}</small>
+              ) : (
+                <small className="download-hint">
+                  Skips the tracks before this number. Useful to go on after a problem.
+                </small>
+              )}
             </label>
             <button type="submit" className="btn btn-primary" disabled={!canStart}>
               Start download

@@ -37,6 +37,8 @@ export type DownloadExtras = {
   pace?: DownloadPace
   /** A file that remembers the videos that were downloaded, so a new launch skips them. */
   archive?: string
+  /** The number of the track to start from (1 = the first). */
+  startAt?: number
 }
 
 export function buildDownloadArgs(
@@ -54,6 +56,7 @@ export function buildDownloadArgs(
     ...clientArgs(cookies),
     ...cookieArgs(cookies),
     ...paceArgs(extras.pace ?? 'fast'),
+    ...(extras.startAt && extras.startAt > 1 ? ['--playlist-start', String(extras.startAt)] : []),
     ...(extras.archive ? ['--download-archive', extras.archive] : []),
     '-x',
     '--audio-format',

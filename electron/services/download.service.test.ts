@@ -66,6 +66,21 @@ if [ "$MODE" = "lenient" ]; then
   done
   exit 0
 fi
+if [ "$MODE" = "start" ]; then
+  # Eight tracks, from the chosen one on. Numbers are relative, or real when REAL=1.
+  S=1; prev=""
+  for a in "$@"; do if [ "$prev" = "--playlist-start" ]; then S="$a"; fi; prev="$a"; done
+  i=$S
+  while [ $i -le 8 ]; do
+    if [ "$REAL" = "1" ]; then echo "[download] Downloading item $i of 8"
+    else echo "[download] Downloading item $((i-S+1)) of $((8-S+1))"; fi
+    echo "[ExtractAudio] Destination: $OUT_DIR/Track $i.mp3"
+    printf x > "$OUT_DIR/Track $i.mp3"
+    i=$((i+1))
+    sleep 0.03
+  done
+  exit 0
+fi
 if [ "$MODE" = "symbols" ]; then
   # Pretend the console could not show some characters: they come out as "?".
   n=1
@@ -388,5 +403,42 @@ describe.skipIf(!posix)('a long playlist that YouTube stops in the middle', () =
       delete process.env.MODE
       setCooldownsForTests(null)
     }
+  })
+})
+
+describe.skipIf(!posix)('starting at a chosen track number', () => {
+  async function runFrom(startAt: number | undefined, real: boolean, name: string) {
+    process.env.MODE = 'start'
+    process.env.REAL = real ? '1' : '0'
+    process.env.OUT_DIR = path.join(folder, name)
+    resetDownload()
+    await startDownload(folder, name, url, settings, startAt)
+    await until(() => getDownloadState().phase !== 'downloading')
+    return getDownloadState()
+  }
+
+  it('passes the start number and shows the real track numbers (relative counting)', async () => {
+    const state = await runFrom(5, false, 'StartA')
+    expect(readFileSync(argsFile, 'utf8')).toContain('--playlist-start\n5\n')
+    expect(state.items.map((item) => item.index)).toEqual([5, 6, 7, 8])
+    expect(state.total).toBe(8)
+    expect(state.items.every((item) => item.status === 'done')).toBe(true)
+  })
+
+  it('keeps the numbers as they are when yt-dlp already prints real numbers', async () => {
+    const state = await runFrom(5, true, 'StartB')
+    expect(state.items.map((item) => item.index)).toEqual([5, 6, 7, 8])
+    expect(state.total).toBe(8)
+  })
+
+  it('does not pass anything for the first track', async () => {
+    const state = await runFrom(undefined, false, 'StartC')
+    expect(readFileSync(argsFile, 'utf8')).not.toContain('--playlist-start')
+    expect(state.items.map((item) => item.index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
+
+  it('refuses a start number that is not valid', async () => {
+    resetDownload()
+    await expect(startDownload(folder, 'StartD', url, settings, 0)).rejects.toThrow()
   })
 })
