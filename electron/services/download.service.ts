@@ -30,6 +30,8 @@ import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 const MAX_LOG = 200
 /** This many sign-in failures in a row mean YouTube has stopped answering: the rest would fail too. */
 const SIGN_IN_STALL_AFTER = 3
+/** YouTube's "too many requests" is the same for every track, so two in a row are enough. */
+const RATE_LIMIT_STALL_AFTER = 2
 /** Seconds to wait before trying again, longer each time nothing new could be downloaded. */
 const DEFAULT_COOLDOWNS = [120, 300, 600, 900, 1200]
 /** A stopped download can be continued by running the same link again for this long. */
@@ -69,6 +71,8 @@ let run: Run | null = null
 let cursor: DownloadItem | null = null
 let cancelled = false
 let lastError: string | null = null
+/** The last error was YouTube's rate limit, which lasts longer than a sign-in check. */
+let rateLimited = false
 let signedIn = false
 let signInStreak = 0
 let stallRequested = false
@@ -181,6 +185,7 @@ function apply(event: YtDlpEvent): void {
       const problem = classifyYtDlpError(event.message)
       const explained = explainYtDlpProblem(problem, signedIn)
       lastError = explained?.full ?? event.message
+      rateLimited = problem === 'rate-limit'
       const item = currentItem() ?? newItem(1)
       if (item.status === 'downloading') item.status = 'failed'
       if (item.status !== 'done') item.error = explained?.short ?? event.message
@@ -188,6 +193,9 @@ function apply(event: YtDlpEvent): void {
         state.signInProblem = true
         signInStreak += 1
         if (signInStreak >= SIGN_IN_STALL_AFTER) requestStall()
+      } else if (problem === 'rate-limit') {
+        signInStreak += 1
+        if (signInStreak >= RATE_LIMIT_STALL_AFTER) requestStall()
       } else {
         signInStreak = 0
       }
@@ -318,7 +326,8 @@ function onStall(): void {
     give()
     return
   }
-  const seconds = cooldowns[current.stalls - 1]
+  // A 429 is about the connection, and lasts longer than a sign-in check: wait three times more.
+  const seconds = cooldowns[current.stalls - 1] * (rateLimited ? 3 : 1)
   state.waiting = {
     until: Date.now() + seconds * 1000,
     reason: lastError ?? 'YouTube asked to sign in again.'
@@ -355,6 +364,7 @@ function launch(gentle: boolean): void {
   stallRequested = false
   signInStreak = 0
   lastError = null
+  rateLimited = false
   current.fineAtLaunch = succeeded()
   current.offset = undefined
 
@@ -446,6 +456,7 @@ export async function startDownload(
   cursor = null
   cancelled = false
   lastError = null
+  rateLimited = false
   signedIn = usesCookies(cookies)
   folderBefore = new Set(before.map(fsKey))
   run = {

@@ -311,7 +311,7 @@ describe.skipIf(!posix)('a long playlist that YouTube stops in the middle', () =
       expect(first).toContain('--sleep-interval 2')
       expect(first).toContain('--download-archive')
       // The second launch is gentler, and uses the same list of what was done.
-      expect(second).toContain('--max-sleep-interval 10')
+      expect(second).toContain('--max-sleep-interval 25')
       const archive = (line: string) =>
         line.split(' ').at(line.split(' ').indexOf('--download-archive') + 1)
       expect(archive(second)).toBe(archive(first))

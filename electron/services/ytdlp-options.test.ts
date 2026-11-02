@@ -6,7 +6,8 @@ import {
   classifyYtDlpError,
   clientArgs,
   cookieArgs,
-  explainYtDlpProblem
+  explainYtDlpProblem,
+  isSignInProblem
 } from './ytdlp-options.ts'
 
 const off: YoutubeCookies = { source: 'off', browser: 'firefox', file: '' }
@@ -119,5 +120,14 @@ describe('start number', () => {
     expect(args(1)).not.toContain('--playlist-start')
     const list = args(42)
     expect(list[list.indexOf('--playlist-start') + 1]).toBe('42')
+  })
+})
+
+describe('rate limit', () => {
+  it('knows the 429 error and does not call it a sign-in problem', () => {
+    const message = 'Unable to download webpage: HTTP Error 429: Too Many Requests'
+    expect(classifyYtDlpError(message)).toBe('rate-limit')
+    expect(isSignInProblem('rate-limit')).toBe(false)
+    expect(explainYtDlpProblem('rate-limit', true)?.short).toMatch(/too many/i)
   })
 })

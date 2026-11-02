@@ -28,7 +28,7 @@ export function paceArgs(pace: DownloadPace): string[] {
     return ['--sleep-requests', '1', '--sleep-interval', '2', '--max-sleep-interval', '5']
   }
   if (pace === 'gentle') {
-    return ['--sleep-requests', '1.5', '--sleep-interval', '5', '--max-sleep-interval', '10']
+    return ['--sleep-requests', '3', '--sleep-interval', '10', '--max-sleep-interval', '25']
   }
   return []
 }
@@ -73,11 +73,12 @@ export function buildDownloadArgs(
 }
 
 export type YtDlpProblem =
-  'sign-in' | 'cookies-unreadable' | 'cookies-expired' | 'cookie-file' | 'other'
+  'sign-in' | 'rate-limit' | 'cookies-unreadable' | 'cookies-expired' | 'cookie-file' | 'other'
 
 /** Tells what a yt-dlp error message is about, for the messages that sign-in can fix. */
 export function classifyYtDlpError(message: string): YtDlpProblem {
   if (/sign in to confirm|not a bot/i.test(message)) return 'sign-in'
+  if (/http error 429|too many requests|rate.?limit/i.test(message)) return 'rate-limit'
   if (/no longer valid|have likely been rotated/i.test(message)) return 'cookies-expired'
   if (/cookie database|failed to decrypt|dpapi|keyring/i.test(message)) return 'cookies-unreadable'
   if (/netscape format|cookies? file/i.test(message)) return 'cookie-file'
@@ -86,7 +87,7 @@ export function classifyYtDlpError(message: string): YtDlpProblem {
 
 /** True for the problems that the YouTube sign-in settings are about. */
 export function isSignInProblem(problem: YtDlpProblem): boolean {
-  return problem !== 'other'
+  return problem !== 'other' && problem !== 'rate-limit'
 }
 
 /** A short text for the list of tracks, and a full explanation. Null for other problems. */
@@ -105,6 +106,11 @@ export function explainYtDlpProblem(
             short: 'YouTube asks to sign in',
             full: 'YouTube is asking for proof that you are not a bot. Turn on YouTube sign-in in the YouTube sign-in box, then press Start over.'
           }
+    case 'rate-limit':
+      return {
+        short: 'YouTube says too many requests',
+        full: 'YouTube is slowing this connection down (error 429: too many requests). Ambrosia waits and tries again by itself. If it keeps happening, wait an hour or two, or change connection (a VPN or phone hotspot), then use Start at track number to go on.'
+      }
     case 'cookies-unreadable':
       return {
         short: 'Could not read the cookies',
