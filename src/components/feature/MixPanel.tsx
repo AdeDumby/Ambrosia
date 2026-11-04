@@ -18,7 +18,6 @@ type SliderProps = {
   max: number
   step: number
   format: (value: number) => string
-  /** Double-clicking the setting puts this value back. */
   reset: number
   onChange: (value: number) => void
 }
@@ -49,7 +48,6 @@ type SecondsProps = {
   onChange: (value: number) => void
 }
 
-/** A number of seconds. It is applied when the field is left or Enter is pressed. */
 function Seconds({ label, value, max, hint, onChange }: SecondsProps) {
   const commit = (text: string) => {
     const parsed = Number(text.replace(',', '.'))
@@ -60,7 +58,6 @@ function Seconds({ label, value, max, hint, onChange }: SecondsProps) {
       <span className="mix-panel-label">{label}</span>
       <span className="mix-panel-number">
         <input
-          // A new key shows the cleaned value after the setting was corrected.
           key={value}
           type="text"
           inputMode="decimal"
@@ -120,7 +117,6 @@ const offPercent = (value: number) => (value === 0 ? 'Off' : percent(value))
 const panLabel = (value: number) =>
   value === 0 ? 'Center' : `${value < 0 ? 'L' : 'R'} ${Math.round(Math.abs(value) * 100)}%`
 
-/** The settings of the selected layer. It takes the place of the player bar on the Mix page. */
 export default function MixPanel() {
   const { tracks } = useLibrary()
   const {

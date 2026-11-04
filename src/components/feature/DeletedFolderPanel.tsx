@@ -32,7 +32,6 @@ function describeErase(result: EmptyDeletedResult): Outcome {
 }
 
 type Props = {
-  /** Extra buttons shown at the start of the action row. */
   children?: ReactNode
 }
 

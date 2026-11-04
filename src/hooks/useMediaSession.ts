@@ -63,7 +63,7 @@ export function useMediaSession(): void {
       try {
         session.setActionHandler(action as MediaSessionAction, handler)
       } catch {
-        // this action is not supported here
+        void 0
       }
     }
     return () => {
@@ -71,7 +71,7 @@ export function useMediaSession(): void {
         try {
           session.setActionHandler(action as MediaSessionAction, null)
         } catch {
-          // nothing to clean up
+          void 0
         }
       }
     }

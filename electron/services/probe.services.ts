@@ -25,7 +25,6 @@ export async function probeDuration(file: string): Promise<number> {
 
 export type FileInfo = { durationSec: number | null; videoId: string | null }
 
-/** The length of a file and the video ID that Ambrosia wrote in it when it downloaded it. */
 export async function probeFileInfo(file: string): Promise<FileInfo> {
   try {
     const { stdout } = await run(

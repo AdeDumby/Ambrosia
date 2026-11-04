@@ -2,7 +2,6 @@ import type { MatchMode, TagFilterState } from '../store/FilterContext'
 
 export type TagSelection = { included: number[]; excluded: number[] }
 
-/** Splits the tag filters into the tags to include and to exclude, ignoring unknown tags. */
 export function selectTags(
   tagFilters: Record<number, TagFilterState>,
   knownTagIds: ReadonlySet<number>
@@ -18,7 +17,6 @@ export function selectTags(
   return { included, excluded }
 }
 
-/** True when an item with these tags passes the tag filters. */
 export function matchesTags(
   itemTagIds: ReadonlySet<number>,
   selection: TagSelection,
@@ -31,7 +29,6 @@ export function matchesTags(
     : selection.included.some((id) => itemTagIds.has(id))
 }
 
-/** True when every word of the search is in the name. `terms` come from normalizeForSearch. */
 export function matchesSearch(normalizedName: string, terms: readonly string[]): boolean {
   return terms.every((term) => normalizedName.includes(term))
 }

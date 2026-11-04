@@ -11,7 +11,6 @@ import {
   usesCookies
 } from './ytdlp-options.ts'
 
-/** The first video ever put on YouTube: short, public and always there. */
 const CHECK_URL = 'https://www.youtube.com/watch?v=jNQXAC9IVRw'
 const VERSION_TIMEOUT_MS = 10_000
 const CHECK_TIMEOUT_MS = 60_000
@@ -47,7 +46,6 @@ function run(args: string[], timeoutMs: number): Promise<Run> {
   })
 }
 
-/** Looks at one video with the current sign-in settings, to tell whether downloads will work. */
 export async function checkYoutubeSignIn(cookies: YoutubeCookies): Promise<SignInCheck> {
   if (cookies.source === 'file' && !(path.isAbsolute(cookies.file) && existsSync(cookies.file))) {
     return {

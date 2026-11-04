@@ -19,7 +19,6 @@ const SLEEP_OPTIONS = [15, 30, 45, 60, 90, 120].map((minutes) => ({
   label: `${minutes} minutes`
 }))
 
-/** Shows how long is left on the sleep timer. It starts when the timer does. */
 function SleepCountdown({ endsAt }: { endsAt: number }) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {

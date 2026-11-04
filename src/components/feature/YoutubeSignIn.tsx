@@ -40,10 +40,6 @@ function summary(cookies: YoutubeCookies): string {
   return 'Off'
 }
 
-/**
- * YouTube sometimes answers "Sign in to confirm you're not a bot". Giving yt-dlp the cookies of
- * a signed-in browser, or a cookies.txt file, gets past it.
- */
 export default function YoutubeSignIn({ defaultOpen }: { defaultOpen: boolean }) {
   const { settings, updateDownload } = useSettings()
   const cookies = settings.download.cookies
@@ -81,7 +77,6 @@ export default function YoutubeSignIn({ defaultOpen }: { defaultOpen: boolean })
   }
 
   return (
-    // A new key opens the box again when a download fails because of the sign-in.
     <details className="yt-signin" key={String(defaultOpen)} open={defaultOpen}>
       <summary>
         YouTube sign-in and speed

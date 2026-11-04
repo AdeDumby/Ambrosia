@@ -19,26 +19,19 @@ import {
   makeImpulse
 } from './layerChain'
 
-/** What the engine needs to know about a track, from the library. */
 export type EngineTrack = {
   durationSec: number
-  /** Loudness correction (1 when Normalize volume is off or the track is not measured). */
   correction: number
-  /** The loudness with the effects is still being measured: the layer waits to start. */
   pending?: boolean
 }
 
 type Nodes = {
-  /** Cuts the lows. */
   cutLow: BiquadFilterNode
-  /** Cuts the highs. */
   cutHigh: BiquadFilterNode
-  /** Joins both channels into one when the layer is mono. */
   mono: GainNode
   delay: DelayNode
   feedback: GainNode
   echoWet: GainNode
-  /** Volume wobble. Its value moves with the LFO. */
   tremolo: GainNode
   lfo: OscillatorNode
   lfoDepth: GainNode
@@ -49,9 +42,7 @@ type Nodes = {
   dry: GainNode
   convolver: ConvolverNode
   wet: GainNode
-  /** Fade in and fade out, 0 to 1. */
   fade: GainNode
-  /** Volume, mute and solo. */
   level: GainNode
 }
 
@@ -63,14 +54,12 @@ type Voice = {
   nodes: Nodes | null
   state: VoiceState
   gapTimer: number | undefined
-  /** The random change picked when the layer last started. */
   variation: Variation
 }
 
 type Graph = {
   context: AudioContext
   master: GainNode
-  /** Only for fading everything out. */
   out: GainNode
   limiter: DynamicsCompressorNode
   impulse: AudioBuffer
@@ -81,14 +70,8 @@ const OUT_RESTORE_MS = 300
 
 const SMOOTHING = 0.015
 const TICK_MS = 100
-/** A part that ends this close to the position is over. */
 const END_MARGIN = 0.03
 const RESUME_FADE_IN = 0.05
-/**
- * Plays the layers of the mix. Each layer that has been played has its own audio element and its
- * own chain: tone, pan, reverb, fades and level, all into one master volume.
- * It does not know about React: `sync` tells it what the layers should be doing now.
- */
 export class MixEngine {
   private graph: Graph | null = null
   private readonly voices = new Map<number, Voice>()
@@ -123,7 +106,6 @@ export class MixEngine {
 
     for (const layer of layers) {
       let voice = this.voices.get(layer.trackId)
-      // Nothing is created for a layer that was never played.
       if (!voice && !layer.playing) continue
       if (!voice) voice = this.create(layer.trackId)
 
@@ -134,13 +116,11 @@ export class MixEngine {
     this.updateTicker()
   }
 
-  /** Keeps a loud mix from clipping, by pressing down only the peaks. */
   setLimiter(on: boolean): void {
     this.limiter = on
     this.route()
   }
 
-  /** Brings everything down over `seconds`, then calls `done` (which should pause the layers). */
   fadeOut(seconds: number, done: () => void): void {
     this.cancelFade()
     const graph = this.graph
@@ -153,12 +133,10 @@ export class MixEngine {
     this.fadeTimer = window.setTimeout(() => {
       this.fadeTimer = undefined
       done()
-      // The layers pause on the next sync, so the level comes back a moment later.
       this.restoreTimer = window.setTimeout(() => this.restoreOut(), OUT_RESTORE_MS)
     }, seconds * 1000)
   }
 
-  /** Stops a fade that is going on and brings the level back. */
   cancelFade(): void {
     window.clearTimeout(this.fadeTimer)
     window.clearTimeout(this.restoreTimer)
@@ -234,8 +212,6 @@ export class MixEngine {
       gapTimer: undefined,
       variation: NO_VARIATION
     }
-    // A removed element still fires events (emptying its source raises an error). They must not
-    // stop a newer layer of the same track, so only the voice that is current is listened to.
     const current = () => this.voices.get(trackId) === voice
     audio.addEventListener('ended', () => {
       const layer = this.layers.get(trackId)
@@ -349,7 +325,7 @@ export class MixEngine {
       try {
         voice.nodes.lfo.stop()
       } catch {
-        // Already stopped.
+        void 0
       }
       for (const node of Object.values(voice.nodes)) node.disconnect()
     }
@@ -369,7 +345,6 @@ export class MixEngine {
     if (audio.preservesPitch !== layer.keepPitch) audio.preservesPitch = layer.keepPitch
 
     if (!nodes || !this.graph) {
-      // No audio graph: the volume still works, the tone and space settings do not.
       audio.volume = Math.min(1, level * this.master)
       return
     }
@@ -387,7 +362,6 @@ export class MixEngine {
       now,
       SMOOTHING
     )
-    // One channel in, and the panner spreads it again, so mono ignores the original stereo width.
     const channels = chain.mono ? 1 : 2
     if (nodes.mono.channelCount !== channels) {
       nodes.mono.channelCountMode = chain.mono ? 'explicit' : 'max'
@@ -408,7 +382,6 @@ export class MixEngine {
 
   private start(voice: Voice, layer: MixLayer): void {
     if (voice.state === 'playing' || voice.state === 'gap') return
-    // The loudness with the effects is measured first, so the layer never starts at the wrong level.
     if (this.tracks.get(layer.trackId)?.pending) return
     if (voice.state === 'paused') {
       this.resume(voice, layer)
@@ -436,7 +409,6 @@ export class MixEngine {
     if (voice.state !== 'playing') return
     voice.audio.pause()
     voice.state = 'paused'
-    // The fades are planned in real time, so the plan is dropped and made again on resume.
     this.holdFade(voice)
   }
 
@@ -447,7 +419,6 @@ export class MixEngine {
     gain.setValueAtTime(1, this.graph.context.currentTime)
   }
 
-  /** Plays from the beginning of the part, or from a random place inside it. */
   private begin(voice: Voice, layer: MixLayer): void {
     const track = this.tracks.get(layer.trackId)
     const window = playWindow(layer, track?.durationSec ?? 0)
@@ -495,7 +466,6 @@ export class MixEngine {
     }
   }
 
-  /** The end of the track or of the part was reached: loop again, wait, or stop. */
   private finish(voice: Voice, layer: MixLayer): void {
     if (!layer.loop) {
       voice.state = 'idle'
@@ -519,7 +489,6 @@ export class MixEngine {
     this.onStopped(voice.trackId)
   }
 
-  /** A part that ends before the end of the track needs watching: the browser does not know. */
   private tick = (): void => {
     for (const voice of this.voices.values()) {
       if (voice.state !== 'playing') continue

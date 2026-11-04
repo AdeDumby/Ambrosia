@@ -5,7 +5,6 @@ import type { Mixtape } from '../shared/mixtape'
 import { useFilters } from '../store/FilterContext'
 import { useLibrary } from '../store/LibraryContext'
 
-/** The mixtapes that pass the search and the tag filters. Empty unless Mixtapes is chosen. */
 export function useVisibleMixtapes(): Mixtape[] {
   const { mixtapes, tags } = useLibrary()
   const { typeFilter, matchMode, tagFilters, search } = useFilters()

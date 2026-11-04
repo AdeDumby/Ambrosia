@@ -28,18 +28,13 @@ import {
 import { parseYtDlpLine, type YtDlpEvent } from './ytdlp-parser.ts'
 
 const MAX_LOG = 200
-/** This many sign-in failures in a row mean YouTube has stopped answering: the rest would fail too. */
 const SIGN_IN_STALL_AFTER = 3
-/** YouTube's "too many requests" pauses the download at once, and the track is tried again. */
 const RATE_LIMIT_STALL_AFTER = 1
-/** Seconds to wait before trying again, longer each time nothing new could be downloaded. */
 const DEFAULT_COOLDOWNS = [120, 300, 600, 900, 1200]
-/** A stopped download can be continued by running the same link again for this long. */
 const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000
 
 let cooldowns = DEFAULT_COOLDOWNS
 
-/** Only for tests: waits that do not take minutes. */
 export function setCooldownsForTests(seconds: number[] | null): void {
   cooldowns = seconds ?? DEFAULT_COOLDOWNS
 }
@@ -50,22 +45,14 @@ type Run = {
   franchise: string
   cookies: YoutubeCookies
   pace: DownloadPace
-  /** The number of the first track to download. */
   startAt: number
-  /** Only these playlist numbers are wanted (the missing tracks), and the size of the playlist. */
   only: { items: number[]; total: number } | null
-  /** The numbers that the current launch of yt-dlp was asked for. */
   launched: number[] | null
-  /** Added to the numbers yt-dlp prints, when it counts from the chosen start. */
   offset: number | undefined
-  /** Remembers the downloaded videos, so that a new launch of yt-dlp skips them. */
   archive: string
-  /** Waits in a row in which nothing new could be downloaded. */
   stalls: number
-  /** Tracks that were fine when the current launch started. */
   fineAtLaunch: number
   timer: NodeJS.Timeout | undefined
-  /** Gave up while YouTube was refusing, so the same link can be continued later. */
   stalledOut: boolean
 }
 
@@ -75,14 +62,11 @@ let run: Run | null = null
 let cursor: DownloadItem | null = null
 let cancelled = false
 let lastError: string | null = null
-/** The last error was YouTube's rate limit, which lasts longer than a sign-in check. */
 let rateLimited = false
-/** The number of the track that YouTube refused with a 429. */
 let rateLimitedAt: number | null = null
 let signedIn = false
 let signInStreak = 0
 let stallRequested = false
-/** The files that were already in the folder when the download started. */
 let folderBefore = new Set<string>()
 let stopped: { url: string; franchise: string; archive: string; at: number } | null = null
 
@@ -114,7 +98,6 @@ function newItem(index: number): DownloadItem {
   return item
 }
 
-/** Tracks that are downloaded: finished, or finished and being converted. */
 function succeeded(): number {
   return state.items.filter(
     (item) => (item.status === 'done' || item.status === 'converting') && item.path
@@ -139,20 +122,14 @@ function apply(event: YtDlpEvent): void {
       let { index, total } = event
       const current = run
       if (current?.launched && current.only) {
-        // With a list of numbers yt-dlp counts the tracks it was asked for, or keeps the real
-        // numbers. When its total is the size of the list it is counting them: map back.
         if (total === current.launched.length) index = current.launched[index - 1] ?? index
         total = current.only.total
       } else if (current && current.startAt > 1) {
-        // With a start number yt-dlp may count from 1 again, or keep the real numbers. The first
-        // number of a launch tells which, so the list always shows the real track numbers.
         current.offset ??= index < current.startAt ? current.startAt - 1 : 0
         index += current.offset
         total += current.offset
       }
       state.total = total
-      // A new launch of yt-dlp counts from the start again. Tracks that are done keep their
-      // place, and the ones that failed before are tried again.
       const known = state.items.find((item) => item.index === index)
       if (known && (known.status === 'done' || known.status === 'skipped')) {
         cursor = known
@@ -219,7 +196,6 @@ function apply(event: YtDlpEvent): void {
 function handleLine(line: string): void {
   state.log.push(line)
   if (state.log.length > MAX_LOG) state.log.shift()
-  // After a stall is called, what is still arriving is not worth following.
   if (stallRequested) return
   const event = parseYtDlpLine(line)
   if (event) apply(event)
@@ -291,7 +267,6 @@ function settle(code: number | null, failure?: string): void {
   notifyDownloadFinished(done, state.franchise)
 }
 
-/** Forgets the run. The list of downloaded videos is kept only when the same link can be continued. */
 function endRun(keepArchive: boolean): void {
   const finished = run
   run = null
@@ -316,7 +291,6 @@ function requestStall(): void {
   killChild()
 }
 
-/** YouTube stopped answering. Wait and go on from where it stopped, or give up. */
 function onStall(): void {
   child = null
   const current = run
@@ -327,7 +301,6 @@ function onStall(): void {
     void reconcilePaths().then(() => settle(null, failure))
   }
 
-  // Nothing was ever downloaded: the sign-in itself is wrong, and waiting will not help.
   if (!current || cancelled || (fine === 0 && !rateLimited)) {
     give(cancelled ? undefined : (lastError ?? 'YouTube asked to sign in.'))
     return
@@ -338,8 +311,6 @@ function onStall(): void {
     give()
     return
   }
-  // A 429 is about the connection and often hits only some tracks: a shorter first wait, and the
-  // same track is tried again by starting the next launch at its number.
   const seconds = cooldowns[current.stalls - 1] * (rateLimited ? 0.5 : 1)
   if (rateLimited && rateLimitedAt !== null)
     current.startAt = Math.max(current.startAt, rateLimitedAt)
@@ -350,7 +321,6 @@ function onStall(): void {
   current.timer = setTimeout(resume, seconds * 1000)
 }
 
-/** Starts yt-dlp again after the wait. It skips what is done and reads the cookies again. */
 function resume(): void {
   const current = run
   if (!current || cancelled || state.phase !== 'downloading' || !state.waiting) return
@@ -360,7 +330,6 @@ function resume(): void {
   launch(true)
 }
 
-/** Ends the wait of a download that is waiting to try again. */
 export function continueDownloadNow(): void {
   resume()
 }
@@ -449,7 +418,6 @@ export async function startDownload(
   await mkdir(folder, { recursive: true })
   const before = await readdir(folder).catch(() => [] as string[])
 
-  // The same link, soon after a download that was stopped by YouTube: go on from there.
   const earlier =
     stopped &&
     stopped.url === url &&
@@ -511,16 +479,6 @@ function fold(text: string): string {
 const AUDIO_EXTENSION = /\.mp3$/i
 const NOT_FOUND = 'The file could not be found in the folder.'
 
-/**
- * yt-dlp prints the name of each file, but it may not be able to print every character: a
- * symbol or a letter of another alphabet can come out as "?". So the printed names are matched
- * with the files that are really in the folder:
- *   1. the same name,
- *   2. the same letters and digits (accents, case and symbols ignored), when only one file fits,
- *   3. the files that appeared during this download, in the order they were made.
- * An item whose file is still not found is marked as failed, so one odd name cannot stop the
- * others from being renamed.
- */
 export async function reconcilePaths(): Promise<void> {
   const candidates = state.items.filter(
     (item) => item.path && (item.status === 'converting' || item.status === 'done')
@@ -541,7 +499,6 @@ export async function reconcilePaths(): Promise<void> {
     item.title = stemOf(real)
   }
 
-  // 1. The printed name is a real file.
   const present = new Map(names.map((name) => [fsKey(name), name]))
   let open = candidates.filter((item) => {
     const real = present.get(fsKey(path.basename(item.path as string)))
@@ -550,7 +507,6 @@ export async function reconcilePaths(): Promise<void> {
     return false
   })
 
-  // 2. The same letters and digits. A name that fits several files is left for step 3.
   const free = () => names.filter((name) => !claimed.has(fsKey(name)))
   const byKey = new Map<string, string[]>()
   for (const name of free()) {
@@ -567,7 +523,6 @@ export async function reconcilePaths(): Promise<void> {
     return false
   })
 
-  // 3. What is left, in the order the files were made.
   if (open.length > 0) {
     const created: { name: string; time: number }[] = []
     for (const name of free()) {
@@ -575,11 +530,10 @@ export async function reconcilePaths(): Promise<void> {
       try {
         created.push({ name, time: (await stat(path.join(state.folder, name))).mtimeMs })
       } catch {
-        // The file went away: it cannot be matched.
+        void 0
       }
     }
     created.sort((a, b) => a.time - b.time || a.name.localeCompare(b.name))
-    // Only when every new file has an item, so a stray file cannot be given to the wrong track.
     if (created.length === open.length) {
       open.forEach((item, position) => take(item, created[position].name))
       open = []
@@ -597,7 +551,6 @@ export function cancelDownload(): void {
   if (state.phase !== 'downloading') return
   cancelled = true
   if (!child) {
-    // Waiting to try again: there is no process to stop.
     void reconcilePaths().then(() => settle(null))
     return
   }

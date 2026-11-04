@@ -104,7 +104,6 @@
   cursor: pointer;
 }
 
-/* The restart dialog is rendered inside the title bar, so it must not drag the window. */
 .titlebar .confirm-dialog {
   -webkit-app-region: no-drag;
 }

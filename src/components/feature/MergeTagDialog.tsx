@@ -8,7 +8,6 @@ import TagColumn from './TagColumn'
 import './MergeTagDialog.css'
 
 type Props = {
-  /** The tag that was right-clicked. It stays, under the new name, in its own folder. */
   tag: Tag
   onMerge: (otherTagId: number, name: string) => Promise<void>
   onClose: () => void

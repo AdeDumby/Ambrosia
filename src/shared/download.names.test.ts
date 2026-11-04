@@ -17,7 +17,6 @@ describe('unsavable characters', () => {
 
   it('accepts whole emoji, accents and other alphabets', () => {
     for (const text of ['😀', 'Étude', 'ゲーム♪', 'Тема', '𠮷', 'Zoë‍', 'ś']) {
-      // A joiner inside a text is only refused when it is invisible on its own.
       expect(hasUnsavableChars(text.replace('‍', ''))).toBe(false)
     }
   })
@@ -36,7 +35,6 @@ describe('unsavable characters', () => {
 describe('fsKey', () => {
   it('treats names the way Windows does', () => {
     expect(fsKey('Boss')).toBe(fsKey('BOSS'))
-    // A final and a normal sigma are the same name on Windows, but not with toLowerCase.
     expect('Σ'.toLowerCase()).not.toBe('ς'.toLowerCase())
     expect(fsKey('ς')).toBe(fsKey('σ'))
     expect(fsKey('ß')).not.toBe(fsKey('ss'))

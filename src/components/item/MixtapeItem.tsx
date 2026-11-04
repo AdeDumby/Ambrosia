@@ -19,7 +19,6 @@ type Props = {
   onCreateTag: (id: number, name: string) => void
 }
 
-/** SQLite stores the date in UTC, as "2026-10-25 10:00:00". */
 function savedOn(createdAt: string): string {
   const date = new Date(`${createdAt.replace(' ', 'T')}Z`)
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString()

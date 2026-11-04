@@ -12,7 +12,6 @@ export function useUpdates() {
     window.api
       .getUpdateInfo()
       .then((loaded) => {
-        // A newer state may already have arrived as an event while this was loading.
         if (active)
           setInfo((previous) => (gotEvent.current ? { ...loaded, state: previous.state } : loaded))
       })

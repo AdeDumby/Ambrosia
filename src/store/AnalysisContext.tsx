@@ -80,7 +80,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             try {
               await window.api.saveAnalysis(track.id, { ok: false, message })
             } catch {
-              // the error could not be stored, so this track stays pending for the next run
+              void 0
             }
           }
         }

@@ -89,7 +89,6 @@ function writeLayers(db: DatabaseSync, mixtapeId: number, layers: MixtapeLayer[]
   )
   let position = 0
   for (const { trackId, ...settings } of layers) {
-    // A track that is no longer in the library cannot be a component.
     if (!exists.get(trackId)) continue
     insert.run(mixtapeId, trackId, position, JSON.stringify(sanitizeLayerSettings(settings)))
     position += 1
@@ -97,7 +96,6 @@ function writeLayers(db: DatabaseSync, mixtapeId: number, layers: MixtapeLayer[]
   return position
 }
 
-/** Saves the given layers as a new mixtape. Returns its id. */
 export function createMixtape(
   db: DatabaseSync,
   name: string,
@@ -126,7 +124,6 @@ export function createMixtape(
   }
 }
 
-/** Replaces the components of a mixtape. Its name and tags stay as they are. */
 export function replaceMixtape(
   db: DatabaseSync,
   id: number,
@@ -161,7 +158,6 @@ export function renameMixtape(db: DatabaseSync, id: number, name: string): strin
   return cleaned
 }
 
-/** Deletes a mixtape. The tracks in it are not touched. Returns the tags that went with it. */
 export function deleteMixtape(db: DatabaseSync, id: number): void {
   db.exec('BEGIN')
   try {
@@ -175,7 +171,6 @@ export function deleteMixtape(db: DatabaseSync, id: number): void {
     const result = db.prepare('DELETE FROM mixtape WHERE id = ?').run(id)
     if (Number(result.changes) === 0) throw new Error('That mixtape does not exist.')
 
-    // A tag outside any folder that only this mixtape used disappears with it.
     const unused = db.prepare(
       `DELETE FROM tag
        WHERE id = ? AND category_id IS NULL

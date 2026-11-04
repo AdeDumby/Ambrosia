@@ -62,7 +62,6 @@
   gap: 10px;
 }
 
-/* Wide enough: two rows of five boxes. Narrower windows fit as many as they can. */
 @media (min-width: 1150px) {
   .mix-panel-groups {
     grid-template-columns: repeat(5, minmax(0, 1fr));

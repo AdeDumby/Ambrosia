@@ -10,7 +10,6 @@ export function useVisibleTracks(): Track[] {
   const { typeFilter, unreviewedOnly, matchMode, tagFilters, search } = useFilters()
 
   return useMemo(() => {
-    // Mixtapes are a list of their own: no track is shown with them.
     if (typeFilter === 'mixtape') return []
 
     const selection = selectTags(tagFilters, new Set(tags.map((tag) => tag.id)))

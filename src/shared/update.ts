@@ -8,7 +8,6 @@ export type UpdateState =
   | { phase: 'error'; message: string }
 
 export type UpdateInfo = {
-  /** Version of the app that is running now. */
   version: string
   state: UpdateState
 }

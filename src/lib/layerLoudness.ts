@@ -11,15 +11,11 @@ import {
 } from './layerChain'
 import { playWindow } from './mix'
 
-/** Only this much of the part is played through the effects to measure it. */
 const SEGMENT_SECONDS = 30
-/** Room for the end of the reverb and of the echoes. */
 const TAIL_SECONDS = 4
 const DECODE_SAMPLE_RATE = 44_100
-/** A part shorter than this says too little about the loudness. */
 const MIN_SEGMENT_SECONDS = 0.5
 
-/** Plays a stretch of a track through the same effects as the live mix, into a buffer. */
 async function renderThroughEffects(
   decoded: AudioBuffer,
   segment: { start: number; length: number },
@@ -92,7 +88,6 @@ async function renderThroughEffects(
   mid.connect(high)
   high.connect(mono)
   mono.connect(dry)
-  // The live mix has a pan here. A pan keeps the total loudness, so it is left out.
   if (params.wet > 0) {
     mono.connect(convolver)
     convolver.connect(wet)
@@ -116,12 +111,6 @@ async function renderThroughEffects(
   return context.startRendering()
 }
 
-/**
- * The gain that brings the layer, with its effects, to the target loudness. It plays the start
- * of the part through the effects, measures that, and applies the same rule as the main player
- * (including the ceiling that keeps a boost from distorting). Null when the part is too short
- * or the track cannot be read, so the caller keeps the correction of the plain track.
- */
 export async function loudnessCorrection(
   trackId: number,
   layer: LayerSettings,

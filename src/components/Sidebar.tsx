@@ -97,7 +97,6 @@ export default function Sidebar() {
 
   const counts = useMemo(() => {
     const result = new Map<number, number>()
-    // The number next to a tag counts what is shown: tracks, or mixtapes in the Mixtapes category.
     const shown = typeFilter === 'mixtape' ? visibleMixtapes : visibleTracks
     for (const item of shown) {
       for (const tag of item.tags) result.set(tag.id, (result.get(tag.id) ?? 0) + 1)

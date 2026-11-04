@@ -46,11 +46,6 @@ export function renameTag(db: DatabaseSync, id: number, name: string): string {
   return cleaned
 }
 
-/**
- * Merges `removeId` into `keepId`: every track and mixtape that had the removed tag gets the kept one
- * (no duplicates), the removed tag is deleted, and the kept tag takes the new name.
- * The kept tag keeps its folder. The new name may be one of the two old names.
- */
 export function mergeTags(
   db: DatabaseSync,
   keepId: number,
@@ -69,7 +64,6 @@ export function mergeTags(
     throw new Error('A tag with that name already exists.')
   }
 
-  // Runs only once the merge is known to be valid, so a refused merge makes no backup.
   beforeChange?.()
 
   db.exec('BEGIN')
@@ -161,7 +155,6 @@ export function tagMixtape(db: DatabaseSync, mixtapeId: number, tagId: number): 
   )
 }
 
-/** Returns true when the tag was deleted because nothing uses it any more. */
 export function untagMixtape(db: DatabaseSync, mixtapeId: number, tagId: number): boolean {
   db.exec('BEGIN')
   try {
@@ -175,7 +168,6 @@ export function untagMixtape(db: DatabaseSync, mixtapeId: number, tagId: number)
   }
 }
 
-/** Returns true when a new tag was created. */
 export function addTagToMixtapeByName(
   db: DatabaseSync,
   mixtapeId: number,

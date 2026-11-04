@@ -1,55 +1,35 @@
 import type { TrackTag } from './types.js'
 
-/** Everything that can be set on one layer of the mix. Saved as it is in a mixtape. */
 export type LayerSettings = {
-  /** 0 to 1. A new layer starts silent. */
   volume: number
   loop: boolean
   muted: boolean
   solo: boolean
-  /** -1 (left) to 1 (right). */
   pan: number
-  /** Playback speed, 1 is normal. */
   speed: number
-  /** Keep the pitch when the speed changes. */
   keepPitch: boolean
-  /** Seconds of fade at the start and before the end. */
   fadeIn: number
   fadeOut: number
-  /** Part of the track that is played, in seconds. An end of 0 means "until the end". */
   startAt: number
   endAt: number
   randomStart: boolean
-  /** Pause between two loops, picked at random between the two values, in seconds. */
   gapMin: number
   gapMax: number
-  /** Tone, in dB. */
   eqLow: number
   eqMid: number
   eqHigh: number
-  /** 0 to 1. */
   reverb: number
-  /** Cut the lows below this many Hz. 0 is off. */
   lowCut: number
-  /** Cut the highs above this many Hz. The maximum is off. */
   highCut: number
-  /** Echo: delay in seconds, how much of it comes back, and how loud it is (0 is off). */
   echoTime: number
   echoFeedback: number
   echoMix: number
-  /** Tremolo: the volume goes up and down. Rate in Hz, depth 0 (off) to 1. */
   tremoloRate: number
   tremoloDepth: number
-  /** Play in mono. */
   mono: boolean
-  /**
-   * Variation, 0 to 1 (speed: 0 to 0.5). Each time the layer starts or loops, its volume, pan
-   * and speed are changed by a random amount up to this much.
-   */
   volumeJitter: number
   panJitter: number
   speedJitter: number
-  /** Seconds to wait between pressing play and the first sound. */
   startDelay: number
 }
 
@@ -107,7 +87,6 @@ export const LAYER_LIMITS = {
   startDelay: { min: 0, max: 3600 }
 } as const
 
-/** The settings that "Reset effects" puts back to their defaults. Level and loop stay as they are. */
 export const EFFECT_KEYS = [
   'pan',
   'speed',
@@ -145,7 +124,6 @@ export type MixtapeLayer = LayerSettings & { trackId: number }
 export type Mixtape = {
   id: number
   name: string
-  /** Master volume the mix had when it was saved. */
   master: number
   createdAt: string
   layers: MixtapeLayer[]
@@ -168,7 +146,6 @@ function flag(raw: unknown, fallback: boolean): boolean {
   return typeof raw === 'boolean' ? raw : fallback
 }
 
-/** Reads settings from anything (a saved row, a message from the page) and fixes what is off. */
 export function sanitizeLayerSettings(
   raw: unknown,
   base: LayerSettings = DEFAULT_LAYER_SETTINGS
@@ -178,7 +155,6 @@ export function sanitizeLayerSettings(
 
   const startAt = number(source.startAt, base.startAt, limits.time)
   let endAt = number(source.endAt, base.endAt, limits.time)
-  // An end that is not after the start would play nothing: treat it as "until the end".
   if (endAt > 0 && endAt <= startAt) endAt = 0
 
   const gapMin = number(source.gapMin, base.gapMin, limits.gap)
@@ -218,17 +194,12 @@ export function sanitizeLayerSettings(
   }
 }
 
-/**
- * The settings that "Paste effects" copies from one layer to another. The part that is played and
- * the start delay belong to a track, so they stay as they are.
- */
 export const COPY_KEYS = EFFECT_KEYS.filter(
   (key) => key !== 'startAt' && key !== 'endAt' && key !== 'randomStart' && key !== 'startDelay'
 )
 
 export type LayerPreset = { name: string; description: string; settings: Partial<LayerSettings> }
 
-/** Ready-made sounds. A preset resets the effects first, then sets what it lists. */
 export const LAYER_PRESETS: LayerPreset[] = [
   {
     name: 'Cave',
@@ -281,7 +252,6 @@ export function cleanMixtapeName(raw: string): string {
   return raw.replace(/\s+/g, ' ').trim()
 }
 
-/** Reads the layers of a mixtape from a message. Layers of the same track are kept once. */
 export function parseMixtapeLayers(raw: unknown): MixtapeLayer[] {
   if (!Array.isArray(raw)) throw new Error('Invalid layers')
   if (raw.length > MAX_MIXTAPE_LAYERS) throw new Error('Too many layers')

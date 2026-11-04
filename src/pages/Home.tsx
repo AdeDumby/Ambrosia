@@ -87,7 +87,6 @@ export default function Home() {
     [toggleTrack]
   )
   const getTagOptions = useCallback(() => tagsRef.current, [])
-  // Playing a mixtape puts its components in the Mix, with their saved settings, and starts them.
   const playTape = useCallback(
     (mixtape: Mixtape) => {
       if (loadedMixtape?.id === mixtape.id && anyPlaying) pauseAll()

@@ -29,7 +29,7 @@ export function ShortcutsProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off')
     } catch {
-      // storage unavailable: the shortcuts simply start enabled next time
+      void 0
     }
   }, [enabled])
 

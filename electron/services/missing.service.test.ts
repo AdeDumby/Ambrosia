@@ -81,9 +81,9 @@ JSON
         ...tags,
         path.join(folder, name)
       ])
-    make('whatever.mp3', 2, ['-metadata', 'ambrosia_id=aaa']) // found by its ID
-    make('Second song.mp3', 3) // found by its title
-    make('Stray.mp3', 9) // not in the playlist
+    make('whatever.mp3', 2, ['-metadata', 'ambrosia_id=aaa'])
+    make('Second song.mp3', 3)
+    make('Stray.mp3', 9)
   })
 
   afterAll(() => {

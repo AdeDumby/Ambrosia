@@ -1,7 +1,6 @@
 import type { EventEmitter } from 'node:events'
 import type { UpdateInfo, UpdateState } from '../../src/shared/update.ts'
 
-/** The part of electron-updater's autoUpdater that the manager uses. */
 export type UpdaterLike = EventEmitter & {
   autoDownload: boolean
   autoInstallOnAppQuit: boolean
@@ -11,7 +10,6 @@ export type UpdaterLike = EventEmitter & {
 
 type Options = {
   updater: UpdaterLike
-  /** False when running from source: there is no installed app to update. */
   enabled: boolean
   version: string
   onChange: (state: UpdateState) => void
@@ -43,8 +41,6 @@ export function createUpdateManager({ updater, enabled, version, onChange }: Opt
   }
 
   if (enabled) {
-    // The update downloads by itself once found, and is installed when the app closes
-    // (or right away from the "Restart to update" button).
     updater.autoDownload = true
     updater.autoInstallOnAppQuit = true
 

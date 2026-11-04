@@ -194,7 +194,6 @@ describe('mixReducer', () => {
       layers = mixReducer(layers, { type: 'add', trackId: 999 })
       expect(layers).toHaveLength(MAX_LAYERS)
       expect(layers[0].trackId).toBe(999)
-      // Track 1 is the oldest but is playing, so the next oldest one goes.
       expect(layers.some((item) => item.trackId === 1)).toBe(true)
       expect(layers.some((item) => item.trackId === 2)).toBe(false)
     })
@@ -359,7 +358,6 @@ describe('presets and pasting', () => {
       highCut: 3000,
       mono: true
     })
-    // The earlier reverb and tone are gone, and the part played is back to the whole track.
     expect(result).toMatchObject({ reverb: 0, eqLow: 0, startAt: 0 })
   })
 

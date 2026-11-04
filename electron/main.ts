@@ -14,7 +14,6 @@ import { purgeGoneDeletedTracks } from './services/purge.services.ts'
 import { getSettings } from './services/settings.services.ts'
 import { updates } from './services/update.services.ts'
 
-// Wait a little after start so looking for an update never slows the app down.
 const UPDATE_CHECK_DELAY_MS = 10_000
 
 protocol.registerSchemesAsPrivileged([
@@ -30,12 +29,10 @@ protocol.registerSchemesAsPrivileged([
   }
 ])
 
-// Must match appId in electron-builder.yml so the taskbar, pins and shortcuts share one identity.
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.ambrosia.app')
 }
 
-// Packaged builds copy the icon into resources/ (extraResources); assets/ is not in the app bundle.
 const iconPath = app.isPackaged
   ? path.join(process.resourcesPath, 'icon.ico')
   : path.join(app.getAppPath(), 'assets', 'icon.ico')
@@ -45,7 +42,6 @@ function createWindow(db: DatabaseSync) {
     titleBarStyle: 'hidden',
     width: 1000,
     height: 700,
-    // Below this the title bar tabs no longer fit next to the Settings button.
     minWidth: 760,
     icon: iconPath,
     webPreferences: {

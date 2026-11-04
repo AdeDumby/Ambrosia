@@ -35,24 +35,17 @@ export type Api = {
   addTagToTrackByName(trackId: number, name: string, categoryId?: number | null): Promise<boolean>
   setTagCategory(tagId: number, categoryId: number | null): Promise<void>
   renameTag(id: number, name: string): Promise<string>
-  /** Merges the second tag into the first, which takes the new name. Returns the cleaned name. */
   mergeTags(keepId: number, removeId: number, name: string): Promise<string>
   listMixtapes(): Promise<Mixtape[]>
-  /** Saves layers as a new mixtape. Returns its id. */
   createMixtape(name: string, master: number, layers: MixtapeLayer[]): Promise<number>
-  /** Replaces the components of a mixtape. Its name and tags are kept. */
   replaceMixtape(id: number, master: number, layers: MixtapeLayer[]): Promise<void>
   renameMixtape(id: number, name: string): Promise<string>
   deleteMixtape(id: number): Promise<void>
   tagMixtape(id: number, tagId: number): Promise<void>
-  /** Returns true when the tag was deleted because nothing uses it any more. */
   untagMixtape(id: number, tagId: number): Promise<boolean>
-  /** Returns true when a new tag was created. */
   addTagToMixtapeByName(id: number, name: string, categoryId?: number | null): Promise<boolean>
   getUpdateInfo(): Promise<UpdateInfo>
-  /** Looks for a newer version. The result arrives as update state events. */
   checkForUpdates(): Promise<void>
-  /** Closes the app and installs the downloaded update, then starts it again. */
   installUpdate(): Promise<void>
 
   listTracks(): Promise<Track[]>
@@ -84,20 +77,15 @@ export type Api = {
 
   getDownloadState(): Promise<DownloadState>
   startDownload(franchise: string, url: string, startAt?: number): Promise<void>
-  /** Compares a playlist with the files of a franchise folder. Nothing is downloaded. */
   checkMissingTracks(franchise: string, url: string): Promise<MissingReport>
-  /** Downloads only the given playlist numbers (the missing ones) into the franchise folder. */
   downloadMissingTracks(
     franchise: string,
     url: string,
     items: number[],
     playlistTotal: number
   ): Promise<void>
-  /** Opens a file picker for a cookies.txt file. Returns its path, or null when cancelled. */
   chooseCookiesFile(): Promise<string | null>
-  /** Looks at one YouTube video with the given sign-in, to tell whether downloads will work. */
   checkYoutubeSignIn(cookies: YoutubeCookies): Promise<SignInCheck>
-  /** Ends the wait of a download that is waiting to try again after YouTube refused. */
   continueDownload(): Promise<void>
   cancelDownload(): Promise<void>
   resetDownload(): Promise<void>

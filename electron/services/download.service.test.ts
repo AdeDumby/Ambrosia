@@ -24,7 +24,6 @@ import {
 } from './download.service.ts'
 import { fsKey } from '../../src/shared/download.ts'
 
-// The tests put a pretend yt-dlp in front of the real one. It needs a shell, so not on Windows.
 const posix = process.platform !== 'win32'
 const bot =
   "ERROR: [youtube] vid: Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies for the authentication."
@@ -44,7 +43,6 @@ beforeAll(() => {
     `#!/bin/sh
 printf '%s\\n' "$@" > "$ARGS_FILE"
 if [ "$MODE" = "lenient" ]; then
-  # Eight tracks. From FAIL_FROM on, YouTube refuses, for the first FAIL_LAUNCHES launches.
   ARCH=""; prev=""
   for a in "$@"; do if [ "$prev" = "--download-archive" ]; then ARCH="$a"; fi; prev="$a"; done
   echo "$@" >> "$LOG_FILE"
@@ -67,7 +65,6 @@ if [ "$MODE" = "lenient" ]; then
   exit 0
 fi
 if [ "$MODE" = "start" ]; then
-  # Eight tracks, from the chosen one on. Numbers are relative, or real when REAL=1.
   S=1; prev=""
   for a in "$@"; do if [ "$prev" = "--playlist-start" ]; then S="$a"; fi; prev="$a"; done
   i=$S
@@ -87,7 +84,6 @@ if [ "$MODE" = "start" ]; then
   exit 0
 fi
 if [ "$MODE" = "items" ]; then
-  # Only the numbers of --playlist-items. Relative numbers, or real ones when REAL=1.
   LIST=""; prev=""
   for a in "$@"; do if [ "$prev" = "--playlist-items" ]; then LIST="$a"; fi; prev="$a"; done
   NUMS=""
@@ -107,7 +103,6 @@ if [ "$MODE" = "items" ]; then
   exit 0
 fi
 if [ "$MODE" = "symbols" ]; then
-  # Pretend the console could not show some characters: they come out as "?".
   n=1
   while IFS='|' read -r printed real; do
     echo "[download] Downloading item $n of $COUNT"
@@ -139,7 +134,6 @@ afterAll(() => {
 })
 
 afterEach(async () => {
-  // A test that failed must not leave a download behind for the next one.
   if (getDownloadState().phase === 'downloading') {
     cancelDownload()
     for (let w = 0; getDownloadState().phase === 'downloading' && w < 3000; w += 20) {
@@ -172,7 +166,6 @@ describe.skipIf(!posix)('download with the YouTube bot check', () => {
     expect(state.phase).toBe('failed')
     expect(state.signInProblem).toBe(true)
     expect(state.error).toMatch(/Turn on YouTube sign-in/)
-    // It stopped long before the 20 items.
     expect(state.items.length).toBeLessThan(10)
     expect(state.items[0].error).toBe('YouTube asks to sign in')
   })
@@ -213,7 +206,6 @@ describe.skipIf(!posix)('download with the YouTube bot check', () => {
 })
 
 async function downloadNamed(rows: string[], count = rows.length) {
-  // Each row is "name printed by yt-dlp|real name on disk" (no real name: no file is made).
   const list = path.join(folder, 'list.txt')
   writeFileSync(list, rows.join('\n') + '\n')
   process.env.MODE = 'symbols'
@@ -335,7 +327,6 @@ describe.skipIf(!posix)('a long playlist that YouTube stops in the middle', () =
       const [first, second] = launches()
       expect(first).toContain('--sleep-interval 2')
       expect(first).toContain('--download-archive')
-      // The second launch is gentler, and uses the same list of what was done.
       expect(second).toContain('--max-sleep-interval 25')
       const archive = (line: string) =>
         line.split(' ').at(line.split(' ').indexOf('--download-archive') + 1)
@@ -393,13 +384,11 @@ describe.skipIf(!posix)('a long playlist that YouTube stops in the middle', () =
       await startDownload(folder, 'Long2', url, settings)
       await until(() => getDownloadState().phase !== 'downloading')
       let state = getDownloadState()
-      // Four tracks were fine, and the rest could not be downloaded.
       expect(state.phase).toBe('downloaded')
       expect(state.items.filter((item) => item.status === 'done')).toHaveLength(4)
       expect(state.error).toMatch(/kept asking to sign in/)
       expect(launches().length).toBe(3)
 
-      // Later, YouTube lets it through: the same link goes on from track 5.
       lenient(0, 0, 'Long2')
       resetDownload()
       await startDownload(folder, 'Long2', url, settings)

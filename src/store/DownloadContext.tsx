@@ -67,7 +67,7 @@ export function DownloadProvider({ children }: { children: ReactNode }) {
     try {
       setState(await window.api.getDownloadState())
     } catch {
-      // the next poll tries again
+      void 0
     }
   }, [])
 

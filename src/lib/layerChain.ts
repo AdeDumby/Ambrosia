@@ -5,10 +5,8 @@ export const EQ_MID_HZ = 1000
 export const EQ_HIGH_HZ = 4000
 export const REVERB_SECONDS = 2.5
 export const MAX_ECHO_SECONDS = 2
-/** A cut this low does nothing, so "off" is a filter nobody can hear. */
 export const LOW_CUT_OFF_HZ = 10
 
-/** A burst of fading noise: the room of the reverb. */
 export function makeImpulse(context: BaseAudioContext): AudioBuffer {
   const length = Math.round(context.sampleRate * REVERB_SECONDS)
   const buffer = context.createBuffer(2, length, context.sampleRate)
@@ -21,7 +19,6 @@ export function makeImpulse(context: BaseAudioContext): AudioBuffer {
   return buffer
 }
 
-/** The numbers behind the sound of a layer. The live mix and the loudness check both use them. */
 export type ChainParams = {
   lowCut: number
   highCut: number
@@ -56,7 +53,6 @@ export function chainParams(layer: LayerSettings): ChainParams {
   }
 }
 
-/** True when the settings change how loud the layer is, so its loudness must be checked again. */
 export function affectsLoudness(layer: LayerSettings): boolean {
   return (
     layer.eqLow !== 0 ||
@@ -71,11 +67,6 @@ export function affectsLoudness(layer: LayerSettings): boolean {
   )
 }
 
-/**
- * Names the settings that decide the loudness, and the part of the track that is measured.
- * Two layers with the same key are equally loud, so a settings change that is not in the key
- * (volume, pan, fades, loop) does not need a new check.
- */
 export function loudnessKey(layer: LayerSettings): string {
   const echo = layer.echoMix > 0
   const wobble = layer.tremoloDepth > 0

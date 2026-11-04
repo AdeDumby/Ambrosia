@@ -25,7 +25,6 @@ const AUDIO_FILE = /\.(mp3|m4a|opus|ogg|wav|flac|aac|webm)$/i
 type FlatEntry = { id?: unknown; title?: unknown; duration?: unknown }
 type FlatList = FlatEntry & { entries?: unknown }
 
-/** Reads the list that `yt-dlp --flat-playlist -J` prints. A single video counts as a list of one. */
 export function parsePlaylistJson(text: string): PlaylistEntry[] {
   let parsed: FlatList
   try {
@@ -114,7 +113,6 @@ async function readFolder(folder: string): Promise<FolderFile[]> {
   return files
 }
 
-/** Compares the tracks of a playlist with the files in a franchise folder. Nothing is downloaded. */
 export async function checkMissingTracks(
   libraryFolder: string,
   franchiseRaw: string,

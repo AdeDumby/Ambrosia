@@ -25,28 +25,20 @@ type MixState = {
   master: number
   anyPlaying: boolean
   anySolo: boolean
-  /** The layer whose settings are shown in the panel. */
   selectedId: number | null
-  /** The mixtape the current layers came from, or were saved as. */
   loadedMixtape: Mixtape | null
-  /** The effects copied from a layer, ready to paste on another. */
   copied: LayerSettings | null
   limiter: boolean
-  /** How many layers are still having their loudness with the effects measured. */
   matching: number
-  /** True while the mix is fading out. */
   fading: boolean
-  /** When the sleep timer will have paused everything, as a time in ms. */
   sleepEndsAt: number | null
   select: (trackId: number | null) => void
   setLimiter: (on: boolean) => void
   applyPreset: (trackId: number, name: string) => void
   copyEffects: (trackId: number) => void
   pasteEffects: (trackId: number) => void
-  /** Fades the whole mix out over a few seconds, then pauses it. */
   fadeOutAndPause: (seconds: number) => void
   startSleepTimer: (minutes: number) => void
-  /** Stops the sleep timer or the fade that is going on. */
   cancelSleep: () => void
   setMaster: (value: number) => void
   update: (trackId: number, patch: Partial<LayerSettings>) => void
@@ -58,19 +50,15 @@ type MixState = {
   unsoloAll: () => void
   removeSilent: () => void
   clear: () => void
-  /** Replaces the mix with the components of a mixtape, and starts them. */
   playMixtape: (mixtape: Mixtape) => void
   saveAsMixtape: (name: string) => Promise<void>
   updateMixtape: () => Promise<void>
 }
 
 const MixContext = createContext<MixState | null>(null)
-/** Review plays every unreviewed track by itself, so those are not meant for the mix. */
 const NO_AUTO_ADD = '/review'
-/** Wait for the effects to stop changing before the loudness is measured again. */
 const MATCH_DELAY_MS = 350
 const MAX_MATCHED = 300
-/** The sleep timer fades the mix out over this long, ending at the time that was set. */
 const SLEEP_FADE_SECONDS = 20
 
 export function MixProvider({ children }: { children: ReactNode }) {
@@ -87,7 +75,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
   const [fading, setFading] = useState(false)
   const [sleepEndsAt, setSleepEndsAt] = useState<number | null>(null)
   const sleepTimer = useRef<number | undefined>(undefined)
-  // The correction that brings a layer with its effects to the target loudness, by what it sounds like.
   const [matched, setMatched] = useState<Map<string, number>>(new Map())
   const measuring = useRef(new Set<string>())
   const lastCorrection = useRef(new Map<number, number>())
@@ -99,14 +86,12 @@ export function MixProvider({ children }: { children: ReactNode }) {
     pathRef.current = pathname
   }, [pathname])
 
-  // A track that starts playing in the main player is sent to the mix, silent and paused.
   const currentId = currentTrack?.id
   useEffect(() => {
     if (currentId === undefined || pathRef.current === NO_AUTO_ADD) return
     dispatch({ type: 'add', trackId: currentId })
   }, [currentId])
 
-  // Forget layers whose track was deleted from the library.
   useEffect(() => {
     if (tracks.length === 0) return
     dispatch({ type: 'remove-missing', existingIds: new Set(tracks.map((track) => track.id)) })
@@ -126,7 +111,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
 
   const trackById = useMemo(() => new Map(tracks.map((track) => [track.id, track])), [tracks])
 
-  // A layer whose effects change its loudness is measured with them, so Normalize volume holds.
   const needsMatch = useCallback(
     (layer: MixLayer) => normalize && affectsLoudness(layer) && trackById.has(layer.trackId),
     [normalize, trackById]
@@ -163,7 +147,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
           .catch(() => null)
           .then((correction) => {
             measuring.current.delete(key)
-            // When the check cannot be done, the layer falls back to the plain track, not to silence.
             setMatched((previous) => {
               const next = new Map(previous).set(key, correction ?? plain)
               while (next.size > MAX_MATCHED) next.delete(next.keys().next().value as string)
@@ -175,7 +158,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(timer)
   }, [layers, matched, needsMatch, matchKey, trackById, targetLufs])
 
-  // Keeps the sound in line with the layers.
   useEffect(() => {
     const info = new Map<number, EngineTrack>()
     for (const layer of layers) {
@@ -193,7 +175,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
           correction = found
           lastCorrection.current.set(layer.trackId, found)
         } else {
-          // Keep the last level until the new check is done, so the sound does not jump.
           correction = lastCorrection.current.get(layer.trackId) ?? plain
           pending = true
         }
@@ -294,7 +275,6 @@ export function MixProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const playMixtape = useCallback((mixtape: Mixtape) => {
-    // A mixtape whose tracks were all deleted has nothing to play: keep the mix as it is.
     if (mixtape.layers.length === 0) return
     dispatch({ type: 'clear' })
     dispatch({ type: 'load', layers: mixtape.layers })

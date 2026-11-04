@@ -1,7 +1,4 @@
-/** What is needed to tell which tracks of a playlist are missing from a folder. */
-
 export type PlaylistEntry = {
-  /** Its number in the playlist, from 1. */
   index: number
   id: string
   title: string
@@ -9,34 +6,26 @@ export type PlaylistEntry = {
 }
 
 export type FolderFile = {
-  /** The name of the file, with its extension. */
   name: string
   durationSec: number | null
-  /** The video ID Ambrosia wrote in the file when it downloaded it, if any. */
   videoId: string | null
 }
 
 export type MatchMethod = 'id' | 'title' | 'length'
 
 export type MissingTrack = PlaylistEntry & {
-  /** Deleted or private: it can not be downloaded. */
   unavailable: boolean
 }
 
 export type MissingReport = {
   playlistTotal: number
-  /** How many playlist tracks have a file in the folder, by the way they were found. */
   matched: Record<MatchMethod, number>
   missing: MissingTrack[]
-  /** Files of the folder that match no track of the playlist. */
   extraFiles: string[]
-  /** The folder did not exist yet, so everything is missing. */
   folderMissing: boolean
 }
 
-/** Two lengths this close (in seconds) are taken as the same recording. */
 export const LENGTH_TOLERANCE_SEC = 2
-/** yt-dlp cuts the title of a file name at this many characters (see the output template). */
 const TITLE_LIMIT = 150
 
 const UNAVAILABLE = /^\[(deleted|private) video\]$/i
@@ -45,7 +34,6 @@ export function isUnavailableTitle(title: string): boolean {
   return UNAVAILABLE.test(title.trim())
 }
 
-/** Letters and digits only, without accents or case: what stays the same when a name is saved. */
 export function foldTitle(text: string): string {
   return text
     .normalize('NFKD')
@@ -67,14 +55,6 @@ function distance(a: number | null, b: number | null): number {
   return a === null || b === null ? Number.MAX_SAFE_INTEGER : Math.abs(a - b)
 }
 
-/**
- * Finds out which tracks of the playlist have a file in the folder. Three steps, from the most
- * to the least sure, and a file is used once:
- *   1. the video ID that was written in the file,
- *   2. the same letters and digits in the title (the closest length wins when several fit),
- *   3. the same length (within a couple of seconds), when only one file and one track fit. This
- *      finds files that were renamed, or whose name has a symbol that could not be saved.
- */
 export function compareWithPlaylist(
   entries: PlaylistEntry[],
   files: FolderFile[],
@@ -89,7 +69,6 @@ export function compareWithPlaylist(
     matched[method] += 1
   }
 
-  // 1. The ID written in the file.
   const byId = new Map<string, number[]>()
   files.forEach((file, position) => {
     if (!file.videoId) return
@@ -100,7 +79,6 @@ export function compareWithPlaylist(
     if (position !== undefined) take(entry, position, 'id')
   }
 
-  // 2. The title. When several tracks share a title, the closest lengths are paired first.
   const stems = files.map((file) => foldTitle(stemOfName(file.name)))
   const pairs: { entry: PlaylistEntry; position: number; gap: number }[] = []
   for (const entry of entries) {
@@ -108,7 +86,6 @@ export function compareWithPlaylist(
     const wanted = foldTitle([...entry.title].slice(0, TITLE_LIMIT).join(''))
     if (wanted === '') continue
     for (const position of freeFiles) {
-      // A file of another video has its own ID: it is not this one.
       const other = files[position].videoId
       if (other && other !== entry.id) continue
       if (stems[position] !== wanted) continue
@@ -120,7 +97,6 @@ export function compareWithPlaylist(
     if (freeEntries.has(entry.index) && freeFiles.has(position)) take(entry, position, 'title')
   }
 
-  // 3. The length, when it points to one file and one track only.
   const candidatesOfEntry = new Map<number, number[]>()
   const candidatesOfFile = new Map<number, number[]>()
   for (const entry of entries) {
@@ -152,7 +128,6 @@ export function compareWithPlaylist(
   }
 }
 
-/** A length like 3:07, or 1:02:09. */
 export function formatDuration(seconds: number | null): string {
   if (seconds === null || !Number.isFinite(seconds)) return ''
   const total = Math.round(seconds)

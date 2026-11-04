@@ -54,7 +54,6 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     setMixtapes(await window.api.listMixtapes())
   }, [])
 
-  // Deleting or scanning tracks also changes the mixtapes that used them.
   const refreshTracks = useCallback(async () => {
     const [loadedTracks, loadedMixtapes] = await Promise.all([
       window.api.listTracks(),

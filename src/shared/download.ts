@@ -9,11 +9,6 @@ const HOSTS = new Set([
 ])
 const FORBIDDEN = /[<>:"/\\|?*\u0000-\u001f]/
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i
-/**
- * Characters that cannot be saved as they are, or that make a name look different from what it
- * is: half of an emoji (a lone surrogate, which the disk turns into a replacement symbol),
- * control characters, zero-width and line-break characters, and the ones that reverse the text.
- */
 const UNSAVABLE =
   /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]|[\u007f-\u009f\u200b\u2028\u2029\u202a-\u202e\u2066-\u2069\ufeff\ufffe\uffff]/g
 
@@ -21,16 +16,10 @@ export function hasUnsavableChars(text: string): boolean {
   return new RegExp(UNSAVABLE.source).test(text)
 }
 
-/** Removes the characters that cannot be saved (see hasUnsavableChars). */
 export function removeUnsavableChars(text: string): string {
   return text.replace(UNSAVABLE, '')
 }
 
-/**
- * What Windows compares to tell whether two names are the same file: it ignores case with a
- * table of capital letters, one letter at a time. Lower casing misses some pairs (a final and a
- * normal sigma, for example), and a rename onto such a name would replace the other file.
- */
 export function fsKey(name: string): string {
   let key = ''
   for (const letter of name) {
@@ -41,7 +30,6 @@ export function fsKey(name: string): string {
 }
 
 export type DownloadPhase = 'idle' | 'downloading' | 'downloaded' | 'failed' | 'cancelled'
-/** Skipped: yt-dlp had already downloaded it in an earlier run of the same link. */
 export type ItemStatus = 'downloading' | 'converting' | 'done' | 'failed' | 'skipped'
 
 export type DownloadItem = {
@@ -65,15 +53,11 @@ export type DownloadState = {
   error: string | null
   log: string[]
   renameActive: boolean
-  /** The failure is about signing in to YouTube, which the sign-in settings can fix. */
   signInProblem: boolean
-  /** Set while the download waits before trying again, after YouTube asked to sign in again. */
   waiting: { until: number; reason: string } | null
-  /** Something the person should know about the run, such as that it continues an earlier one. */
   notice: string | null
 }
 
-/** What a check of the YouTube sign-in found. */
 export type SignInCheck = { ok: boolean; message: string; version: string | null }
 
 export function idleDownloadState(): DownloadState {
@@ -110,7 +94,6 @@ export function checkFranchise(raw: string): string | null {
 
 export const MAX_START_AT = 100000
 
-/** The track number to start from. Empty means the first track. */
 export function checkStartAt(raw: string): string | null {
   const text = raw.trim()
   if (text === '') return null

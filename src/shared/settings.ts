@@ -88,15 +88,12 @@ export const COOKIE_SOURCES: CookieSource[] = ['off', 'browser', 'file']
 
 export const MAX_COOKIE_PATH = 500
 
-/** Where yt-dlp gets the YouTube sign-in from, to get past "Sign in to confirm you're not a bot". */
 export type YoutubeCookies = {
   source: CookieSource
   browser: YoutubeBrowser
-  /** Full path of a cookies.txt file (Netscape format). */
   file: string
 }
 
-/** How much time is left between requests to YouTube. Slower is less likely to be refused. */
 export type DownloadPace = 'fast' | 'balanced' | 'gentle'
 
 export const DOWNLOAD_PACES: DownloadPace[] = ['fast', 'balanced', 'gentle']

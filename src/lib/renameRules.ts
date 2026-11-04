@@ -36,8 +36,6 @@ export function compileRules(rules: RenameRule[]): CompiledRule[] {
       return { rule, regex: null, error: `Use at most ${MAX_PATTERN} characters.` }
     }
     try {
-      // With the u flag a pattern sees whole symbols (an emoji or a rare letter is one character,
-      // not two halves), and can use \\p{L}. A pattern the flag does not accept still works without it.
       const flags = rule.ignoreCase ? 'gi' : 'g'
       try {
         return { rule, regex: new RegExp(rule.find, flags + 'u'), error: null }

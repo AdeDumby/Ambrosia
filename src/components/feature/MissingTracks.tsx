@@ -6,13 +6,11 @@ import './MissingTracks.css'
 type Props = {
   franchise: string
   url: string
-  /** The franchise and the link are filled in and valid. */
   ready: boolean
   onDownload: (items: number[], total: number) => Promise<void>
 }
 
 export default function MissingTracks({ franchise, url, ready, onDownload }: Props) {
-  // A report belongs to the folder and the link it was made for, and goes away when they change.
   const key = `${franchise}\n${url}`
   const [result, setResult] = useState<{
     key: string

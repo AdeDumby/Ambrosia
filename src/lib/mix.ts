@@ -28,7 +28,6 @@ export type MixAction =
   | { type: 'remove-silent' }
   | { type: 'clear' }
 
-/** Playing a lot of tracks adds a lot of layers, so the oldest idle ones are dropped past this. */
 export const MAX_LAYERS = 100
 
 export function clampVolume(value: number): number {
@@ -58,7 +57,6 @@ function patchLayer(
   return found ? next : layers
 }
 
-/** Drops the oldest layers that are not playing until the list fits, never one that must stay. */
 function trim(layers: MixLayer[], keep: ReadonlySet<number> = new Set()): MixLayer[] {
   let result = layers
   for (let index = result.length - 1; index > 0 && result.length > MAX_LAYERS; index -= 1) {
@@ -70,16 +68,13 @@ function trim(layers: MixLayer[], keep: ReadonlySet<number> = new Set()): MixLay
 }
 
 function add(layers: MixLayer[], trackId: number): MixLayer[] {
-  // Playing the same track again keeps its layer, and its place in the list, as it is.
   if (layers.some((layer) => layer.trackId === trackId)) return layers
 
   const next = [fresh(trackId), ...layers]
   const trimmed = trim(next, new Set([trackId]))
-  // When every other layer is playing there is no room: the new one is not added.
   return trimmed.length > MAX_LAYERS ? layers : trimmed
 }
 
-/** Puts the components of a mixtape in the mix with their saved settings, paused. */
 function load(layers: MixLayer[], incoming: MixtapeLayer[]): MixLayer[] {
   if (incoming.length === 0) return layers
 
@@ -122,7 +117,6 @@ export function mixReducer(layers: MixLayer[], action: MixAction): MixLayer[] {
     case 'reset-effects':
       return patchLayer(layers, action.trackId, resetEffects)
     case 'preset':
-      // A preset starts from plain effects, so presets do not pile up on each other.
       return patchLayer(layers, action.trackId, (layer) => ({
         ...layer,
         ...sanitizeLayerSettings(
@@ -153,7 +147,6 @@ export function mixReducer(layers: MixLayer[], action: MixAction): MixLayer[] {
       return kept.length === layers.length ? layers : kept
     }
     case 'play-all':
-      // Layers that make no sound stay paused: starting them would only use up the disk and CPU.
       return layers.map((layer) =>
         layer.volume > 0 && !layer.playing ? { ...layer, playing: true } : layer
       )
@@ -170,20 +163,14 @@ export function mixReducer(layers: MixLayer[], action: MixAction): MixLayer[] {
   }
 }
 
-/** A layer is heard unless it is muted, or another layer is solo and this one is not. */
 export function isAudible(layer: LayerSettings, anySolo: boolean): boolean {
   return !layer.muted && (!anySolo || layer.solo)
 }
 
-/** Gain given to one layer: its own volume, times the loudness correction of its track. */
 export function layerGain(layer: LayerSettings, anySolo: boolean, correction: number): number {
   return isAudible(layer, anySolo) ? clampVolume(layer.volume) * correction : 0
 }
 
-/**
- * True when the browser can repeat the track by itself. Anything that needs a decision at the
- * end of the track (a trimmed part, a pause between loops, a fade out) is handled by the mix.
- */
 export function usesNativeLoop(layer: LayerSettings): boolean {
   return (
     layer.loop &&
@@ -196,21 +183,16 @@ export function usesNativeLoop(layer: LayerSettings): boolean {
   )
 }
 
-/** True when the volume, pan or speed change a little each time the layer starts or loops. */
 export function hasVariation(layer: LayerSettings): boolean {
   return layer.volumeJitter > 0 || layer.panJitter > 0 || layer.speedJitter > 0
 }
 
 export type Variation = {
-  /** Multiplies the volume. 1 or less. */
   volume: number
-  /** Added to the pan. */
   pan: number
-  /** Multiplies the speed. */
   speed: number
 }
 
-/** The random change for one play. Each `random` is 0 to 1. The volume never goes above the set one. */
 export function variationFor(
   layer: LayerSettings,
   random: { volume: number; pan: number; speed: number }
@@ -225,7 +207,6 @@ export function variationFor(
 
 export type PlayWindow = { start: number; end: number }
 
-/** The part of a track that is played, in seconds, for a track of the given length. */
 export function playWindow(layer: LayerSettings, duration: number): PlayWindow {
   const length = Number.isFinite(duration) && duration > 0 ? duration : 0
   if (length === 0) return { start: layer.startAt, end: layer.endAt > 0 ? layer.endAt : 0 }
@@ -234,31 +215,23 @@ export function playWindow(layer: LayerSettings, duration: number): PlayWindow {
   return { start, end }
 }
 
-/** Where to start: the beginning of the part, or somewhere inside it. `random` is 0 to 1. */
 export function startPosition(layer: LayerSettings, window: PlayWindow, random: number): number {
   if (!layer.randomStart) return window.start
   const room = window.end - window.start - 0.5
   return room > 0 ? window.start + random * room : window.start
 }
 
-/** Seconds to wait before the next loop. `random` is 0 to 1. */
 export function loopGap(layer: LayerSettings, random: number): number {
   if (layer.gapMax <= 0) return 0
   return layer.gapMin + random * (layer.gapMax - layer.gapMin)
 }
 
 export type FadePlan = {
-  /** Seconds of fade in, from now. */
   fadeIn: number
-  /** When the fade out starts, in seconds from now, and how long it lasts. */
   fadeOutAfter: number
   fadeOut: number
 }
 
-/**
- * Fades for a play that starts now at `position` of the part `window`. Lengths are in real
- * time, so a track played faster is over sooner. Without a fade out the end is left alone.
- */
 export function fadePlan(layer: LayerSettings, window: PlayWindow, position: number): FadePlan {
   const remaining = Math.max(0, (window.end - position) / layer.speed)
   const fadeIn = window.end > 0 ? Math.min(layer.fadeIn, remaining) : layer.fadeIn
@@ -267,7 +240,6 @@ export function fadePlan(layer: LayerSettings, window: PlayWindow, position: num
   return { fadeIn, fadeOutAfter: Math.max(0, remaining - fadeOut), fadeOut }
 }
 
-/** The saved form of a layer: its settings, without whether it is playing right now. */
 export function toMixtapeLayer(layer: MixLayer): MixtapeLayer {
   const { playing, ...saved } = layer
   void playing

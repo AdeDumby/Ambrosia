@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
 import { useLibrary } from '../store/LibraryContext'
 
-/** Tagging, renaming and deleting mixtapes. Each action reloads the list when it is done. */
 export function useMixtapeActions() {
   const { refreshMixtapes, refreshTags } = useLibrary()
 
@@ -42,7 +41,6 @@ export function useMixtapeActions() {
   const remove = useCallback(
     async (id: number) => {
       await window.api.deleteMixtape(id)
-      // A tag that only this mixtape used is gone with it.
       await Promise.all([refreshMixtapes(), refreshTags()])
     },
     [refreshMixtapes, refreshTags]
